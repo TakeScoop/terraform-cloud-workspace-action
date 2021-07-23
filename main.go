@@ -98,9 +98,11 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error running Init: %s", err)
 	}
 
+	planPath := "plan.txt"
+
 	diff, err := tf.Plan(
 		context.Background(),
-		tfexec.Out("plan.txt"),
+		tfexec.Out(planPath),
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
@@ -110,7 +112,7 @@ resource "tfe_workspace" "workspace" {
 	}
 
 	if diff {
-		planStr, err := tf.ShowPlanFileRaw(context.Background(), "plan.txt")
+		planStr, err := tf.ShowPlanFileRaw(context.Background(), planPath)
 		if err != nil {
 			log.Fatalf("Error showing plan: %s", err)
 		}
@@ -118,7 +120,7 @@ resource "tfe_workspace" "workspace" {
 		fmt.Println(planStr)
 		githubactions.SetOutput("plan", planStr)
 
-		plan, err := tf.ShowPlanFile(context.Background(), "plan.txt")
+		plan, err := tf.ShowPlanFile(context.Background(), planPath)
 		if err != nil {
 			log.Fatalf("error creating plan struct: %s", err)
 		}
@@ -133,9 +135,7 @@ resource "tfe_workspace" "workspace" {
 		fmt.Println("Applying...")
 		err = tf.Apply(
 			context.Background(),
-			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
-			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
-			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+			tfexec.DirOrPlan(planPath),
 		)
 		if err != nil {
 			log.Fatalf("error running apply: %s", err)
