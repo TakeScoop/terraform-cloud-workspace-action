@@ -133,9 +133,6 @@ resource "tfe_workspace" "workspace" {
 		fmt.Println("Applying...")
 		err = tf.Apply(
 			context.Background(),
-			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
-			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
-			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 			tfexec.DirOrPlan("plan.txt"),
 		)
 		if err != nil {
