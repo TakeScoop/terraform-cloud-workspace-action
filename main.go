@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -101,12 +102,26 @@ resource "tfe_workspace" "workspace" {
 	}
 
 	if diff {
-		p, err := tf.ShowPlanFileRaw(context.Background(), "plan.txt")
+		planStr, err := tf.ShowPlanFileRaw(context.Background(), "plan.txt")
 		if err != nil {
 			log.Fatalf("Error showing plan: %s", err)
 		}
 
-		fmt.Println(p)
+		fmt.Println(planStr)
+		githubactions.SetOutput("plan", planStr)
+
+		plan, err := tf.ShowPlanFile(context.Background(), "plan.txt")
+		if err != nil {
+			log.Fatalf("error creating plan struct: %s", err)
+		}
+
+		b, err := json.Marshal(plan)
+		if err != nil {
+			log.Fatalf("error converting plan to json: %s", err)
+		}
+
+		fmt.Println(string(b))
+		githubactions.SetOutput("plan_json", string(b))
 	} else {
 		fmt.Println("No changes")
 	}
@@ -117,6 +132,7 @@ resource "tfe_workspace" "workspace" {
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 	)
+
 	if err != nil {
 		log.Fatalf("error running apply: %s", err)
 	}

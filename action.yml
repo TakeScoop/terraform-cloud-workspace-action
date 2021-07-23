@@ -37,6 +37,11 @@ inputs:
   aws_region:
     description: S3 bucket region
     required: true
+outputs:
+  plan:
+    description: Human readable Terraform plan
+  plan_json:
+    description: JSON plan
 runs:
   using: docker
   image: Dockerfile
