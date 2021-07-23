@@ -136,6 +136,7 @@ resource "tfe_workspace" "workspace" {
 			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+			tfexec.DirOrPlan("plan.txt"),
 		)
 		if err != nil {
 			log.Fatalf("error running apply: %s", err)
