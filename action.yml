@@ -3,14 +3,106 @@ description: Runs Terraform stuff
 inputs:
   terraform-version:
     description: Terraform version
-    default: '1.0.3'
+    default: "1.0.3"
+  terraform-token:
+    description: Terraform Cloud token
+    required: true
+  terraform-host:
+    description: Terraform Cloud host
+    default: app.terraform.io
+  terraform-organization:
+    description: Terraform Cloud organization
+    required: true
+  name:
+    description: Name of the workspace
+    default: "${{ github.event.repository.name }}"
+  runner-terraform-version:
+    description: Terraform version used to create the workspace
+    default: "1.0.3"
+  environments:
+    description: Environments to create multiple workspaces
+    default: ""
+  aws-role:
+    description: Role with permission to access the S3 storage bucket
+    required: true
+  aws-access-key:
+    description: Access key for a user with permission to assume the AWS storage role
+    required: true
+  aws-secret-key:
+    description: Secret key for a user with permission to assume the AWS storage role
+    required: true
+  aws-storage-bucket:
+    description: S3 bucket ARN to store Terraform state
+    required: true
+  aws-region:
+    description: S3 bucket region
+    required: true
 runs:
   using: composite
   steps:
-    - name: Install Terraform
-        run: curl -o terraform.zip https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_386.zip
-        run: unzip terraform.zip
-        run: sudo mv terraform /usr/local/bin
-        run: terraform version
-        run: which terraform
-        
+    - name: Install Terraform version ${{ inputs.runner-terraform-version }}
+      run: |
+        curl -fsS -o terraform.zip "https://releases.hashicorp.com/terraform/${{ inputs.runner-terraform-version }}/terraform_${{ inputs.runner-terraform-version }}_linux_386.zip"
+        sudo unzip -o terraform.zip -d /usr/local/bin && rm -rf terraform.zip
+      shell: bash
+    - name: Set Terraform Cloud credentials
+      run: |
+        cat << EOF > ~/.terraformrc
+        credentials "${{ inputs.terraform-host }}" {
+          token = "${{ inputs.terraform-token }}" 
+        }
+        EOF
+      shell: bash
+    - name: Create workspace directory
+      id: create-workspace-dir
+      run: |
+        WORKSPACE_PROJECT_DIR="${{github.workspace}}/tmp/${{ inputs.name }}"
+        mkdir -p $WORKSPACE_PROJECT_DIR
+
+        if [[ "${{ inputs.environments }}" == "" ]] ; then
+          workspaces='["${{ inputs.name }}"]'
+        else
+          workspaces=$(echo '${{ inputs.environments }}' | jq -Rc 'split(",") | [("${{ inputs.name }}-" + .[])]')
+        fi
+
+        cat <<EOF > $WORKSPACE_PROJECT_DIR/main.tf
+        terraform {
+          backend "s3" {}
+        }
+
+        resource "tfe_workspace" "workspace" {
+          for_each = toset($workspaces)
+
+          name         = each.value
+          organization = "${{ inputs.terraform-organization }}"
+
+          auto_apply = true
+          terraform_version = "${{ inputs.terraform-version }}"
+        }
+        EOF
+
+        echo "::set-output name=dir::${WORKSPACE_PROJECT_DIR}"
+      shell: bash
+    - name: Terraform init
+      working-directory: "${{ steps.create-workspace-dir.outputs.dir }}"
+      run: |
+        cat main.tf
+        terraform init \
+          -backend-config="access_key=${{ inputs.aws-access-key }}" \
+          -backend-config="secret_key=${{ inputs.aws-secret-key }}" \
+          -backend-config="role_arn=${{ inputs.aws-role }}" \
+          -backend-config="bucket=${{ inputs.aws-storage-bucket }}" \
+          -backend-config="key=${{ inputs.name }}/terraform.tfstate" \
+          -backend-config="region=${{ inputs.aws-region }}"
+
+      shell: bash
+    - name: Terraform plan
+      working-directory: "${{ steps.create-workspace-dir.outputs.dir }}"
+      run: |
+        terraform plan
+      shell: bash
+    - name: Terraform apply
+      working-directory: "${{ steps.create-workspace-dir.outputs.dir }}"
+      run: |
+        terraform apply -auto-approve
+      shell: bash
