@@ -93,6 +93,7 @@ resource "tfe_workspace" "workspace" {
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+		tfexec.Out("plan.txt"),
 	)
 
 	if err != nil {
@@ -100,7 +101,14 @@ resource "tfe_workspace" "workspace" {
 	}
 
 	if diff {
-		fmt.Println("Plan is not empty")
+		p, err := tf.ShowPlanFileRaw(context.Background(), "plan.txt")
+		if err != nil {
+			log.Fatalf("Error showing plan: %s", err)
+		}
+
+		fmt.Println(p)
+	} else {
+		fmt.Println("No changes")
 	}
 
 	err = tf.Apply(
