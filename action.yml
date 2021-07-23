@@ -1,0 +1,42 @@
+name: Terraform Cloud Workspace
+description: Manages Terraform Cloud workspaces
+inputs:
+  terraform_version:
+    description: Terraform version
+    default: "1.0.3"
+  terraform_token:
+    description: Terraform Cloud token
+    required: true
+  terraform_host:
+    description: Terraform Cloud host
+    default: app.terraform.io
+  terraform_organization:
+    description: Terraform Cloud organization
+    required: true
+  name:
+    description: Name of the workspace
+    default: "${{ github.event.repository.name }}"
+  runner_terraform_version:
+    description: Terraform version used to create the workspace
+    default: "1.0.3"
+  environments:
+    description: Environments to create multiple workspaces
+    default: ""
+  aws_role:
+    description: Role with permission to access the S3 storage bucket
+    required: true
+  aws_access_key:
+    description: Access key for a user with permission to assume the AWS storage role
+    required: true
+  aws_secret_key:
+    description: Secret key for a user with permission to assume the AWS storage role
+    required: true
+  aws_storage_bucket:
+    description: S3 bucket ARN to store Terraform state
+    required: true
+  aws_region:
+    description: S3 bucket region
+    required: true
+runs:
+  using: docker
+  image: Dockerfile
