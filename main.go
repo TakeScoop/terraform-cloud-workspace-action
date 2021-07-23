@@ -59,9 +59,9 @@ variable "organization" {}
 variable "terraform_version" {}
 
 resource "tfe_workspace" "workspace" {
-	name         = var.name
-	organization = var.organization
-	auto_apply = true
+	name              = var.name
+	organization      = var.organization
+	auto_apply        = true
 	terraform_version = var.terraform_version
 }
 `)
