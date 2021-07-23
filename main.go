@@ -122,18 +122,19 @@ resource "tfe_workspace" "workspace" {
 
 		fmt.Println(string(b))
 		githubactions.SetOutput("plan_json", string(b))
+
+		err = tf.Apply(
+			context.Background(),
+			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
+			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
+			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+		)
+
+		if err != nil {
+			log.Fatalf("error running apply: %s", err)
+		}
 	} else {
 		fmt.Println("No changes")
 	}
 
-	err = tf.Apply(
-		context.Background(),
-		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
-		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
-		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
-	)
-
-	if err != nil {
-		log.Fatalf("error running apply: %s", err)
-	}
 }
