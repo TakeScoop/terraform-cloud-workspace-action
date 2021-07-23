@@ -49,22 +49,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b = []byte(fmt.Sprintf(`
+	b = []byte(`
 terraform {
 	backend "s3" {}
 }
 
+variable "name" {}
+variable "organization" {}
+variable "terraform_version" {}
+
 resource "tfe_workspace" "workspace" {
-	name         = "%s"
-	organization = "%s"
+	name         = var.name
+	organization = var.organization
 	auto_apply = true
-	terraform_version = "%s"
+	terraform_version = var.terraform_version
 }
-`,
-		githubactions.GetInput("terraform_organization"),
-		githubactions.GetInput("name"),
-		githubactions.GetInput("terraform_version"),
-	))
+`)
 
 	err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644)
 	if err != nil {
@@ -89,7 +89,13 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error running Init: %s", err)
 	}
 
-	diff, err := tf.Plan(context.Background())
+	diff, err := tf.Plan(
+		context.Background(),
+		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
+		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
+		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+	)
+
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
@@ -98,7 +104,12 @@ resource "tfe_workspace" "workspace" {
 		fmt.Println("Plan is not empty")
 	}
 
-	err = tf.Apply(context.Background())
+	err = tf.Apply(
+		context.Background(),
+		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
+		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
+		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+	)
 	if err != nil {
 		log.Fatalf("error running apply: %s", err)
 	}
