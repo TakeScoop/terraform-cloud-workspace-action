@@ -82,17 +82,17 @@ resource "tfe_workspace" "workspace" {
 		"\n",
 	)
 
-	var backendOpts []tfexec.InitOption
+	var backendConfigs []tfexec.InitOption
 	for _, val := range bcfg {
-		backendOpts = append(
-			backendOpts,
+		backendConfigs = append(
+			backendConfigs,
 			tfexec.BackendConfig(val),
 		)
 	}
 
 	err = tf.Init(
 		context.Background(),
-		backendOpts...,
+		backendConfigs...,
 	)
 	if err != nil {
 		log.Fatalf("error running Init: %s", err)
@@ -105,7 +105,6 @@ resource "tfe_workspace" "workspace" {
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 	)
-
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
@@ -132,18 +131,17 @@ resource "tfe_workspace" "workspace" {
 		fmt.Println(string(b))
 		githubactions.SetOutput("plan_json", string(b))
 
+		fmt.Println("Applying...")
 		err = tf.Apply(
 			context.Background(),
 			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 		)
-
 		if err != nil {
 			log.Fatalf("error running apply: %s", err)
 		}
 	} else {
 		fmt.Println("No changes")
 	}
-
 }

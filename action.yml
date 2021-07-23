@@ -22,21 +22,6 @@ inputs:
   environments:
     description: Environments to create multiple workspaces
     default: ""
-  aws_role:
-    description: Role with permission to access the S3 storage bucket
-    required: true
-  aws_access_key:
-    description: Access key for a user with permission to assume the AWS storage role
-    required: true
-  aws_secret_key:
-    description: Secret key for a user with permission to assume the AWS storage role
-    required: true
-  aws_storage_bucket:
-    description: S3 bucket ARN to store Terraform state
-    required: true
-  aws_region:
-    description: S3 bucket region
-    required: true
   backend_config:
     description: Backend config block
     default: ""
