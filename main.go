@@ -128,7 +128,6 @@ resource "tfe_workspace" "workspace" {
 			log.Fatalf("error converting plan to json: %s", err)
 		}
 
-		fmt.Println(string(b))
 		githubactions.SetOutput("plan_json", string(b))
 
 		fmt.Println("Applying...")
