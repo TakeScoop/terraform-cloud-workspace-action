@@ -1,0 +1,16 @@
+name: Terraform
+description: Runs Terraform stuff
+inputs:
+  terraform-version:
+    description: Terraform version
+    default: '1.0.3'
+runs:
+  using: composite
+  steps:
+    - name: Install Terraform
+        run: curl -o terraform.zip https://releases.hashicorp.com/terraform/${{ inputs.terraform-version }}/terraform_${{ inputs.terraform-version }}_linux_386.zip
+        run: unzip terraform.zip
+        run: sudo mv terraform /usr/local/bin
+        run: terraform version
+        run: which terraform
+        
