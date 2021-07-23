@@ -5,10 +5,4 @@ COPY . ./
 
 RUN go build
 
-FROM alpine
-
-WORKDIR /app
-
-COPY --from=build /src/terraform-cloud-workspace-action ./
-
-ENTRYPOINT ["./terraform-cloud-workspace-action"]
+ENTRYPOINT ["/src/terraform-cloud-workspace-action"]
