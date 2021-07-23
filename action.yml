@@ -37,6 +37,9 @@ inputs:
   aws_region:
     description: S3 bucket region
     required: true
+  backend_config:
+    description: Backend config block
+    default: ""
 outputs:
   plan:
     description: Human readable Terraform plan

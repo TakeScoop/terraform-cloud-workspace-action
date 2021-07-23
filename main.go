@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
@@ -76,14 +77,22 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error creating Terraform client: %s", err)
 	}
 
+	bcfg := strings.Split(
+		strings.TrimSpace(githubactions.GetInput("backend_config")),
+		"\n",
+	)
+
+	var backendOpts []tfexec.InitOption
+	for _, val := range bcfg {
+		backendOpts = append(
+			backendOpts,
+			tfexec.BackendConfig(val),
+		)
+	}
+
 	err = tf.Init(
 		context.Background(),
-		tfexec.BackendConfig(fmt.Sprintf("access_key=%s", githubactions.GetInput("aws_access_key"))),
-		tfexec.BackendConfig(fmt.Sprintf("secret_key=%s", githubactions.GetInput("aws_secret_key"))),
-		tfexec.BackendConfig(fmt.Sprintf("role_arn=%s", githubactions.GetInput("aws_role"))),
-		tfexec.BackendConfig(fmt.Sprintf("bucket=%s", githubactions.GetInput("aws_storage_bucket"))),
-		tfexec.BackendConfig(fmt.Sprintf("key=%s/terraform.tfstate", githubactions.GetInput("name"))),
-		tfexec.BackendConfig(fmt.Sprintf("region=%s", githubactions.GetInput("aws_region"))),
+		backendOpts...,
 	)
 	if err != nil {
 		log.Fatalf("error running Init: %s", err)
@@ -91,10 +100,10 @@ resource "tfe_workspace" "workspace" {
 
 	diff, err := tf.Plan(
 		context.Background(),
+		tfexec.Out("plan.txt"),
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
-		tfexec.Out("plan.txt"),
 	)
 
 	if err != nil {
