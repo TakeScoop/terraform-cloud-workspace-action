@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
@@ -43,8 +45,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	workDir := path.Join(os.Getenv("GITHUB_WORKSPACE"), "tmp", githubactions.GetInput("name"))
-	err = os.Mkdir(workDir, 0755)
+	workDir, err := ioutil.TempDir("", githubactions.GetInput("name"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,14 +77,22 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error creating Terraform client: %s", err)
 	}
 
+	bcfg := strings.Split(
+		strings.TrimSpace(githubactions.GetInput("backend_config")),
+		"\n",
+	)
+
+	var backendConfigs []tfexec.InitOption
+	for _, val := range bcfg {
+		backendConfigs = append(
+			backendConfigs,
+			tfexec.BackendConfig(val),
+		)
+	}
+
 	err = tf.Init(
 		context.Background(),
-		tfexec.BackendConfig(fmt.Sprintf("access_key=%s", githubactions.GetInput("aws_access_key"))),
-		tfexec.BackendConfig(fmt.Sprintf("secret_key=%s", githubactions.GetInput("aws_secret_key"))),
-		tfexec.BackendConfig(fmt.Sprintf("role_arn=%s", githubactions.GetInput("aws_role"))),
-		tfexec.BackendConfig(fmt.Sprintf("bucket=%s", githubactions.GetInput("aws_storage_bucket"))),
-		tfexec.BackendConfig(fmt.Sprintf("key=%s/terraform.tfstate", githubactions.GetInput("name"))),
-		tfexec.BackendConfig(fmt.Sprintf("region=%s", githubactions.GetInput("aws_region"))),
+		backendConfigs...,
 	)
 	if err != nil {
 		log.Fatalf("error running Init: %s", err)
@@ -91,26 +100,47 @@ resource "tfe_workspace" "workspace" {
 
 	diff, err := tf.Plan(
 		context.Background(),
+		tfexec.Out("plan.txt"),
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 	)
-
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
 
 	if diff {
-		fmt.Println("Plan is not empty")
-	}
+		planStr, err := tf.ShowPlanFileRaw(context.Background(), "plan.txt")
+		if err != nil {
+			log.Fatalf("Error showing plan: %s", err)
+		}
 
-	err = tf.Apply(
-		context.Background(),
-		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
-		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
-		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
-	)
-	if err != nil {
-		log.Fatalf("error running apply: %s", err)
+		fmt.Println(planStr)
+		githubactions.SetOutput("plan", planStr)
+
+		plan, err := tf.ShowPlanFile(context.Background(), "plan.txt")
+		if err != nil {
+			log.Fatalf("error creating plan struct: %s", err)
+		}
+
+		b, err := json.Marshal(plan)
+		if err != nil {
+			log.Fatalf("error converting plan to json: %s", err)
+		}
+
+		githubactions.SetOutput("plan_json", string(b))
+
+		fmt.Println("Applying...")
+		err = tf.Apply(
+			context.Background(),
+			tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
+			tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
+			tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+		)
+		if err != nil {
+			log.Fatalf("error running apply: %s", err)
+		}
+	} else {
+		fmt.Println("No changes")
 	}
 }
