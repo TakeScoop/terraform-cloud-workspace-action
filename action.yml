@@ -1,5 +1,5 @@
-name: Terraform
-description: Runs Terraform stuff
+name: Terraform Cloud Workspace
+description: Manages Terraform Cloud workspaces
 inputs:
   terraform-version:
     description: Terraform version
