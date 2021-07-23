@@ -43,8 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	workDir := path.Join(os.Getenv("GITHUB_WORKSPACE"), "tmp", githubactions.GetInput("name"))
-	err = os.Mkdir(workDir, 0755)
+	workDir, err := ioutil.TempDir("", githubactions.GetInput("name"))
 	if err != nil {
 		log.Fatal(err)
 	}
