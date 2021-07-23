@@ -86,7 +86,6 @@ runs:
     - name: Terraform init
       working-directory: "${{ steps.create-workspace-dir.outputs.dir }}"
       run: |
-        cat main.tf
         terraform init \
           -backend-config="access_key=${{ inputs.aws-access-key }}" \
           -backend-config="secret_key=${{ inputs.aws-secret-key }}" \
@@ -94,7 +93,6 @@ runs:
           -backend-config="bucket=${{ inputs.aws-storage-bucket }}" \
           -backend-config="key=${{ inputs.name }}/terraform.tfstate" \
           -backend-config="region=${{ inputs.aws-region }}"
-
       shell: bash
     - name: Terraform plan
       working-directory: "${{ steps.create-workspace-dir.outputs.dir }}"
