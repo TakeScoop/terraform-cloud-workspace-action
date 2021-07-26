@@ -55,12 +55,24 @@ terraform {
 	backend "s3" {}
 }
 
-variable "name" {}
-variable "organization" {}
-variable "terraform_version" {}
+variable "name" {
+	type = string
+}
+variable "organization" {
+	type = string
+}
+variable "terraform_version" {
+	type = string
+}
+variable "workspaces" {
+	type    = string
+	default = ""
+}
 
 resource "tfe_workspace" "workspace" {
-	name              = var.name
+	for_each = toset(var.workspaces != "" ? [for ws in split(",", var.workspaces) => "${var.name}-${trimspace(ws)}"] : var.name)
+
+	name              = each.value
 	organization      = var.organization
 	auto_apply        = true
 	terraform_version = var.terraform_version
@@ -106,6 +118,7 @@ resource "tfe_workspace" "workspace" {
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+		tfexec.Var(fmt.Sprintf("workspaces=%s", githubactions.GetInput("workspaces"))),
 	)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)

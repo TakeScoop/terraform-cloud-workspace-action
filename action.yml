@@ -14,13 +14,13 @@ inputs:
     description: Terraform Cloud organization
     required: true
   name:
-    description: Name of the workspace
+    description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`)
     default: "${{ github.event.repository.name }}"
   runner_terraform_version:
     description: Terraform version used to create the workspace
     default: "1.0.3"
-  environments:
-    description: Environments to create multiple workspaces
+  workspaces:
+    description: Comma separated list of workspaces
     default: ""
   backend_config:
     description: Backend config block
