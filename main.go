@@ -116,7 +116,10 @@ resource "tfe_workspace" "workspace" {
 	for _, s := range strings.Split(githubactions.GetInput("workspaces"), ",") {
 		workspaces = append(workspaces, strings.TrimSpace(s))
 	}
-	wsBytes, _ := json.Marshal(workspaces)
+	wsBytes, err := json.Marshal(workspaces)
+	if err != nil {
+		log.Fatalf("error marshalling workspaces input: %s", err)
+	}
 
 	diff, err := tf.Plan(
 		context.Background(),
