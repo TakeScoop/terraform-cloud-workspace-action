@@ -65,12 +65,12 @@ variable "terraform_version" {
 	type = string
 }
 variable "workspaces" {
-	type    = string
-	default = ""
+	type    = set(string)
+	default = []
 }
 
 resource "tfe_workspace" "workspace" {
-	for_each = toset(var.workspaces != "" ? [for ws in split(",", var.workspaces) => "${var.name}-${trimspace(ws)}"] : var.name)
+	for_each = toset(length(var.workspaces) > 0 ? [for ws in var.workspaces: "${var.name}-${ws}" ] : [var.name])
 
 	name              = each.value
 	organization      = var.organization
@@ -112,13 +112,19 @@ resource "tfe_workspace" "workspace" {
 
 	planPath := "plan.txt"
 
+	var workspaces []string
+	for _, s := range strings.Split(githubactions.GetInput("workspaces"), ",") {
+		workspaces = append(workspaces, strings.TrimSpace(s))
+	}
+	wsBytes, _ := json.Marshal(workspaces)
+
 	diff, err := tf.Plan(
 		context.Background(),
 		tfexec.Out(planPath),
 		tfexec.Var(fmt.Sprintf("name=%s", githubactions.GetInput("name"))),
 		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
-		tfexec.Var(fmt.Sprintf("workspaces=%s", githubactions.GetInput("workspaces"))),
+		tfexec.Var(fmt.Sprintf("workspaces='%s'", string(wsBytes))),
 	)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
