@@ -16,6 +16,11 @@ import (
 )
 
 func main() {
+	token := githubactions.GetInput("terraform_token")
+	host := githubactions.GetInput("terraform_host")
+	name := strings.TrimSpace(githubactions.GetInput("name"))
+	org := githubactions.GetInput("terraform_organization")
+
 	tmpDir, err := ioutil.TempDir("", "tfinstall")
 	if err != nil {
 		log.Fatalf("error creating temp dir: %s", err)
@@ -33,7 +38,7 @@ func main() {
 
 	b := []byte(fmt.Sprintf(`credentials "%s" {
 	token = "%s" 
-}`, githubactions.GetInput("terraform_host"), githubactions.GetInput("terraform_token")))
+}`, host, token))
 
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -45,7 +50,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	workDir, err := ioutil.TempDir("", githubactions.GetInput("name"))
+	workDir, err := ioutil.TempDir("", name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,8 +111,6 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error running Init: %s", err)
 	}
 
-	name := strings.TrimSpace(githubactions.GetInput("name"))
-
 	var workspaces []string
 
 	if githubactions.GetInput("workspaces") == "" {
@@ -123,14 +126,45 @@ resource "tfe_workspace" "workspace" {
 		log.Fatalf("error marshalling workspaces input: %s", err)
 	}
 
+	varOpts := []*tfexec.VarOption{
+		tfexec.Var(fmt.Sprintf("organization=%s", org)),
+		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
+		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
+	}
+
+	if githubactions.GetInput("import") == "true" {
+		fmt.Println("Importing resources...")
+
+		i, err := NewImporter(tf, token, host)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		opts := make([]tfexec.ImportOption, len(varOpts))
+		for i, v := range varOpts {
+			opts[i] = v
+		}
+
+		for _, name := range workspaces {
+			err = i.ImportWorkspace(context.Background(), name, org, opts...)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
 	planPath := "plan.txt"
+
+	var opts []tfexec.PlanOption
+	for _, v := range varOpts {
+		opts = append(opts, v)
+	}
+
+	opts = append(opts, tfexec.Out(planPath))
 
 	diff, err := tf.Plan(
 		context.Background(),
-		tfexec.Out(planPath),
-		tfexec.Var(fmt.Sprintf("organization=%s", githubactions.GetInput("terraform_organization"))),
-		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
-		tfexec.Var(fmt.Sprintf("workspace_names='%s'", string(wsBytes))),
+		opts...,
 	)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
