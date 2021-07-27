@@ -132,13 +132,15 @@ resource "tfe_workspace" "workspace" {
 
 		githubactions.SetOutput("plan_json", string(b))
 
-		fmt.Println("Applying...")
-		err = tf.Apply(
-			context.Background(),
-			tfexec.DirOrPlan(planPath),
-		)
-		if err != nil {
-			log.Fatalf("error running apply: %s", err)
+		if githubactions.GetInput("apply") == "true" {
+			fmt.Println("Applying...")
+			err = tf.Apply(
+				context.Background(),
+				tfexec.DirOrPlan(planPath),
+			)
+			if err != nil {
+				log.Fatalf("error running apply: %s", err)
+			}
 		}
 	} else {
 		fmt.Println("No changes")

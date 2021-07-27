@@ -25,6 +25,9 @@ inputs:
   backend_config:
     description: Backend config block
     default: ""
+  apply:
+    description: Whether to apply the proposed Terraform changes
+    required: true
 outputs:
   plan:
     description: Human readable Terraform plan
