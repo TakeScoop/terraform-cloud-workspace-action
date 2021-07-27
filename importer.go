@@ -9,16 +9,12 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-type Importer interface {
-	ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error
-}
-
-type ImporterClient struct {
+type Importer struct {
 	e *tfexec.Terraform
 	c *tfe.Client
 }
 
-func NewImporter(tf *tfexec.Terraform, token string, host string) (*ImporterClient, error) {
+func NewImporter(tf *tfexec.Terraform, token string, host string) (*Importer, error) {
 	tfc, err := tfe.NewClient(&tfe.Config{
 		Token:   token,
 		Address: fmt.Sprintf("https://%s", host),
@@ -28,13 +24,13 @@ func NewImporter(tf *tfexec.Terraform, token string, host string) (*ImporterClie
 		return nil, err
 	}
 
-	return &ImporterClient{
+	return &Importer{
 		tf,
 		tfc,
 	}, nil
 }
 
-func (tf *ImporterClient) ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error {
+func (tf *Importer) ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error {
 	address := fmt.Sprintf("tfe_workspace.workspace[\"%s\"]", name)
 
 	state, err := tf.e.Show(context.Background())

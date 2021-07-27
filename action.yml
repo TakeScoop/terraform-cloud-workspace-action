@@ -29,7 +29,7 @@ inputs:
     description: Whether to apply the proposed Terraform changes
     required: true
   import:
-    description: Whether to attempt to import existing resources of the same name
+    description: Whether to attempt to import existing matching resources using the resource name
     default: false
 outputs:
   plan:
