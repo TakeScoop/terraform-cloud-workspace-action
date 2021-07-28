@@ -23,9 +23,6 @@ func main() {
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
-	vcsType := githubactions.GetInput("vcs_type")
-	vcsTokenID := githubactions.GetInput("vcs_token_id")
-	vcsRepo := githubactions.GetInput("vcs_repo")
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", host),
@@ -68,6 +65,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	vcsType := githubactions.GetInput("vcs_type")
+	vcsTokenID := githubactions.GetInput("vcs_token_id")
+	vcsRepo := githubactions.GetInput("vcs_repo")
 
 	vcsBlock := ""
 	if vcsType != "" || vcsTokenID != "" {
