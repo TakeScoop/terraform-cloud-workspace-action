@@ -13,7 +13,7 @@ func FormatVCSBlock(VCStokenID string, repo string, ingressSubmodules bool) stri
   vcs_repo {
     oauth_token_id     = %q
     identifier         = %q
-		ingress_submodules = %t
+    ingress_submodules = %t
   }
 `, VCStokenID, repo, ingressSubmodules)
 }
