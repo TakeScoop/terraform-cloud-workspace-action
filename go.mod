@@ -1,4 +1,4 @@
-module githu.com/takescoop/terraform-cloud-workspace-action
+module github.com/takescoop/terraform-cloud-workspace-action
 
 go 1.16
 

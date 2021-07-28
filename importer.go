@@ -3,76 +3,56 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-type Importer struct {
-	e *tfexec.Terraform
-	c *tfe.Client
-}
-
-func NewImporter(tf *tfexec.Terraform, token string, host string) (*Importer, error) {
-	tfc, err := tfe.NewClient(&tfe.Config{
-		Token:   token,
-		Address: fmt.Sprintf("https://%s", host),
-	})
-
+func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bool, error) {
+	state, err := tf.Show(ctx)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	return &Importer{
-		tf,
-		tfc,
-	}, nil
-}
-
-func (i *Importer) ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
-
-	state, err := tf.e.Show(ctx)
-	if err != nil {
-		log.Fatalf("Failed to read state: %s", err)
-	}
-
-	found := false
 	if state.Values == nil {
-		fmt.Println("No state found, importing")
-	} else {
-		for _, r := range state.Values.RootModule.Resources {
-			if address == r.Address {
-				found = true
-				break
-			}
+		return true, nil
+	}
+
+	for _, r := range state.Values.RootModule.Resources {
+		if address == r.Address {
+			return false, nil
 		}
 	}
 
-	if found {
+	return true, nil
+}
+
+func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, tfc *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
+	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
+
+	imp, err := shouldImport(ctx, tf, address)
+	if err != nil {
+		return err
+	}
+
+	if !imp {
 		fmt.Printf("Workspace %q already exists in state, skipping import\n", name)
 		return nil
 	}
 
-	ws, err := tf.c.Workspaces.Read(context.Background(), organization, name)
+	ws, err := tfc.Workspaces.Read(ctx, organization, name)
 	if err != nil {
-		fmt.Printf("Could not read workspace '%s': %s\n", name, err)
-	} else {
-		fmt.Printf("Importing workspace: %s\n", name)
-
-		err = tf.e.Import(
-			context.Background(),
-			address,
-			ws.ID,
-			opts...,
-		)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("Successful workspace import: %s\n", name)
+		return err
 	}
+
+	fmt.Printf("Importing workspace: %s\n", name)
+
+	err = tf.Import(ctx, address, ws.ID, opts...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Successful workspace import: %s\n", name)
 
 	return nil
 }

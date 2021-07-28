@@ -10,9 +10,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	"github.com/sethvargo/go-githubactions"
+
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/inputs"
 )
 
 func main() {
@@ -132,12 +135,15 @@ resource "tfe_workspace" "workspace" {
 		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
 	}
 
-	if githubactions.GetInput("import") == "true" {
+	if inputs.GetBool("import") {
 		fmt.Println("Importing resources...")
 
-		i, err := NewImporter(tf, token, host)
+		client, err := tfe.NewClient(&tfe.Config{
+			Address: fmt.Sprintf("https://%s", host),
+			Token:   token,
+		})
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("error configuring Terraform client: %s", err)
 		}
 
 		opts := make([]tfexec.ImportOption, len(varOpts))
@@ -146,7 +152,7 @@ resource "tfe_workspace" "workspace" {
 		}
 
 		for _, name := range workspaces {
-			err = i.ImportWorkspace(context.Background(), name, org, opts...)
+			err = ImportWorkspace(context.Background(), tf, client, name, org, opts...)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -191,7 +197,7 @@ resource "tfe_workspace" "workspace" {
 
 		githubactions.SetOutput("plan_json", string(b))
 
-		if githubactions.GetInput("apply") == "true" {
+		if inputs.GetBool("apply") {
 			fmt.Println("Applying...")
 			err = tf.Apply(
 				context.Background(),
