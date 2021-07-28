@@ -23,7 +23,7 @@ func main() {
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
-	vcsName := githubactions.GetInput("vcs_name")
+	vcsType := githubactions.GetInput("vcs_type")
 	vcsTokenID := githubactions.GetInput("vcs_token_id")
 	vcsRepo := githubactions.GetInput("vcs_repo")
 
@@ -70,9 +70,9 @@ func main() {
 	}
 
 	vcsBlock := ""
-	if vcsName != "" || vcsTokenID != "" {
+	if vcsType != "" || vcsTokenID != "" {
 		if vcsTokenID == "" {
-			vcsTokenID, err = GetVCSTokenIDByClientName(context.Background(), client, org, vcsName)
+			vcsTokenID, err = GetVCSTokenIDByClientType(context.Background(), client, org, vcsType)
 			if err != nil {
 				log.Fatalf("Failed to find VCS client: %s", err)
 			}

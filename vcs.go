@@ -18,8 +18,8 @@ func FormatVCSBlock(VCStokenID string, repo string, ingressSubmodules bool) stri
 `, VCStokenID, repo, ingressSubmodules)
 }
 
-// getVCSClientByName looks for a VCS client of the passed name against the VCS clients in the Terraform Cloud organization
-func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization string, vcsName string) (*tfe.OAuthClient, error) {
+// getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
+func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization string, vcsType string) (*tfe.OAuthClient, error) {
 	list, err := tfc.OAuthClients.List(ctx, organization, tfe.OAuthClientListOptions{
 		ListOptions: tfe.ListOptions{
 			PageSize: 100,
@@ -30,17 +30,17 @@ func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization strin
 	}
 
 	for _, v := range list.Items {
-		if v.ServiceProviderName == vcsName {
+		if v.ServiceProvider == tfe.ServiceProviderType(vcsType) {
 			return v, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no VCS Client found named %s", vcsName)
+	return nil, fmt.Errorf("no VCS Client found named %s", vcsType)
 }
 
-// GetVCSTokenIDByClientName returns an OAuth client token ID for the passed VCS client name
-func GetVCSTokenIDByClientName(ctx context.Context, tfc *tfe.Client, organization string, vcsName string) (string, error) {
-	vcsClient, err := getVCSClientByName(ctx, tfc, organization, vcsName)
+// GetVCSTokenIDByClientType returns an OAuth client token ID for the passed VCS type
+func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organization string, vcsType string) (string, error) {
+	vcsClient, err := getVCSClientByName(ctx, tfc, organization, vcsType)
 	if err != nil {
 		return "", err
 	}
