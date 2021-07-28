@@ -30,10 +30,10 @@ func NewImporter(tf *tfexec.Terraform, token string, host string) (*Importer, er
 	}, nil
 }
 
-func (tf *Importer) ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_workspace.workspace[\"%s\"]", name)
+func (i *Importer) ImportWorkspace(ctx context.Context, name string, organization string, opts ...tfexec.ImportOption) error {
+	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
 
-	state, err := tf.e.Show(context.Background())
+	state, err := tf.e.Show(ctx)
 	if err != nil {
 		log.Fatalf("Failed to read state: %s", err)
 	}
@@ -51,7 +51,7 @@ func (tf *Importer) ImportWorkspace(ctx context.Context, name string, organizati
 	}
 
 	if found {
-		fmt.Printf("Workspace '%s' already exists in state\n", name)
+		fmt.Printf("Workspace %q already exists in state, skipping import\n", name)
 		return nil
 	}
 
