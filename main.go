@@ -23,6 +23,17 @@ func main() {
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
+	vcsName := githubactions.GetInput("vcs_name")
+	vcsTokenID := githubactions.GetInput("vcs_token_id")
+	vcsRepo := githubactions.GetInput("vcs_repo")
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", host),
+		Token:   token,
+	})
+	if err != nil {
+		log.Fatalf("error configuring Terraform client: %s", err)
+	}
 
 	tmpDir, err := ioutil.TempDir("", "tfinstall")
 	if err != nil {
@@ -58,7 +69,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b = []byte(`
+	vcsBlock := ""
+	if vcsName != "" || vcsTokenID != "" {
+		if vcsTokenID == "" {
+			vcsTokenID, err = GetVCSTokenIDByClientName(context.Background(), client, org, vcsName)
+			if err != nil {
+				log.Fatalf("Failed to find VCS client: %s", err)
+			}
+		}
+		vcsBlock = FormatVCSBlock(vcsTokenID, vcsRepo, inputs.GetBool("vcs_ingress_submodules"))
+	}
+
+	b = []byte(fmt.Sprintf(`
 terraform {
 	backend "s3" {}
 }
@@ -80,8 +102,10 @@ resource "tfe_workspace" "workspace" {
 	organization      = var.organization
 	auto_apply        = true
 	terraform_version = var.terraform_version
+
+	%s
 }
-`)
+`, vcsBlock))
 
 	err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644)
 	if err != nil {
@@ -137,14 +161,6 @@ resource "tfe_workspace" "workspace" {
 
 	if inputs.GetBool("import") {
 		fmt.Println("Importing resources...")
-
-		client, err := tfe.NewClient(&tfe.Config{
-			Address: fmt.Sprintf("https://%s", host),
-			Token:   token,
-		})
-		if err != nil {
-			log.Fatalf("error configuring Terraform client: %s", err)
-		}
 
 		opts := make([]tfexec.ImportOption, len(varOpts))
 		for i, v := range varOpts {
