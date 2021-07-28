@@ -32,7 +32,7 @@ inputs:
     description: Whether to attempt to import existing matching resources using the resource name
     default: false
   vcs_type:
-    description: Terraform VCS type to find a token for ("github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
+    description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
   vcs_token_id: 
     description: Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added.
   vcs_repo:
