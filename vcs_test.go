@@ -80,7 +80,7 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("get client by type", func(t *testing.T) {
+	t.Run("get client token ID by type", func(t *testing.T) {
 		tokenID, err := GetVCSTokenIDByClientType(ctx, client, "org", "github")
 		if err != nil {
 			t.Fatal(err)
