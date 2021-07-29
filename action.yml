@@ -35,6 +35,16 @@ inputs:
     description: YAML encoded variables to apply to all workspaces
   workspace_variables:
     description: YAML encoded variables to apply to specific workspaces, with variables nested under workspace names
+  vcs_type:
+    description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
+  vcs_token_id: 
+    description: Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added.
+  vcs_repo:
+    description: Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed
+    default: "${{ github.repository }}"
+  vcs_ingress_submodules:
+    description: Whether to allow submodule ingress
+    default: false
 outputs:
   plan:
     description: Human readable Terraform plan

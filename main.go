@@ -24,6 +24,14 @@ func main() {
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
 
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", host),
+		Token:   token,
+	})
+	if err != nil {
+		log.Fatalf("error configuring Terraform client: %s", err)
+	}
+
 	tmpDir, err := ioutil.TempDir("", "tfinstall")
 	if err != nil {
 		log.Fatalf("error creating temp dir: %s", err)
@@ -58,45 +66,63 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b = []byte(`
-terraform {
-	backend "s3" {}
-}
+	vcsType := githubactions.GetInput("vcs_type")
+	vcsTokenID := githubactions.GetInput("vcs_token_id")
 
-variable "organization" {
-	type = string
-}
-variable "terraform_version" {
-	type = string
-}
-variable "workspace_names" {
-	type = set(string)
-}
-variable "variables" {
-	type = set(map(string))
-}
+	var vcs *WorkspaceVCSBlock
 
-resource "tfe_workspace" "workspace" {
-	for_each = var.workspace_names
+	if vcsType != "" || vcsTokenID != "" {
+		if vcsTokenID == "" {
+			vcsTokenID, err = GetVCSTokenIDByClientType(context.Background(), client, org, vcsType)
+			if err != nil {
+				log.Fatalf("Failed to find VCS client: %s", err)
+			}
 
-	name              = each.value
-	organization      = var.organization
-	auto_apply        = true
-	terraform_version = var.terraform_version
-}
+			vcs = &WorkspaceVCSBlock{
+				OauthTokenID:      vcsTokenID,
+				Identifier:        githubactions.GetInput("vcs_repo"),
+				IngressSubmodules: inputs.GetBool("vcs_ingress_submodules"),
+			}
+		}
+	}
 
-resource "tfe_variables" "vars" {
-	for_each = { for k, v in var.variables : "${v.workspace}-${v.key}" => v }
+	cfg := WorkspaceConfig{
+		Terraform: WorkspaceTerraform{
+			Backend: WorkspaceBackend{
+				S3: S3BackendConfig{},
+			},
+		},
+		Variables: map[string]WorkspaceVariable{
+			"organization": {
+				Type: "string",
+			},
+			"terraform_version": {
+				Type: "string",
+			},
+			"workspace_names": {
+				Type: "set(string)",
+			},
+		},
+		Resources: map[string]map[string]WorkspaceResource{
+			"tfe_workspace": {
+				"workspace": {
+					ForEach:          "${var.workspace_names}",
+					Name:             "${each.value}",
+					Organization:     "${var.organization}",
+					AutoApply:        true,
+					TerraformVersion: "${var.terraform_version}",
+					VCSRepo:          vcs,
+				},
+			},
+		},
+	}
 
-  description  = each.value.description
-	key          = each.value.key
-  value        = each.value.value
-  category     = each.value.category
-  workspace_id = tfe_workspace.workspaces[each.value.workspace].id
-}
-`)
+	b, err = json.MarshalIndent(cfg, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644)
+	err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,14 +176,6 @@ resource "tfe_variables" "vars" {
 
 	if inputs.GetBool("import") {
 		fmt.Println("Importing resources...")
-
-		client, err := tfe.NewClient(&tfe.Config{
-			Address: fmt.Sprintf("https://%s", host),
-			Token:   token,
-		})
-		if err != nil {
-			log.Fatalf("error configuring Terraform client: %s", err)
-		}
 
 		opts := make([]tfexec.ImportOption, len(varOpts))
 		for i, v := range varOpts {
