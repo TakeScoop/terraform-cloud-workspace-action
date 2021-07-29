@@ -72,6 +72,9 @@ variable "terraform_version" {
 variable "workspace_names" {
 	type = set(string)
 }
+variable "variables" {
+	type = set(map(string))
+}
 
 resource "tfe_workspace" "workspace" {
 	for_each = var.workspace_names
@@ -80,6 +83,16 @@ resource "tfe_workspace" "workspace" {
 	organization      = var.organization
 	auto_apply        = true
 	terraform_version = var.terraform_version
+}
+
+resource "tfe_variables" "vars" {
+	for_each = { for k, v in var.variables : "${v.workspace}-${v.key}" => v }
+
+  description  = each.value.description
+	key          = each.value.key
+  value        = each.value.value
+  category     = each.value.category
+  workspace_id = tfe_workspace.workspaces[each.value.workspace].id
 }
 `)
 
