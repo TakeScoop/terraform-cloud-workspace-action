@@ -57,7 +57,7 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, tfc *tfe.Client,
 	return nil
 }
 
-func getVariableByKey(ctx context.Context, client *tfe.Client, key string, workspaceID string, page int) (*tfe.Variable, error) {
+func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, workspaceID string, page int) (*tfe.Variable, error) {
 	vs, err := client.Variables.List(ctx, workspaceID, tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
 			PageSize: 100,
@@ -76,7 +76,7 @@ func getVariableByKey(ctx context.Context, client *tfe.Client, key string, works
 	fmt.Println(vs.NextPage)
 
 	if vs.NextPage > page {
-		return getVariableByKey(ctx, client, key, workspaceID, vs.NextPage)
+		return fetchVariableByKey(ctx, client, key, workspaceID, vs.NextPage)
 	}
 
 	return nil, nil
@@ -100,7 +100,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 		return err
 	}
 
-	v, err := getVariableByKey(ctx, client, key, ws.ID, 1)
+	v, err := fetchVariableByKey(ctx, client, key, ws.ID, 1)
 	if err != nil {
 		return err
 	}
