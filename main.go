@@ -68,47 +68,61 @@ func main() {
 
 	vcsType := githubactions.GetInput("vcs_type")
 	vcsTokenID := githubactions.GetInput("vcs_token_id")
-	vcsRepo := githubactions.GetInput("vcs_repo")
 
-	vcsBlock := ""
+	var vcs *WorkspaceVCSBlock
+
 	if vcsType != "" || vcsTokenID != "" {
 		if vcsTokenID == "" {
 			vcsTokenID, err = GetVCSTokenIDByClientType(context.Background(), client, org, vcsType)
 			if err != nil {
 				log.Fatalf("Failed to find VCS client: %s", err)
 			}
+
+			vcs = &WorkspaceVCSBlock{
+				OauthTokenID:      vcsTokenID,
+				Identifier:        githubactions.GetInput("vcs_repo"),
+				IngressSubmodules: inputs.GetBool("vcs_ingress_submodules"),
+			}
 		}
-		vcsBlock = FormatVCSBlock(vcsTokenID, vcsRepo, inputs.GetBool("vcs_ingress_submodules"))
 	}
 
-	b = []byte(fmt.Sprintf(`
-terraform {
-	backend "s3" {}
-}
+	cfg := WorkspaceConfig{
+		Terraform: WorkspaceTerraform{
+			Backend: WorkspaceBackend{
+				S3: WorkspaceBackend{},
+			},
+		},
+		Variables: map[string]WorkspaceVariable{
+			"organization": {
+				Type: "string",
+			},
+			"terraform_version": {
+				Type: "string",
+			},
+			"workspace_names": {
+				Type: "set(string)",
+			},
+		},
+		Resources: map[string]map[string]WorkspaceResource{
+			"tfe_workspace": {
+				"workspace": {
+					ForEach:          "${var.workspace_names}",
+					Name:             "${each.value}",
+					Organization:     "${var.organization}",
+					AutoApply:        true,
+					TerraformVersion: "${var.terraform_version}",
+					VCSRepo:          vcs,
+				},
+			},
+		},
+	}
 
-variable "organization" {
-	type = string
-}
-variable "terraform_version" {
-	type = string
-}
-variable "workspace_names" {
-	type = set(string)
-}
+	b, err = json.MarshalIndent(cfg, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-resource "tfe_workspace" "workspace" {
-	for_each = var.workspace_names
-
-	name              = each.value
-	organization      = var.organization
-	auto_apply        = true
-	terraform_version = var.terraform_version
-
-	%s
-}
-`, vcsBlock))
-
-	err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644)
+	err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
