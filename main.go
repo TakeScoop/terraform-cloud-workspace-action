@@ -89,7 +89,7 @@ func main() {
 	cfg := WorkspaceConfig{
 		Terraform: WorkspaceTerraform{
 			Backend: WorkspaceBackend{
-				S3: WorkspaceBackend{},
+				S3: S3BackendConfig{},
 			},
 		},
 		Variables: map[string]WorkspaceVariable{

@@ -14,14 +14,14 @@ type WorkspaceConfig struct {
 }
 
 type WorkspaceBackend struct {
-	S3 WorkspaceBackendConfig `json:"s3,omitempty"`
+	S3 S3BackendConfig `json:"s3,omitempty"`
 }
 
 type WorkspaceTerraform struct {
 	Backend WorkspaceBackend `json:"backend"`
 }
 
-type WorkspaceBackendConfig interface{}
+type S3BackendConfig struct{}
 
 type WorkspaceVariable struct {
 	Type        string      `json:"type,omitempty"`

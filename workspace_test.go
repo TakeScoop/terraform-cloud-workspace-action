@@ -118,7 +118,7 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		b, err := json.MarshalIndent(WorkspaceConfig{
 			Terraform: WorkspaceTerraform{
 				Backend: WorkspaceBackend{
-					S3: WorkspaceBackend{},
+					S3: S3BackendConfig{},
 				},
 			},
 			Variables: map[string]WorkspaceVariable{
