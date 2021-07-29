@@ -92,7 +92,7 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 }
 
 func TestWorkspaceJSONRender(t *testing.T) {
-	t.Run("render a full JSON workspace configuration", func(t *testing.T) {
+	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
 		b, err := json.MarshalIndent(WorkspaceResource{
 			ForEach:          "${var.workspace_names}",
 			Name:             "${each.value}",
