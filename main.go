@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	"github.com/sethvargo/go-githubactions"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/inputs"
 )
@@ -86,7 +87,7 @@ func main() {
 		}
 	}
 
-	cfg := WorkspaceConfig{
+	b, err = json.MarshalIndent(WorkspaceConfig{
 		Terraform: WorkspaceTerraform{
 			Backend: WorkspaceBackend{
 				S3: S3BackendConfig{},
@@ -102,10 +103,13 @@ func main() {
 			"workspace_names": {
 				Type: "set(string)",
 			},
+			"variables": {
+				Type: "set(map(string))",
+			},
 		},
-		Resources: map[string]map[string]WorkspaceResource{
+		Resources: map[string]map[string]interface{}{
 			"tfe_workspace": {
-				"workspace": {
+				"workspace": WorkspaceWorkspaceResource{
 					ForEach:          "${var.workspace_names}",
 					Name:             "${each.value}",
 					Organization:     "${var.organization}",
@@ -114,10 +118,18 @@ func main() {
 					VCSRepo:          vcs,
 				},
 			},
+			"tfe_variable": {
+				"variables": WorkspaceVariableResource{
+					ForEach:     "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" => v }}",
+					Description: "${each.value.description}",
+					Key:         "${each.value.key}",
+					Value:       "${each.value.value}",
+					Category:    "${each.value.category}",
+					WorkspaceID: "${tfe_workspace.workspace[each.value.workspace_name].id}",
+				},
+			},
 		},
-	}
-
-	b, err = json.MarshalIndent(cfg, "", "\t")
+	}, "", "\t")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -163,6 +175,28 @@ func main() {
 		}
 	}
 
+	genVars := []Variable{}
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("variables")), &genVars)
+	if err != nil {
+		log.Fatalf("Failed to parse variables %s", err)
+	}
+
+	wsVars := map[string][]Variable{}
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspace_variables")), &wsVars)
+	if err != nil {
+		log.Fatalf("Failed to parse workspace variables %s", err)
+	}
+
+	vars, err := ParseVariablesByWorkspace(workspaces, &genVars, &wsVars)
+	if err != nil {
+		log.Fatalf("Failed to parse variables: %s", err)
+	}
+
+	varBytes, err := json.Marshal(vars)
+	if err != nil {
+		log.Fatalf("Failed marshal vars: %s", err)
+	}
+
 	wsBytes, err := json.Marshal(workspaces)
 	if err != nil {
 		log.Fatalf("error marshalling workspaces input: %s", err)
@@ -172,6 +206,7 @@ func main() {
 		tfexec.Var(fmt.Sprintf("organization=%s", org)),
 		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
+		tfexec.Var(fmt.Sprintf("variables=%s", string(varBytes))),
 	}
 
 	if inputs.GetBool("import") {
@@ -186,6 +221,13 @@ func main() {
 			err = ImportWorkspace(context.Background(), tf, client, name, org, opts...)
 			if err != nil {
 				log.Fatal(err)
+			}
+		}
+
+		for _, v := range vars {
+			err = ImportVariable(context.Background(), tf, client, v.Key, v.WorkspaceName, org, opts...)
+			if err != nil {
+				log.Fatalf("Error importing variables: %s\n", err)
 			}
 		}
 	}

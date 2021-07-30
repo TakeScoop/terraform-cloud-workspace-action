@@ -31,6 +31,12 @@ inputs:
   import:
     description: Whether to attempt to import existing matching resources using the resource name
     default: false
+  variables:
+    description: YAML encoded variables to apply to all workspaces
+    default: ""
+  workspace_variables:
+    description: YAML encoded variables to apply to specific workspaces, with variables nested under workspace names
+    default: ""
   vcs_type:
     description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
   vcs_token_id: 

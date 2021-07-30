@@ -93,7 +93,7 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 
 func TestWorkspaceJSONRender(t *testing.T) {
 	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
-		b, err := json.MarshalIndent(WorkspaceResource{
+		b, err := json.MarshalIndent(WorkspaceWorkspaceResource{
 			ForEach:          "${var.workspace_names}",
 			Name:             "${each.value}",
 			Organization:     "${var.organization}",
@@ -132,9 +132,9 @@ func TestWorkspaceJSONRender(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
-			Resources: map[string]map[string]WorkspaceResource{
+			Resources: map[string]map[string]interface{}{
 				"tfe_workspace": {
-					"workspace": {
+					"workspace": WorkspaceWorkspaceResource{
 						ForEach:          "${var.workspace_names}",
 						Name:             "${each.value}",
 						Organization:     "${var.organization}",

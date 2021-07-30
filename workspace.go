@@ -8,9 +8,9 @@ import (
 )
 
 type WorkspaceConfig struct {
-	Terraform WorkspaceTerraform                      `json:"terraform"`
-	Variables map[string]WorkspaceVariable            `json:"variable,omitempty"`
-	Resources map[string]map[string]WorkspaceResource `json:"resource,omitempty"`
+	Terraform WorkspaceTerraform                `json:"terraform"`
+	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
+	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
 }
 
 type WorkspaceBackend struct {
@@ -35,13 +35,23 @@ type WorkspaceVCSBlock struct {
 	IngressSubmodules bool   `json:"ingress_submodules"`
 }
 
-type WorkspaceResource struct {
+type WorkspaceWorkspaceResource struct {
 	ForEach          string             `json:"for_each,omitempty"`
 	Name             string             `json:"name"`
 	Organization     string             `json:"organization"`
 	AutoApply        bool               `json:"auto_apply"`
 	TerraformVersion string             `json:"terraform_version"`
 	VCSRepo          *WorkspaceVCSBlock `json:"vcs_repo,omitempty"`
+}
+
+type WorkspaceVariableResource struct {
+	ForEach     string `json:"for_each,omitempty"`
+	Key         string `json:"key"`
+	Value       string `json:"value"`
+	Description string `json:"description,omitempty"`
+	Category    string `json:"category,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	Sensitive   bool   `json:"sensitive,omitempty"`
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
