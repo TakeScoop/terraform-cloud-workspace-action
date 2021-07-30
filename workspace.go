@@ -80,7 +80,7 @@ func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization strin
 		}
 	}
 
-	return nil, fmt.Errorf("no VCS Client found named %s", vcsType)
+	return nil, fmt.Errorf("no VCS client found of type %s", vcsType)
 }
 
 // GetVCSTokenIDByClientType returns an OAuth client token ID for the passed VCS type
