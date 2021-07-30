@@ -39,14 +39,44 @@ inputs:
     default: ""
   vcs_type:
     description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
+    required: false
   vcs_token_id: 
     description: Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added.
+    required: false
   vcs_repo:
     description: Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed
     default: "${{ github.repository }}"
   vcs_ingress_submodules:
     description: Whether to allow submodule ingress
     default: false
+  agent_pool_id: 
+    description: ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent".
+    required: false
+  execution_mode:
+    description: Execution mode to use for the workspace
+    required: false
+  global_remote_state: 
+    description: Whether all workspaces in the organization can access the workspace via remote state
+    default: true
+  remote_state_consumer_ids:
+    description: Comma separated list
+    default: ""
+  auto_apply:
+    description: Whether to set auto_apply on the workspace or workspaces
+    default: true
+  queue_all_runs:
+    description: Whether the workspace should start automatically performing runs immediately after creation
+    required: false
+  speculative_enabled:
+    description: Whether the workspace allows speculative plans
+    required: false
+  ssh_key_id:
+    description: SSH key ID to assign the workspace
+    required: false
+  file_triggers_enabled:
+    description: Whether to filter runs based on the changed files in a VCS push
+    required: false
+
 outputs:
   plan:
     description: Human readable Terraform plan
