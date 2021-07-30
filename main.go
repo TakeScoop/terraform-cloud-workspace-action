@@ -197,8 +197,6 @@ func main() {
 		log.Fatalf("Failed marshal vars: %s", err)
 	}
 
-	fmt.Println(string(varBytes))
-
 	wsBytes, err := json.Marshal(workspaces)
 	if err != nil {
 		log.Fatalf("error marshalling workspaces input: %s", err)
@@ -223,6 +221,13 @@ func main() {
 			err = ImportWorkspace(context.Background(), tf, client, name, org, opts...)
 			if err != nil {
 				log.Fatal(err)
+			}
+		}
+
+		for _, v := range vars {
+			err = ImportVariable(context.Background(), tf, client, v.Key, v.WorkspaceName, org, opts...)
+			if err != nil {
+				log.Fatalf("Error importing variables: %s\n", err)
 			}
 		}
 	}

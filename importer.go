@@ -76,6 +76,11 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 		}
 	}
 
+	fmt.Println("next page", vs.NextPage)
+	fmt.Println("total page:", vs.TotalPages)
+	fmt.Println("current page:", vs.CurrentPage)
+	fmt.Println("page:", page)
+
 	if vs.NextPage > page {
 		return fetchVariableByKey(ctx, client, key, workspaceID, vs.NextPage)
 	}
@@ -96,6 +101,8 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 		return nil
 	}
 
+	fmt.Printf("Importing variable: %q\n", address)
+
 	ws, err := client.Workspaces.Read(ctx, organization, workspace)
 	if err != nil {
 		return err
@@ -111,11 +118,12 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 		return nil
 	}
 
-	err = tf.Import(ctx, address, v.ID, opts...)
+	importID := fmt.Sprintf("%s/%s/%s", organization, workspace, v.ID)
+	err = tf.Import(ctx, address, importID, opts...)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Variable %q for workspace %q successfully imported\n", key, workspace)
+	fmt.Printf("Variable %q successfully imported\n", importID)
 	return nil
 }
