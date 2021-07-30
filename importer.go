@@ -8,8 +8,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-var pageSize int = 100
-var startingPage int = 1
+var maxPageSize int = 100
 
 func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bool, error) {
 	state, err := tf.Show(ctx)
@@ -63,7 +62,7 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, tfc *tfe.Client,
 func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, workspaceID string, page int) (*tfe.Variable, error) {
 	vs, err := client.Variables.List(ctx, workspaceID, tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
-			PageSize: pageSize,
+			PageSize: maxPageSize,
 		},
 	})
 	if err != nil {
@@ -103,7 +102,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 		return err
 	}
 
-	v, err := fetchVariableByKey(ctx, client, key, ws.ID, startingPage)
+	v, err := fetchVariableByKey(ctx, client, key, ws.ID, 1)
 	if err != nil {
 		return err
 	}
