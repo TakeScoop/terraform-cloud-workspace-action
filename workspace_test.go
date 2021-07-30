@@ -58,10 +58,6 @@ var basicOauthClientResponse string = `
 }
 `
 
-func stringPtr(s string) *string {
-	return &s
-}
-
 func boolPtr(b bool) *bool {
 	return &b
 }
@@ -103,12 +99,11 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 
 func TestWorkspaceJSONRender(t *testing.T) {
 	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
-		autoApply := true
 		b, err := json.MarshalIndent(WorkspaceWorkspaceResource{
 			ForEach:          "${var.workspace_names}",
 			Name:             "${each.value}",
 			Organization:     "${var.organization}",
-			AutoApply:        &autoApply,
+			AutoApply:        boolPtr(true),
 			TerraformVersion: "${var.terraform_version}",
 			VCSRepo:          nil,
 		}, "", "\t")
@@ -118,15 +113,14 @@ func TestWorkspaceJSONRender(t *testing.T) {
 
 		assert.Equal(t, string(b), `{
 	"for_each": "${var.workspace_names}",
+	"auto_apply": true,
 	"name": "${each.value}",
 	"organization": "${var.organization}",
-	"auto_apply": true,
 	"terraform_version": "${var.terraform_version}"
 }`)
 	})
 
 	t.Run("render a full JSON workspace configuration", func(t *testing.T) {
-		autoApply := true
 		b, err := json.MarshalIndent(WorkspaceConfig{
 			Terraform: WorkspaceTerraform{
 				Backend: WorkspaceBackend{
@@ -134,14 +128,11 @@ func TestWorkspaceJSONRender(t *testing.T) {
 				},
 			},
 			Variables: map[string]WorkspaceVariable{
-				"organization": {
-					Type: "string",
-				},
-				"terraform_version": {
-					Type: "string",
-				},
 				"workspace_names": {
 					Type: "set(string)",
+				},
+				"variables": {
+					Type: "set(map(string))",
 				},
 			},
 			Resources: map[string]map[string]interface{}{
@@ -149,14 +140,24 @@ func TestWorkspaceJSONRender(t *testing.T) {
 					"workspace": WorkspaceWorkspaceResource{
 						ForEach:          "${var.workspace_names}",
 						Name:             "${each.value}",
-						Organization:     "${var.organization}",
-						AutoApply:        &autoApply,
-						TerraformVersion: "${var.terraform_version}",
+						Organization:     "org",
+						AutoApply:        boolPtr(false),
+						TerraformVersion: "1.0.0",
 						VCSRepo: &WorkspaceVCSBlock{
 							OauthTokenID:      "12345",
 							Identifier:        "org/repo",
 							IngressSubmodules: true,
 						},
+					},
+				},
+				"tfe_variable": {
+					"variables": WorkspaceVariableResource{
+						ForEach:     "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" => v }}",
+						Description: "${each.value.description}",
+						Key:         "${each.value.key}",
+						Value:       "${each.value.value}",
+						Category:    "${each.value.category}",
+						WorkspaceID: "${tfe_workspace.workspace[each.value.workspace_name].id}",
 					},
 				},
 			},
@@ -172,24 +173,31 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		}
 	},
 	"variable": {
-		"organization": {
-			"type": "string"
-		},
-		"terraform_version": {
-			"type": "string"
+		"variables": {
+			"type": "set(map(string))"
 		},
 		"workspace_names": {
 			"type": "set(string)"
 		}
 	},
 	"resource": {
+		"tfe_variable": {
+			"variables": {
+				"for_each": "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" =\u003e v }}",
+				"key": "${each.value.key}",
+				"value": "${each.value.value}",
+				"description": "${each.value.description}",
+				"category": "${each.value.category}",
+				"workspace_id": "${tfe_workspace.workspace[each.value.workspace_name].id}"
+			}
+		},
 		"tfe_workspace": {
 			"workspace": {
 				"for_each": "${var.workspace_names}",
+				"auto_apply": false,
 				"name": "${each.value}",
-				"organization": "${var.organization}",
-				"auto_apply": true,
-				"terraform_version": "${var.terraform_version}",
+				"organization": "org",
+				"terraform_version": "1.0.0",
 				"vcs_repo": {
 					"oauth_token_id": "12345",
 					"identifier": "org/repo",
@@ -323,7 +331,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	t.Run("add VCS block type if VCS type is passed", func(t *testing.T) {
 		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
 			Organization: "org",
-			VCSType:      stringPtr("github"),
+			VCSType:      "github",
 			VCSRepo:      "org/repo",
 		})
 		if err != nil {
@@ -337,7 +345,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	t.Run("fail if vcs_repo is not passed", func(t *testing.T) {
 		_, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
 			Organization: "org",
-			VCSType:      stringPtr("github"),
+			VCSType:      "github",
 		})
 		assert.ErrorContains(t, err, "vcs_repo must be passed")
 	})
@@ -345,8 +353,8 @@ func TestNewWorkspaceResource(t *testing.T) {
 	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
 		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
 			Organization: "org",
-			VCSTokenID:   stringPtr("TOKEN"),
-			VCSType:      stringPtr("github"),
+			VCSTokenID:   "TOKEN",
+			VCSType:      "github",
 			VCSRepo:      "org/repo",
 		})
 		if err != nil {
@@ -358,7 +366,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	t.Run("add AgentPoolID and ExecutionMode: \"agent\" when AgentPoolID is passed", func(t *testing.T) {
 		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
 			Organization: "org",
-			AgentPoolID:  stringPtr("12345"),
+			AgentPoolID:  "12345",
 		})
 		if err != nil {
 			t.Fatal(err)

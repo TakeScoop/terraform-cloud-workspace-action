@@ -68,21 +68,21 @@ func main() {
 	}
 
 	wsResource, err := NewWorkspaceResource(context.Background(), client, WorkspaceConfigOptions{
-		AgentPoolID:            inputs.GetStringPtr("agent_pool_id"),
+		AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 		AutoApply:              inputs.GetBoolPtr("auto_apply"),
-		ExecutionMode:          inputs.GetStringPtr("execution_mode"),
+		ExecutionMode:          githubactions.GetInput("execution_mode"),
 		FileTriggersEnabled:    inputs.GetBoolPtr("file_triggers_enabled"),
 		GlobalRemoteState:      inputs.GetBoolPtr("global_remote_state"),
 		Organization:           org,
 		QueueAllRuns:           inputs.GetBoolPtr("queue_all_runs"),
 		RemoteStateConsumerIDs: githubactions.GetInput("remote_state_consumer_ids"),
 		SpeculativeEnabled:     inputs.GetBoolPtr("speculative_enabled"),
-		TerraformVersion:       inputs.GetStringPtr("terraform_version"),
-		SSHKeyID:               inputs.GetStringPtr("ssh_key_id"),
+		TerraformVersion:       githubactions.GetInput("terraform_version"),
+		SSHKeyID:               githubactions.GetInput("ssh_key_id"),
 		VCSIngressSubmodules:   inputs.GetBool("vcs_ingress_submodules"),
 		VCSRepo:                githubactions.GetInput("vcs_repo"),
-		VCSTokenID:             inputs.GetStringPtr("vcs_token_id"),
-		VCSType:                inputs.GetStringPtr("vcs_type"),
+		VCSTokenID:             githubactions.GetInput("vcs_token_id"),
+		VCSType:                githubactions.GetInput("vcs_type"),
 	})
 	if err != nil {
 		log.Fatalf("Error structuring workspace resource: %s", err)

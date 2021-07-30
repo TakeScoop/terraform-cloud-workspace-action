@@ -98,21 +98,21 @@ func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organizatio
 }
 
 type WorkspaceConfigOptions struct {
-	AgentPoolID            *string
+	AgentPoolID            string
 	AutoApply              *bool
-	ExecutionMode          *string
+	ExecutionMode          string
 	FileTriggersEnabled    *bool
 	GlobalRemoteState      *bool
 	Organization           string
 	QueueAllRuns           *bool
 	RemoteStateConsumerIDs string
 	SpeculativeEnabled     *bool
-	SSHKeyID               *string
-	TerraformVersion       *string
+	SSHKeyID               string
+	TerraformVersion       string
 	VCSIngressSubmodules   bool
 	VCSRepo                string
-	VCSTokenID             *string
-	VCSType                *string
+	VCSTokenID             string
+	VCSType                string
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
@@ -127,28 +127,23 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 		ws.AutoApply = config.AutoApply
 	}
 
-	if config.TerraformVersion != nil {
-		ws.TerraformVersion = *config.TerraformVersion
-	}
-
 	var vcs *WorkspaceVCSBlock
 
-	if config.VCSType != nil || config.VCSTokenID != nil {
+	if config.VCSType != "" || config.VCSTokenID != "" {
 		if config.VCSRepo == "" {
 			return nil, fmt.Errorf("vcs_repo must be passed if vcs_type or vcs_token_id is passed")
 		}
 
-		var vcsTokenID string
-
-		if config.VCSTokenID == nil {
-			t, err := GetVCSTokenIDByClientType(ctx, client, config.Organization, *config.VCSType)
+		vcsTokenID := config.VCSTokenID
+		if vcsTokenID == "" {
+			t, err := GetVCSTokenIDByClientType(ctx, client, config.Organization, config.VCSType)
 			if err != nil {
 				return nil, err
 			}
 
 			vcsTokenID = t
 		} else {
-			vcsTokenID = *config.VCSTokenID
+			vcsTokenID = config.VCSTokenID
 		}
 
 		vcs = &WorkspaceVCSBlock{
@@ -160,11 +155,11 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 
 	ws.VCSRepo = vcs
 
-	if config.AgentPoolID != nil {
-		ws.AgentPoolID = *config.AgentPoolID
+	if config.AgentPoolID != "" {
+		ws.AgentPoolID = config.AgentPoolID
 		ws.ExecutionMode = "agent"
-	} else if config.ExecutionMode != nil {
-		ws.ExecutionMode = *config.ExecutionMode
+	} else if config.ExecutionMode != "" {
+		ws.ExecutionMode = config.ExecutionMode
 	}
 
 	if config.GlobalRemoteState != nil {
@@ -174,15 +169,11 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 		}
 	}
 
+	ws.TerraformVersion = config.TerraformVersion
 	ws.QueueAllRuns = config.QueueAllRuns
-
 	ws.SpeculativeEnabled = config.SpeculativeEnabled
-
 	ws.FileTriggersEnabled = config.FileTriggersEnabled
-
-	if config.SSHKeyID != nil {
-		ws.SSHKeyID = *config.SSHKeyID
-	}
+	ws.SSHKeyID = config.SSHKeyID
 
 	return ws, nil
 }
