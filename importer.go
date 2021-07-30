@@ -92,7 +92,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 	}
 
 	if !imp {
-		fmt.Printf("Variable %q already exists in state, skipping import\n", key)
+		fmt.Printf("Variable %q already exists in state, skipping import\n", address)
 		return nil
 	}
 
