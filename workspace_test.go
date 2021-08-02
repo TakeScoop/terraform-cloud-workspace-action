@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	tfe "github.com/hashicorp/go-tfe"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 func TestGetVCSTokenIDByClientType(t *testing.T) {
