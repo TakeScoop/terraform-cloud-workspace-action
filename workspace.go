@@ -131,7 +131,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 
 	if config.VCSType != "" || config.VCSTokenID != "" {
 		if config.VCSRepo == "" {
-			return nil, fmt.Errorf("vcs_repo must be passed if vcs_type or vcs_token_id is passed")
+			return nil, fmt.Errorf("VCS repository must be passed if VCS type or a VCS token ID is passed")
 		}
 
 		vcsTokenID := config.VCSTokenID

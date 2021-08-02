@@ -57,7 +57,7 @@ inputs:
     required: false
   global_remote_state: 
     description: Whether all workspaces in the organization can access the workspace via remote state
-    default: true
+    default: false
   remote_state_consumer_ids:
     description: Comma separated list
     default: ""
