@@ -76,7 +76,8 @@ inputs:
   file_triggers_enabled:
     description: Whether to filter runs based on the changed files in a VCS push
     required: false
-
+  remote_state_blocks:
+    description: Remote state blocks to configure in the workspace
 outputs:
   plan:
     description: Human readable Terraform plan

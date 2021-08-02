@@ -88,7 +88,7 @@ func main() {
 		log.Fatalf("Error structuring workspace resource: %s", err)
 	}
 
-	b, err = json.MarshalIndent(WorkspaceConfig{
+	wsConfig := WorkspaceConfig{
 		Terraform: WorkspaceTerraform{
 			Backend: WorkspaceBackend{
 				S3: S3BackendConfig{},
@@ -98,59 +98,28 @@ func main() {
 			"workspace_names": {
 				Type: "set(string)",
 			},
-			"variables": {
-				Type: "set(map(string))",
-			},
 		},
+		Data: map[string]map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{
 			"tfe_workspace": {
 				"workspace": wsResource,
 			},
-			"tfe_variable": {
-				"variables": WorkspaceVariableResource{
-					ForEach:     "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" => v }}",
-					Description: "${each.value.description}",
-					Key:         "${each.value.key}",
-					Value:       "${each.value.value}",
-					Category:    "${each.value.category}",
-					WorkspaceID: "${tfe_workspace.workspace[each.value.workspace_name].id}",
-				},
-			},
 		},
-	}, "", "\t")
-	if err != nil {
-		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644)
+	var remoteStates map[string]RemoteStateBlock
+
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_state_blocks")), &remoteStates)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to parse remote state blocks%s", err)
 	}
 
-	tf, err := tfexec.NewTerraform(workDir, execPath)
-	if err != nil {
-		log.Fatalf("error creating Terraform client: %s", err)
-	}
+	if len(remoteStates) > 0 {
+		wsConfig.Data["terraform_remote_state"] = map[string]interface{}{}
 
-	bcfg := strings.Split(
-		strings.TrimSpace(githubactions.GetInput("backend_config")),
-		"\n",
-	)
-
-	var backendConfigs []tfexec.InitOption
-	for _, val := range bcfg {
-		backendConfigs = append(
-			backendConfigs,
-			tfexec.BackendConfig(val),
-		)
-	}
-
-	err = tf.Init(
-		context.Background(),
-		backendConfigs...,
-	)
-	if err != nil {
-		log.Fatalf("error running Init: %s", err)
+		for name, block := range remoteStates {
+			wsConfig.Data["terraform_remote_state"][name] = block
+		}
 	}
 
 	var workspaces []string
@@ -180,9 +149,42 @@ func main() {
 		log.Fatalf("Failed to parse variables: %s", err)
 	}
 
-	varBytes, err := json.Marshal(vars)
+	if len(vars) > 0 {
+		varResources := map[string]interface{}{}
+
+		for _, v := range vars {
+			varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(&v)
+		}
+
+		wsConfig.Resources["tfe_variable"] = varResources
+	}
+
+	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
-		log.Fatalf("Failed marshal vars: %s", err)
+		log.Fatal(err)
+	}
+
+	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
+		log.Fatal(err)
+	}
+
+	tf, err := tfexec.NewTerraform(workDir, execPath)
+	if err != nil {
+		log.Fatalf("error creating Terraform client: %s", err)
+	}
+
+	bcfg := strings.Split(
+		strings.TrimSpace(githubactions.GetInput("backend_config")),
+		"\n",
+	)
+
+	var backendConfigs []tfexec.InitOption
+	for _, val := range bcfg {
+		backendConfigs = append(backendConfigs, tfexec.BackendConfig(val))
+	}
+
+	if err = tf.Init(context.Background(), backendConfigs...); err != nil {
+		log.Fatalf("error running Init: %s", err)
 	}
 
 	wsBytes, err := json.Marshal(workspaces)
@@ -192,7 +194,6 @@ func main() {
 
 	varOpts := []*tfexec.VarOption{
 		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
-		tfexec.Var(fmt.Sprintf("variables=%s", string(varBytes))),
 	}
 
 	if inputs.GetBool("import") {
@@ -227,10 +228,7 @@ func main() {
 
 	opts = append(opts, tfexec.Out(planPath))
 
-	diff, err := tf.Plan(
-		context.Background(),
-		opts...,
-	)
+	diff, err := tf.Plan(context.Background(), opts...)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
@@ -258,11 +256,8 @@ func main() {
 
 		if inputs.GetBool("apply") {
 			fmt.Println("Applying...")
-			err = tf.Apply(
-				context.Background(),
-				tfexec.DirOrPlan(planPath),
-			)
-			if err != nil {
+
+			if err = tf.Apply(context.Background(), tfexec.DirOrPlan(planPath)); err != nil {
 				log.Fatalf("error running apply: %s", err)
 			}
 		}

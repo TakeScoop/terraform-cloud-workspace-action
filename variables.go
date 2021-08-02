@@ -5,12 +5,12 @@ import (
 )
 
 type Variable struct {
-	Key           string `yaml:"key" json:"key"`
-	Value         string `yaml:"value" json:"value"`
-	Description   string `yaml:"description,omitempty" json:"description"`
-	Category      string `yaml:"category,omitempty" json:"category"`
-	Sensitive     bool   `yaml:"sensitive,omitempty" json:"sensitive"`
-	WorkspaceName string `json:"workspace_name"`
+	Key           string `yaml:"key"`
+	Value         string `yaml:"value"`
+	Description   string `yaml:"description,omitempty"`
+	Category      string `yaml:"category,omitempty"`
+	Sensitive     bool   `yaml:"sensitive,omitempty"`
+	WorkspaceName string
 }
 
 func contains(strings []string, target string) bool {
