@@ -347,7 +347,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 			Organization: "org",
 			VCSType:      "github",
 		})
-		assert.ErrorContains(t, err, "vcs_repo must be passed")
+		assert.ErrorContains(t, err, "VCS repository must be passed")
 	})
 
 	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
