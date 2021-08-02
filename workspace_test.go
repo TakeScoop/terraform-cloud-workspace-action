@@ -12,6 +12,56 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+var basicOauthClientResponse string = `
+{
+	"data": [
+		{
+			"id": "oc-sdlkfjdskljfsd",
+			"type": "oauth-clients",
+			"attributes": {
+				"name": "github.com",
+				"created-at": "2021-04-12T21:14:17.245Z",
+				"callback-url": "https://app.terraform.io/auth/12345/callback",
+				"connect-path": "/auth/12345?organization_id=12345",
+				"service-provider": "github",
+				"service-provider-display-name": "GitHub",
+				"http-url": "https://github.com",
+				"api-url": "https://api.github.com",
+				"key": "12345",
+				"secret": null,
+				"rsa-public-key": null
+			},
+			"relationships": {
+				"organization": {
+					"data": {
+						"id": "org",
+						"type": "organizations"
+					},
+					"links": {
+						"related": "/api/v2/organizations/org"
+					}
+				},
+				"oauth-tokens": {
+					"data": [
+						{
+							"id": "ot-678910",
+							"type": "oauth-tokens"
+						}
+					],
+					"links": {
+						"related": "/api/v2/oauth-clients/oc-sdlkfjdskljfsd/oauth-tokens"
+					}
+				}
+			}
+		}
+	]
+}
+`
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestGetVCSTokenIDByClientType(t *testing.T) {
 	ctx := context.Background()
 
@@ -23,51 +73,7 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 
-		_, err := fmt.Fprint(w, `
-			{
-				"data": [
-					{
-						"id": "oc-sdlkfjdskljfsd",
-						"type": "oauth-clients",
-						"attributes": {
-							"name": "github.com",
-							"created-at": "2021-04-12T21:14:17.245Z",
-							"callback-url": "https://app.terraform.io/auth/12345/callback",
-							"connect-path": "/auth/12345?organization_id=12345",
-							"service-provider": "github",
-							"service-provider-display-name": "GitHub",
-							"http-url": "https://github.com",
-							"api-url": "https://api.github.com",
-							"key": "12345",
-							"secret": null,
-							"rsa-public-key": null
-						},
-						"relationships": {
-							"organization": {
-								"data": {
-									"id": "org",
-									"type": "organizations"
-								},
-								"links": {
-									"related": "/api/v2/organizations/org"
-								}
-							},
-							"oauth-tokens": {
-								"data": [
-									{
-										"id": "ot-678910",
-										"type": "oauth-tokens"
-									}
-								],
-								"links": {
-									"related": "/api/v2/oauth-clients/oc-sdlkfjdskljfsd/oauth-tokens"
-								}
-							}
-						}
-					}
-				]
-			}
-		`)
+		_, err := fmt.Fprint(w, basicOauthClientResponse)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -97,7 +103,7 @@ func TestWorkspaceJSONRender(t *testing.T) {
 			ForEach:          "${var.workspace_names}",
 			Name:             "${each.value}",
 			Organization:     "${var.organization}",
-			AutoApply:        true,
+			AutoApply:        boolPtr(true),
 			TerraformVersion: "${var.terraform_version}",
 			VCSRepo:          nil,
 		}, "", "\t")
@@ -107,9 +113,9 @@ func TestWorkspaceJSONRender(t *testing.T) {
 
 		assert.Equal(t, string(b), `{
 	"for_each": "${var.workspace_names}",
+	"auto_apply": true,
 	"name": "${each.value}",
 	"organization": "${var.organization}",
-	"auto_apply": true,
 	"terraform_version": "${var.terraform_version}"
 }`)
 	})
@@ -122,14 +128,11 @@ func TestWorkspaceJSONRender(t *testing.T) {
 				},
 			},
 			Variables: map[string]WorkspaceVariable{
-				"organization": {
-					Type: "string",
-				},
-				"terraform_version": {
-					Type: "string",
-				},
 				"workspace_names": {
 					Type: "set(string)",
+				},
+				"variables": {
+					Type: "set(map(string))",
 				},
 			},
 			Resources: map[string]map[string]interface{}{
@@ -137,14 +140,24 @@ func TestWorkspaceJSONRender(t *testing.T) {
 					"workspace": WorkspaceWorkspaceResource{
 						ForEach:          "${var.workspace_names}",
 						Name:             "${each.value}",
-						Organization:     "${var.organization}",
-						AutoApply:        true,
-						TerraformVersion: "${var.terraform_version}",
+						Organization:     "org",
+						AutoApply:        boolPtr(false),
+						TerraformVersion: "1.0.0",
 						VCSRepo: &WorkspaceVCSBlock{
 							OauthTokenID:      "12345",
 							Identifier:        "org/repo",
 							IngressSubmodules: true,
 						},
+					},
+				},
+				"tfe_variable": {
+					"variables": WorkspaceVariableResource{
+						ForEach:     "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" => v }}",
+						Description: "${each.value.description}",
+						Key:         "${each.value.key}",
+						Value:       "${each.value.value}",
+						Category:    "${each.value.category}",
+						WorkspaceID: "${tfe_workspace.workspace[each.value.workspace_name].id}",
 					},
 				},
 			},
@@ -160,24 +173,31 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		}
 	},
 	"variable": {
-		"organization": {
-			"type": "string"
-		},
-		"terraform_version": {
-			"type": "string"
+		"variables": {
+			"type": "set(map(string))"
 		},
 		"workspace_names": {
 			"type": "set(string)"
 		}
 	},
 	"resource": {
+		"tfe_variable": {
+			"variables": {
+				"for_each": "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" =\u003e v }}",
+				"key": "${each.value.key}",
+				"value": "${each.value.value}",
+				"description": "${each.value.description}",
+				"category": "${each.value.category}",
+				"workspace_id": "${tfe_workspace.workspace[each.value.workspace_name].id}"
+			}
+		},
 		"tfe_workspace": {
 			"workspace": {
 				"for_each": "${var.workspace_names}",
+				"auto_apply": false,
 				"name": "${each.value}",
-				"organization": "${var.organization}",
-				"auto_apply": true,
-				"terraform_version": "${var.terraform_version}",
+				"organization": "org",
+				"terraform_version": "1.0.0",
 				"vcs_repo": {
 					"oauth_token_id": "12345",
 					"identifier": "org/repo",
@@ -187,5 +207,199 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		}
 	}
 }`)
+	})
+}
+
+func TestNewWorkspaceResource(t *testing.T) {
+	ctx := context.Background()
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+
+	defer server.Close()
+
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+
+		_, err := fmt.Fprint(w, basicOauthClientResponse)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: server.URL,
+		Token:   "12345",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type BoolTest struct {
+		AutoApply *bool `json:"auto_apply,omitempty"`
+	}
+
+	t.Run("should render a basic workspace without unprovided values", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s, err := json.MarshalIndent(ws, "", "\t")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, string(s), `{
+	"for_each": "${var.workspace_names}",
+	"name": "${each.value}",
+	"organization": "org"
+}`)
+	})
+
+	t.Run("should set boolean value to false if passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			AutoApply:    boolPtr(false),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b, err := json.Marshal(ws)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bt := BoolTest{}
+
+		if err := json.Unmarshal(b, &bt); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, *bt.AutoApply, false)
+	})
+
+	t.Run("should set boolean value to true if passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			AutoApply:    boolPtr(true),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b, err := json.Marshal(ws)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bt := BoolTest{}
+
+		if err := json.Unmarshal(b, &bt); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, *bt.AutoApply, true)
+	})
+
+	t.Run("should set boolean value nil if not passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b, err := json.Marshal(ws)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bt := BoolTest{}
+		if err := json.Unmarshal(b, &bt); err != nil {
+			t.Fatal(err)
+		}
+
+		var nilBool *bool = nil
+		assert.Equal(t, bt.AutoApply, nilBool)
+	})
+
+	t.Run("add VCS block type if VCS type is passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			VCSType:      "github",
+			VCSRepo:      "org/repo",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, ws.VCSRepo.OauthTokenID, "ot-678910")
+		assert.Equal(t, ws.VCSRepo.IngressSubmodules, false)
+		assert.Equal(t, ws.VCSRepo.Identifier, "org/repo")
+	})
+
+	t.Run("fail if vcs_repo is not passed", func(t *testing.T) {
+		_, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			VCSType:      "github",
+		})
+		assert.ErrorContains(t, err, "VCS repository must be passed")
+	})
+
+	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			VCSTokenID:   "TOKEN",
+			VCSType:      "github",
+			VCSRepo:      "org/repo",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, ws.VCSRepo.OauthTokenID, "TOKEN")
+	})
+
+	t.Run("add AgentPoolID and ExecutionMode: \"agent\" when AgentPoolID is passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization: "org",
+			AgentPoolID:  "12345",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, ws.AgentPoolID, "12345")
+		assert.Equal(t, ws.ExecutionMode, "agent")
+	})
+
+	t.Run("add RemoteConsumerIDs and GlobalRemoteState if global_remote_state is false", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization:           "org",
+			GlobalRemoteState:      boolPtr(false),
+			RemoteStateConsumerIDs: "123,456,789",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, *ws.GlobalRemoteState, false)
+		assert.DeepEqual(t, ws.RemoteStateConsumerIDs, []string{"123", "456", "789"})
+	})
+
+	t.Run("add no remote IDs when none are passed", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+			Organization:      "org",
+			GlobalRemoteState: boolPtr(false),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, *ws.GlobalRemoteState, false)
+		assert.DeepEqual(t, ws.RemoteStateConsumerIDs, []string{})
 	})
 }

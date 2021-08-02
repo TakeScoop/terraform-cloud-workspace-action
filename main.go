@@ -67,24 +67,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	vcsType := githubactions.GetInput("vcs_type")
-	vcsTokenID := githubactions.GetInput("vcs_token_id")
-
-	var vcs *WorkspaceVCSBlock
-
-	if vcsType != "" || vcsTokenID != "" {
-		if vcsTokenID == "" {
-			vcsTokenID, err = GetVCSTokenIDByClientType(context.Background(), client, org, vcsType)
-			if err != nil {
-				log.Fatalf("Failed to find VCS client: %s", err)
-			}
-
-			vcs = &WorkspaceVCSBlock{
-				OauthTokenID:      vcsTokenID,
-				Identifier:        githubactions.GetInput("vcs_repo"),
-				IngressSubmodules: inputs.GetBool("vcs_ingress_submodules"),
-			}
-		}
+	wsResource, err := NewWorkspaceResource(context.Background(), client, WorkspaceConfigOptions{
+		AgentPoolID:            githubactions.GetInput("agent_pool_id"),
+		AutoApply:              inputs.GetBoolPtr("auto_apply"),
+		ExecutionMode:          githubactions.GetInput("execution_mode"),
+		FileTriggersEnabled:    inputs.GetBoolPtr("file_triggers_enabled"),
+		GlobalRemoteState:      inputs.GetBoolPtr("global_remote_state"),
+		Organization:           org,
+		QueueAllRuns:           inputs.GetBoolPtr("queue_all_runs"),
+		RemoteStateConsumerIDs: githubactions.GetInput("remote_state_consumer_ids"),
+		SpeculativeEnabled:     inputs.GetBoolPtr("speculative_enabled"),
+		TerraformVersion:       githubactions.GetInput("terraform_version"),
+		SSHKeyID:               githubactions.GetInput("ssh_key_id"),
+		VCSIngressSubmodules:   inputs.GetBool("vcs_ingress_submodules"),
+		VCSRepo:                githubactions.GetInput("vcs_repo"),
+		VCSTokenID:             githubactions.GetInput("vcs_token_id"),
+		VCSType:                githubactions.GetInput("vcs_type"),
+	})
+	if err != nil {
+		log.Fatalf("Error structuring workspace resource: %s", err)
 	}
 
 	b, err = json.MarshalIndent(WorkspaceConfig{
@@ -94,12 +95,6 @@ func main() {
 			},
 		},
 		Variables: map[string]WorkspaceVariable{
-			"organization": {
-				Type: "string",
-			},
-			"terraform_version": {
-				Type: "string",
-			},
 			"workspace_names": {
 				Type: "set(string)",
 			},
@@ -109,14 +104,7 @@ func main() {
 		},
 		Resources: map[string]map[string]interface{}{
 			"tfe_workspace": {
-				"workspace": WorkspaceWorkspaceResource{
-					ForEach:          "${var.workspace_names}",
-					Name:             "${each.value}",
-					Organization:     "${var.organization}",
-					AutoApply:        true,
-					TerraformVersion: "${var.terraform_version}",
-					VCSRepo:          vcs,
-				},
+				"workspace": wsResource,
 			},
 			"tfe_variable": {
 				"variables": WorkspaceVariableResource{
@@ -203,8 +191,6 @@ func main() {
 	}
 
 	varOpts := []*tfexec.VarOption{
-		tfexec.Var(fmt.Sprintf("organization=%s", org)),
-		tfexec.Var(fmt.Sprintf("terraform_version=%s", githubactions.GetInput("terraform_version"))),
 		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
 		tfexec.Var(fmt.Sprintf("variables=%s", string(varBytes))),
 	}

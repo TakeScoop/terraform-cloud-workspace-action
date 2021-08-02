@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
 )
@@ -36,12 +37,20 @@ type WorkspaceVCSBlock struct {
 }
 
 type WorkspaceWorkspaceResource struct {
-	ForEach          string             `json:"for_each,omitempty"`
-	Name             string             `json:"name"`
-	Organization     string             `json:"organization"`
-	AutoApply        bool               `json:"auto_apply"`
-	TerraformVersion string             `json:"terraform_version"`
-	VCSRepo          *WorkspaceVCSBlock `json:"vcs_repo,omitempty"`
+	ForEach                string             `json:"for_each,omitempty"`
+	AgentPoolID            string             `json:"agent_pool_id,omitempty"`
+	AutoApply              *bool              `json:"auto_apply,omitempty"`
+	ExecutionMode          string             `json:"execution_mode,omitempty"`
+	FileTriggersEnabled    *bool              `json:"file_triggers_enabled,omitempty"`
+	GlobalRemoteState      *bool              `json:"global_remote_state,omitempty"`
+	Name                   string             `json:"name"`
+	Organization           string             `json:"organization"`
+	QueueAllRuns           *bool              `json:"queue_all_runs,omitempty"`
+	RemoteStateConsumerIDs []string           `json:"remote_state_consumer_ids,omitempty"`
+	SpeculativeEnabled     *bool              `json:"speculative_enabled,omitempty"`
+	TerraformVersion       string             `json:"terraform_version,omitempty"`
+	SSHKeyID               string             `json:"ssh_key_id,omitempty"`
+	VCSRepo                *WorkspaceVCSBlock `json:"vcs_repo,omitempty"`
 }
 
 type WorkspaceVariableResource struct {
@@ -71,7 +80,7 @@ func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization strin
 		}
 	}
 
-	return nil, fmt.Errorf("no VCS Client found named %s", vcsType)
+	return nil, fmt.Errorf("no VCS client found of type %s", vcsType)
 }
 
 // GetVCSTokenIDByClientType returns an OAuth client token ID for the passed VCS type
@@ -86,4 +95,85 @@ func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organizatio
 	}
 
 	return vcsClient.OAuthTokens[0].ID, nil
+}
+
+type WorkspaceConfigOptions struct {
+	AgentPoolID            string
+	AutoApply              *bool
+	ExecutionMode          string
+	FileTriggersEnabled    *bool
+	GlobalRemoteState      *bool
+	Organization           string
+	QueueAllRuns           *bool
+	RemoteStateConsumerIDs string
+	SpeculativeEnabled     *bool
+	SSHKeyID               string
+	TerraformVersion       string
+	VCSIngressSubmodules   bool
+	VCSRepo                string
+	VCSTokenID             string
+	VCSType                string
+}
+
+// NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
+func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config WorkspaceConfigOptions) (*WorkspaceWorkspaceResource, error) {
+	ws := &WorkspaceWorkspaceResource{
+		ForEach:      "${var.workspace_names}",
+		Name:         "${each.value}",
+		Organization: config.Organization,
+	}
+
+	if config.AutoApply != nil {
+		ws.AutoApply = config.AutoApply
+	}
+
+	var vcs *WorkspaceVCSBlock
+
+	if config.VCSType != "" || config.VCSTokenID != "" {
+		if config.VCSRepo == "" {
+			return nil, fmt.Errorf("VCS repository must be passed if VCS type or a VCS token ID is passed")
+		}
+
+		vcsTokenID := config.VCSTokenID
+		if vcsTokenID == "" {
+			t, err := GetVCSTokenIDByClientType(ctx, client, config.Organization, config.VCSType)
+			if err != nil {
+				return nil, err
+			}
+
+			vcsTokenID = t
+		} else {
+			vcsTokenID = config.VCSTokenID
+		}
+
+		vcs = &WorkspaceVCSBlock{
+			OauthTokenID:      vcsTokenID,
+			Identifier:        config.VCSRepo,
+			IngressSubmodules: config.VCSIngressSubmodules,
+		}
+	}
+
+	ws.VCSRepo = vcs
+
+	if config.AgentPoolID != "" {
+		ws.AgentPoolID = config.AgentPoolID
+		ws.ExecutionMode = "agent"
+	} else if config.ExecutionMode != "" {
+		ws.ExecutionMode = config.ExecutionMode
+	}
+
+	if config.GlobalRemoteState != nil {
+		if !*config.GlobalRemoteState {
+			ws.GlobalRemoteState = config.GlobalRemoteState
+			ws.RemoteStateConsumerIDs = strings.FieldsFunc(config.RemoteStateConsumerIDs, func(c rune) bool { return c == ',' })
+		}
+	}
+
+	ws.TerraformVersion = config.TerraformVersion
+	ws.QueueAllRuns = config.QueueAllRuns
+	ws.SpeculativeEnabled = config.SpeculativeEnabled
+	ws.FileTriggersEnabled = config.FileTriggersEnabled
+	ws.SSHKeyID = config.SSHKeyID
+
+	return ws, nil
 }
