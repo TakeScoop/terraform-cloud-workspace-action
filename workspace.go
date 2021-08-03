@@ -177,3 +177,15 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 
 	return ws, nil
 }
+
+func (ws *WorkspaceConfig) AddTeams(teams []Team) {
+	if len(teams) == 0 {
+		return
+	}
+
+	ws.Resources["tfe_team_access"] = map[string]interface{}{}
+
+	for _, team := range teams {
+		ws.Resources["tfe_team_access"][team.TeamID] = team
+	}
+}
