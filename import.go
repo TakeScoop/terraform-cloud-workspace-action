@@ -83,7 +83,7 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 }
 
 func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, key string, workspace string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_variable.variables[\"%s-%s\"]", workspace, key)
+	address := fmt.Sprintf("tfe_variable.%s-%s", workspace, key)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {

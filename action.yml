@@ -79,6 +79,8 @@ inputs:
   teams:
     description: Teams to grant access to the project
     required: false
+  remote_states:
+    description: Remote state blocks to configure in the workspace
 outputs:
   plan:
     description: Human readable Terraform plan

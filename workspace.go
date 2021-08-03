@@ -12,6 +12,7 @@ type WorkspaceConfig struct {
 	Terraform WorkspaceTerraform                `json:"terraform"`
 	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
 	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
+	Data      map[string]map[string]interface{} `json:"data,omitempty"`
 }
 
 type WorkspaceBackend struct {
@@ -34,6 +35,24 @@ type WorkspaceVCSBlock struct {
 	OauthTokenID      string `json:"oauth_token_id"`
 	Identifier        string `json:"identifier"`
 	IngressSubmodules bool   `json:"ingress_submodules"`
+}
+
+type RemoteStateBackendConfigWorkspaces struct {
+	Name string `json:"name"`
+}
+
+type RemoteStateBackendConfig struct {
+	Key          *string                             `json:"key,omitempty"`
+	Bucket       *string                             `json:"bucket,omitempty"`
+	Region       *string                             `json:"region,omitempty"`
+	Hostname     *string                             `json:"hostname,omitempty"`
+	Organization *string                             `json:"organization,omitempty"`
+	Workspaces   *RemoteStateBackendConfigWorkspaces `json:"workspaces,omitempty"`
+}
+
+type RemoteStateBlock struct {
+	Config  RemoteStateBackendConfig `json:"config" yaml:"config"`
+	Backend string                   `json:"backend" yaml:"backend"`
 }
 
 type WorkspaceWorkspaceResource struct {
@@ -187,5 +206,17 @@ func (ws *WorkspaceConfig) AddTeams(teams []Team) {
 
 	for _, team := range teams {
 		ws.Resources["tfe_team_access"][team.TeamID] = team
+	}
+}
+
+// NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
+func NewWorkspaceVariableResource(v *Variable) *WorkspaceVariableResource {
+	return &WorkspaceVariableResource{
+		Key:         v.Key,
+		Value:       v.Value,
+		Description: v.Description,
+		Category:    v.Category,
+		Sensitive:   v.Sensitive,
+		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.WorkspaceName),
 	}
 }
