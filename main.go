@@ -109,7 +109,7 @@ func main() {
 
 	var remoteStates map[string]RemoteStateBlock
 
-	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_state_blocks")), &remoteStates)
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_states")), &remoteStates)
 	if err != nil {
 		log.Fatalf("Failed to parse remote state blocks%s", err)
 	}
@@ -161,7 +161,7 @@ func main() {
 
 	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed marshal workspace configuration: %s", err)
 	}
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
