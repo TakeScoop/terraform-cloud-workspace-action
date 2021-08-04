@@ -83,6 +83,7 @@ func main() {
 		VCSRepo:                githubactions.GetInput("vcs_repo"),
 		VCSTokenID:             githubactions.GetInput("vcs_token_id"),
 		VCSType:                githubactions.GetInput("vcs_type"),
+		WorkingDirectory:       githubactions.GetInput("working_directory"),
 	})
 	if err != nil {
 		log.Fatalf("Error structuring workspace resource: %s", err)
