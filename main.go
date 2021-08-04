@@ -112,7 +112,7 @@ func main() {
 				S3: &S3BackendConfig{},
 			},
 		},
-		WorkspaceOptions: &WorkspaceConfigOptions{
+		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 			AutoApply:              inputs.GetBoolPtr("auto_apply"),
 			ExecutionMode:          githubactions.GetInput("execution_mode"),

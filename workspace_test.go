@@ -246,7 +246,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	}
 
 	t.Run("should render a basic workspace without unprovided values", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 		})
 		if err != nil {
@@ -267,7 +267,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value to false if passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			AutoApply:    boolPtr(false),
 		})
@@ -290,7 +290,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value to true if passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			AutoApply:    boolPtr(true),
 		})
@@ -313,7 +313,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value nil if not passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 		})
 		if err != nil {
@@ -335,7 +335,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add VCS block type if VCS type is passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSType:      "github",
 			VCSRepo:      "org/repo",
@@ -349,7 +349,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("fail if vcs_repo is not passed", func(t *testing.T) {
-		_, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		_, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSType:      "github",
 		})
@@ -357,7 +357,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSTokenID:   "TOKEN",
 			VCSType:      "github",
@@ -370,7 +370,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add AgentPoolID and ExecutionMode: \"agent\" when AgentPoolID is passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization: "org",
 			AgentPoolID:  "12345",
 		})
@@ -383,7 +383,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add RemoteConsumerIDs and GlobalRemoteState if global_remote_state is false", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization:           "org",
 			GlobalRemoteState:      boolPtr(false),
 			RemoteStateConsumerIDs: "123,456,789",
@@ -397,7 +397,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add no remote IDs when none are passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
+		ws, err := NewWorkspaceResource(ctx, client, &WorkspaceResourceOptions{
 			Organization:      "org",
 			GlobalRemoteState: boolPtr(false),
 		})
@@ -539,7 +539,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Local: &LocalBackendConfig{},
 				},
 			},
-			WorkspaceOptions: &WorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
 			WorkspaceVariables: map[string]WorkspaceVariable{
@@ -567,7 +567,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Local: &LocalBackendConfig{},
 				},
 			},
-			WorkspaceOptions: &WorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
 			WorkspaceVariables: map[string]WorkspaceVariable{
@@ -605,7 +605,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Local: &LocalBackendConfig{},
 				},
 			},
-			WorkspaceOptions: &WorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
 			WorkspaceVariables: map[string]WorkspaceVariable{
@@ -643,7 +643,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Local: &LocalBackendConfig{},
 				},
 			},
-			WorkspaceOptions: &WorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
 			WorkspaceVariables: map[string]WorkspaceVariable{

@@ -122,7 +122,7 @@ func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organizatio
 	return vcsClient.OAuthTokens[0].ID, nil
 }
 
-type WorkspaceConfigOptions struct {
+type WorkspaceResourceOptions struct {
 	AgentPoolID            string
 	AutoApply              *bool
 	ExecutionMode          string
@@ -142,7 +142,7 @@ type WorkspaceConfigOptions struct {
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
-func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config WorkspaceConfigOptions) (*WorkspaceWorkspaceResource, error) {
+func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*WorkspaceWorkspaceResource, error) {
 	ws := &WorkspaceWorkspaceResource{
 		ForEach:      "${var.workspace_names}",
 		Name:         "${each.value}",
@@ -265,8 +265,8 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 
 	for _, ta := range teamAccess {
 
-		_, exists := ws.Data["tfe_team"][ta.TeamName]
-		if !exists {
+		_, ok := ws.Data["tfe_team"][ta.TeamName]
+		if !ok {
 			ws.Data["tfe_team"][ta.TeamName] = TeamDataResource{
 				Name:         ta.TeamName,
 				Organization: organization,
@@ -291,17 +291,17 @@ func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) 
 }
 
 type NewWorkspaceConfigOptions struct {
-	TerraformBackendConfig *WorkspaceTerraform
-	WorkspaceVariables     map[string]WorkspaceVariable
-	RemoteStates           map[string]RemoteState
-	Variables              []Variable
-	TeamAccess             []TeamAccess
-	WorkspaceOptions       *WorkspaceConfigOptions
+	TerraformBackendConfig   *WorkspaceTerraform
+	WorkspaceVariables       map[string]WorkspaceVariable
+	RemoteStates             map[string]RemoteState
+	Variables                []Variable
+	TeamAccess               []TeamAccess
+	WorkspaceResourceOptions *WorkspaceResourceOptions
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
 func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*WorkspaceConfig, error) {
-	wsResource, err := NewWorkspaceResource(ctx, client, *config.WorkspaceOptions)
+	wsResource, err := NewWorkspaceResource(ctx, client, config.WorkspaceResourceOptions)
 	if err != nil {
 		return nil, err
 	}
