@@ -403,3 +403,56 @@ func TestNewWorkspaceResource(t *testing.T) {
 		assert.DeepEqual(t, ws.RemoteStateConsumerIDs, []string{})
 	})
 }
+
+func TestAddRemoteStates(t *testing.T) {
+	wsConfig := WorkspaceConfig{
+		Data: map[string]map[string]interface{}{},
+	}
+
+	foo := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
+	bar := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
+	wsConfig.AddRemoteStates(map[string]RemoteState{
+		"foo": foo,
+		"bar": bar,
+	})
+	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["foo"], foo)
+	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["bar"], bar)
+}
+
+func TestAddTeamAccess(t *testing.T) {
+	wsConfig := WorkspaceConfig{
+		Data:      map[string]map[string]interface{}{},
+		Resources: map[string]map[string]interface{}{},
+	}
+
+	wsConfig.AddTeamAccess([]TeamAccess{
+		{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
+		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
+	}, "org")
+
+	assert.DeepEqual(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
+		Name:         "Writers",
+		Organization: "org",
+	})
+	assert.DeepEqual(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
+		Name:         "Readers",
+		Organization: "org",
+	})
+
+	assert.DeepEqual(t,
+		wsConfig.Resources["tfe_team_access"]["workspace-Writers"],
+		&WorkspaceTeamAccessResource{
+			TeamID:      "${data.tfe_team.Writers.id}",
+			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+			Access:      "write",
+		},
+	)
+	assert.DeepEqual(t,
+		wsConfig.Resources["tfe_team_access"]["workspace-Readers"],
+		&WorkspaceTeamAccessResource{
+			TeamID:      "${data.tfe_team.Readers.id}",
+			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+			Access:      "read",
+		},
+	)
+}
