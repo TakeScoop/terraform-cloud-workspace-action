@@ -76,11 +76,11 @@ inputs:
   file_triggers_enabled:
     description: Whether to filter runs based on the changed files in a VCS push
     required: false
-  teams:
-    description: Teams to grant access to the project
-    required: false
   remote_states:
     description: Remote state blocks to configure in the workspace
+  team_access:
+    description: Teams to grant access to the project
+    required: false
 outputs:
   plan:
     description: Human readable Terraform plan
