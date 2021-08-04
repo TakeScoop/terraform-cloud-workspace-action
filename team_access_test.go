@@ -15,7 +15,7 @@ func TestMergeWorkspaceIDs(t *testing.T) {
 			},
 			[]string{"staging", "production"},
 		),
-		&[]TeamAccess{
+		[]TeamAccess{
 			{Access: "read", TeamName: "readers", WorkspaceName: "staging"},
 			{Access: "read", TeamName: "readers", WorkspaceName: "production"},
 			{Access: "write", TeamName: "writers", WorkspaceName: "staging"},

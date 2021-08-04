@@ -4,11 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path"
 	"testing"
 
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/terraform-exec/tfexec"
+	"github.com/hashicorp/terraform-exec/tfinstall"
+	tfjson "github.com/hashicorp/terraform-json"
 	"gotest.tools/v3/assert"
 )
 
@@ -124,7 +130,7 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		b, err := json.MarshalIndent(WorkspaceConfig{
 			Terraform: WorkspaceTerraform{
 				Backend: WorkspaceBackend{
-					S3: S3BackendConfig{},
+					S3: &S3BackendConfig{},
 				},
 			},
 			Variables: map[string]WorkspaceVariable{
@@ -455,4 +461,210 @@ func TestAddTeamAccess(t *testing.T) {
 			Access:      "read",
 		},
 	)
+}
+
+func RunValidate(ctx context.Context, name string, tfexecPath string, wsConfig *WorkspaceConfig) (*tfjson.ValidateOutput, error) {
+	b, err := json.MarshalIndent(wsConfig, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+
+	workDir, err := ioutil.TempDir("", name)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
+		return nil, err
+	}
+
+	tf, err := tfexec.NewTerraform(workDir, tfexecPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tf.Init(ctx); err != nil {
+		return nil, err
+	}
+
+	return tf.Validate(ctx)
+}
+
+func TestNewWorkspaceConfig(t *testing.T) {
+	ctx := context.Background()
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+
+	defer server.Close()
+
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+
+		_, err := fmt.Fprint(w, basicOauthClientResponse)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: server.URL,
+		Token:   "12345",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir, err := ioutil.TempDir("", "tfinstall")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer os.RemoveAll(tmpDir)
+
+	execPath, err := tfinstall.Find(
+		ctx,
+		tfinstall.ExactVersion("1.0.3", tmpDir),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	name := "test-repo"
+
+	t.Run("validate basic workspace config", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			TerraformBackendConfig: &WorkspaceTerraform{
+				Backend: WorkspaceBackend{
+					Local: &LocalBackendConfig{},
+				},
+			},
+			WorkspaceOptions: &WorkspaceConfigOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]WorkspaceVariable{
+				"workspace_names": {
+					Type: "set(string)",
+				},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate workspace with remote states", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			TerraformBackendConfig: &WorkspaceTerraform{
+				Backend: WorkspaceBackend{
+					Local: &LocalBackendConfig{},
+				},
+			},
+			WorkspaceOptions: &WorkspaceConfigOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]WorkspaceVariable{
+				"workspace_names": {
+					Type: "set(string)",
+				},
+			},
+			RemoteStates: map[string]RemoteState{
+				"foo": {
+					Backend: "s3",
+					Config: RemoteStateBackendConfig{
+						Key:    "key",
+						Bucket: "bucket",
+						Region: "us-east-1",
+					},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate workspace with team access", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			TerraformBackendConfig: &WorkspaceTerraform{
+				Backend: WorkspaceBackend{
+					Local: &LocalBackendConfig{},
+				},
+			},
+			WorkspaceOptions: &WorkspaceConfigOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]WorkspaceVariable{
+				"workspace_names": {
+					Type: "set(string)",
+				},
+			},
+			TeamAccess: []TeamAccess{
+				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
+				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
+					Runs:             "read",
+					Variables:        "read",
+					StateVersions:    "read",
+					SentinelMocks:    "none",
+					WorkspaceLocking: true,
+				}},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate workspace with variables", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			TerraformBackendConfig: &WorkspaceTerraform{
+				Backend: WorkspaceBackend{
+					Local: &LocalBackendConfig{},
+				},
+			},
+			WorkspaceOptions: &WorkspaceConfigOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]WorkspaceVariable{
+				"workspace_names": {
+					Type: "set(string)",
+				},
+			},
+			Variables: []Variable{
+				{Key: "foo", Value: "bar", Category: "env", WorkspaceName: name},
+				{Key: "baz", Value: "woz", Category: "env", WorkspaceName: name},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
 }
