@@ -224,16 +224,16 @@ func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
 	}
 }
 
-type WorkspaceTeamResource struct {
+type WorkspaceTeamAccessResource struct {
 	TeamID      string                 `json:"team_id"`
 	WorkspaceID string                 `json:"workspace_id"`
 	Access      string                 `json:"access,omitempty"`
 	Permissions *TeamAccessPermissions `json:"permissions,omitempty"`
 }
 
-// NewWorkspaceTeamAccessResource takes a Team object and uses it to fill a new WorkspaceTeamResource
-func NewWorkspaceTeamAccessResource(ta *TeamAccess) *WorkspaceTeamResource {
-	return &WorkspaceTeamResource{
+// NewWorkspaceTeamAccessResource takes a Team object and uses it to fill a new WorkspaceTeamAccessResource
+func NewWorkspaceTeamAccessResource(ta *TeamAccess) *WorkspaceTeamAccessResource {
+	return &WorkspaceTeamAccessResource{
 		TeamID:      fmt.Sprintf("${data.tfe_team.%s.id}", ta.TeamName),
 		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", ta.WorkspaceName),
 		Access:      ta.Access,
@@ -269,7 +269,7 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 	}
 }
 
-// AddRemoteState adds the passed remote state to the calling workspace
+// AddRemoteStates adds the passed remote state to the calling workspace
 func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) {
 	if len(remoteStates) == 0 {
 		return
