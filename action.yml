@@ -73,6 +73,9 @@ inputs:
     description: Whether to filter runs based on the changed files in a VCS push
   remote_states:
     description: Remote state blocks to configure in the workspace
+  team_access:
+    description: Teams and their associated permissions to be granted to the created workspaces
+    required: false
 outputs:
   plan:
     description: Human readable Terraform plan

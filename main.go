@@ -20,6 +20,8 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	token := githubactions.GetInput("terraform_token")
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
@@ -40,7 +42,7 @@ func main() {
 	defer os.RemoveAll(tmpDir)
 
 	execPath, err := tfinstall.Find(
-		context.Background(),
+		ctx,
 		tfinstall.ExactVersion(githubactions.GetInput("runner_terraform_version"), tmpDir),
 	)
 
@@ -67,7 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	wsResource, err := NewWorkspaceResource(context.Background(), client, WorkspaceConfigOptions{
+	wsResource, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
 		AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 		AutoApply:              inputs.GetBoolPtr("auto_apply"),
 		ExecutionMode:          githubactions.GetInput("execution_mode"),
@@ -108,20 +110,14 @@ func main() {
 		},
 	}
 
-	var remoteStates map[string]RemoteStateBlock
+	var remoteStates map[string]RemoteState
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_states")), &remoteStates)
 	if err != nil {
 		log.Fatalf("Failed to parse remote state blocks%s", err)
 	}
 
-	if len(remoteStates) > 0 {
-		wsConfig.Data["terraform_remote_state"] = map[string]interface{}{}
-
-		for name, block := range remoteStates {
-			wsConfig.Data["terraform_remote_state"][name] = block
-		}
-	}
+	wsConfig.AddRemoteStates(remoteStates)
 
 	var workspaces []string
 
@@ -150,15 +146,17 @@ func main() {
 		log.Fatalf("Failed to parse variables: %s", err)
 	}
 
-	if len(vars) > 0 {
-		varResources := map[string]interface{}{}
+	wsConfig.AddVariables(vars)
 
-		for _, v := range vars {
-			varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(&v)
-		}
+	var teamInputs []TeamAccess
 
-		wsConfig.Resources["tfe_variable"] = varResources
+	if err = yaml.Unmarshal([]byte(githubactions.GetInput("team_access")), &teamInputs); err != nil {
+		log.Fatalf("Failed to parse teams: %s", err)
 	}
+
+	teamAccess := MergeWorkspaceIDs(teamInputs, workspaces)
+
+	wsConfig.AddTeamAccess(*teamAccess, org)
 
 	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
@@ -184,7 +182,7 @@ func main() {
 		backendConfigs = append(backendConfigs, tfexec.BackendConfig(val))
 	}
 
-	if err = tf.Init(context.Background(), backendConfigs...); err != nil {
+	if err = tf.Init(ctx, backendConfigs...); err != nil {
 		log.Fatalf("error running Init: %s", err)
 	}
 
@@ -206,16 +204,23 @@ func main() {
 		}
 
 		for _, name := range workspaces {
-			err = ImportWorkspace(context.Background(), tf, client, name, org, opts...)
+			err = ImportWorkspace(ctx, tf, client, name, org, opts...)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		for _, v := range vars {
-			err = ImportVariable(context.Background(), tf, client, v.Key, v.WorkspaceName, org, opts...)
+			err = ImportVariable(ctx, tf, client, v.Key, v.WorkspaceName, org, opts...)
 			if err != nil {
 				log.Fatalf("Error importing variables: %s\n", err)
+			}
+		}
+
+		for _, ta := range *teamAccess {
+			err = ImportTeamAccess(ctx, tf, client, org, ta.WorkspaceName, ta.TeamName)
+			if err != nil {
+				log.Fatalf("Error importing team access: %s\n", err)
 			}
 		}
 	}
@@ -229,13 +234,13 @@ func main() {
 
 	opts = append(opts, tfexec.Out(planPath))
 
-	diff, err := tf.Plan(context.Background(), opts...)
+	diff, err := tf.Plan(ctx, opts...)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
 
 	if diff {
-		planStr, err := tf.ShowPlanFileRaw(context.Background(), planPath)
+		planStr, err := tf.ShowPlanFileRaw(ctx, planPath)
 		if err != nil {
 			log.Fatalf("Error showing plan: %s", err)
 		}
@@ -243,7 +248,7 @@ func main() {
 		fmt.Println(planStr)
 		githubactions.SetOutput("plan", planStr)
 
-		plan, err := tf.ShowPlanFile(context.Background(), planPath)
+		plan, err := tf.ShowPlanFile(ctx, planPath)
 		if err != nil {
 			log.Fatalf("error creating plan struct: %s", err)
 		}
@@ -258,7 +263,7 @@ func main() {
 		if inputs.GetBool("apply") {
 			fmt.Println("Applying...")
 
-			if err = tf.Apply(context.Background(), tfexec.DirOrPlan(planPath)); err != nil {
+			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
 				log.Fatalf("error running apply: %s", err)
 			}
 		}

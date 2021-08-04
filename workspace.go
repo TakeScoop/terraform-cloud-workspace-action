@@ -50,7 +50,7 @@ type RemoteStateBackendConfig struct {
 	Workspaces   *RemoteStateBackendConfigWorkspaces `json:"workspaces,omitempty"`
 }
 
-type RemoteStateBlock struct {
+type RemoteState struct {
 	Config  RemoteStateBackendConfig `json:"config" yaml:"config"`
 	Backend string                   `json:"backend" yaml:"backend"`
 }
@@ -200,8 +200,23 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 	return ws, nil
 }
 
+// AddVariable adds the passed variables to the calling workspace
+func (ws *WorkspaceConfig) AddVariables(vars []Variable) {
+	if len(vars) == 0 {
+		return
+	}
+
+	varResources := map[string]interface{}{}
+
+	for _, v := range vars {
+		varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(v)
+	}
+
+	ws.Resources["tfe_variable"] = varResources
+}
+
 // NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
-func NewWorkspaceVariableResource(v *Variable) *WorkspaceVariableResource {
+func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
 	return &WorkspaceVariableResource{
 		Key:         v.Key,
 		Value:       v.Value,
@@ -209,5 +224,63 @@ func NewWorkspaceVariableResource(v *Variable) *WorkspaceVariableResource {
 		Category:    v.Category,
 		Sensitive:   v.Sensitive,
 		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.WorkspaceName),
+	}
+}
+
+type WorkspaceTeamAccessResource struct {
+	TeamID      string                 `json:"team_id"`
+	WorkspaceID string                 `json:"workspace_id"`
+	Access      string                 `json:"access,omitempty"`
+	Permissions *TeamAccessPermissions `json:"permissions,omitempty"`
+}
+
+// NewWorkspaceTeamAccessResource takes a Team object and uses it to fill a new WorkspaceTeamAccessResource
+func NewWorkspaceTeamAccessResource(ta *TeamAccess) *WorkspaceTeamAccessResource {
+	return &WorkspaceTeamAccessResource{
+		TeamID:      fmt.Sprintf("${data.tfe_team.%s.id}", ta.TeamName),
+		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", ta.WorkspaceName),
+		Access:      ta.Access,
+		Permissions: ta.Permissions,
+	}
+}
+
+type TeamDataResource struct {
+	Name         string `json:"name"`
+	Organization string `json:"organization"`
+}
+
+// AddTeamAccess adds the passed teams to the calling workspace
+func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization string) {
+	if len(teamAccess) == 0 {
+		return
+	}
+
+	ws.Data["tfe_team"] = map[string]interface{}{}
+	ws.Resources["tfe_team_access"] = map[string]interface{}{}
+
+	for _, ta := range teamAccess {
+
+		_, exists := ws.Data["tfe_team"][ta.TeamName]
+		if !exists {
+			ws.Data["tfe_team"][ta.TeamName] = TeamDataResource{
+				Name:         ta.TeamName,
+				Organization: organization,
+			}
+		}
+
+		ws.Resources["tfe_team_access"][fmt.Sprintf("%s-%s", ta.WorkspaceName, ta.TeamName)] = NewWorkspaceTeamAccessResource(&ta)
+	}
+}
+
+// AddRemoteStates adds the passed remote state to the calling workspace
+func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) {
+	if len(remoteStates) == 0 {
+		return
+	}
+
+	ws.Data["terraform_remote_state"] = map[string]interface{}{}
+
+	for name, block := range remoteStates {
+		ws.Data["terraform_remote_state"][name] = block
 	}
 }
