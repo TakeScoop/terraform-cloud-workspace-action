@@ -8,15 +8,15 @@ type TeamAccess struct {
 }
 
 type TeamAccessPermissions struct {
-	Runs             string `yaml:"runs"`
-	Variables        string `yaml:"variables"`
-	StateVersions    string `yaml:"state_versions"`
-	SentinelMocks    string `yaml:"sentinel_mocks"`
-	WorkspaceLocking bool   `yaml:"workspace_locking"`
+	Runs             string `yaml:"runs" json:"runs"`
+	Variables        string `yaml:"variables" json:"variables"`
+	StateVersions    string `yaml:"state_versions" json:"state_versions"`
+	SentinelMocks    string `yaml:"sentinel_mocks" json:"sentinel_mocks"`
+	WorkspaceLocking bool   `yaml:"workspace_locking" json:"workspace_locking"`
 }
 
 // MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) *[]TeamAccess {
+func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) []TeamAccess {
 	ts := make([]TeamAccess, len(teamAccess)*len(workspaceNames))
 
 	i := 0
@@ -28,5 +28,5 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) *[]Team
 		}
 	}
 
-	return &ts
+	return ts
 }

@@ -39,13 +39,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating temp dir: %s", err)
 	}
+
 	defer os.RemoveAll(tmpDir)
 
 	execPath, err := tfinstall.Find(
 		ctx,
 		tfinstall.ExactVersion(githubactions.GetInput("runner_terraform_version"), tmpDir),
 	)
-
 	if err != nil {
 		log.Fatalf("error locating Terraform binary: %s", err)
 	}
@@ -64,60 +64,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	workDir, err := ioutil.TempDir("", name)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	wsResource, err := NewWorkspaceResource(ctx, client, WorkspaceConfigOptions{
-		AgentPoolID:            githubactions.GetInput("agent_pool_id"),
-		AutoApply:              inputs.GetBoolPtr("auto_apply"),
-		ExecutionMode:          githubactions.GetInput("execution_mode"),
-		FileTriggersEnabled:    inputs.GetBoolPtr("file_triggers_enabled"),
-		GlobalRemoteState:      inputs.GetBoolPtr("global_remote_state"),
-		Organization:           org,
-		QueueAllRuns:           inputs.GetBoolPtr("queue_all_runs"),
-		RemoteStateConsumerIDs: githubactions.GetInput("remote_state_consumer_ids"),
-		SpeculativeEnabled:     inputs.GetBoolPtr("speculative_enabled"),
-		TerraformVersion:       githubactions.GetInput("terraform_version"),
-		SSHKeyID:               githubactions.GetInput("ssh_key_id"),
-		VCSIngressSubmodules:   inputs.GetBool("vcs_ingress_submodules"),
-		VCSRepo:                githubactions.GetInput("vcs_repo"),
-		VCSTokenID:             githubactions.GetInput("vcs_token_id"),
-		VCSType:                githubactions.GetInput("vcs_type"),
-		WorkingDirectory:       githubactions.GetInput("working_directory"),
-	})
-	if err != nil {
-		log.Fatalf("Error structuring workspace resource: %s", err)
-	}
-
-	wsConfig := WorkspaceConfig{
-		Terraform: WorkspaceTerraform{
-			Backend: WorkspaceBackend{
-				S3: S3BackendConfig{},
-			},
-		},
-		Variables: map[string]WorkspaceVariable{
-			"workspace_names": {
-				Type: "set(string)",
-			},
-		},
-		Data: map[string]map[string]interface{}{},
-		Resources: map[string]map[string]interface{}{
-			"tfe_workspace": {
-				"workspace": wsResource,
-			},
-		},
-	}
-
 	var remoteStates map[string]RemoteState
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_states")), &remoteStates)
 	if err != nil {
 		log.Fatalf("Failed to parse remote state blocks%s", err)
 	}
-
-	wsConfig.AddRemoteStates(remoteStates)
 
 	var workspaces []string
 
@@ -146,8 +98,6 @@ func main() {
 		log.Fatalf("Failed to parse variables: %s", err)
 	}
 
-	wsConfig.AddVariables(vars)
-
 	var teamInputs []TeamAccess
 
 	if err = yaml.Unmarshal([]byte(githubactions.GetInput("team_access")), &teamInputs); err != nil {
@@ -156,11 +106,50 @@ func main() {
 
 	teamAccess := MergeWorkspaceIDs(teamInputs, workspaces)
 
-	wsConfig.AddTeamAccess(*teamAccess, org)
+	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+		TerraformBackendConfig: &WorkspaceTerraform{
+			Backend: WorkspaceBackend{
+				S3: &S3BackendConfig{},
+			},
+		},
+		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
+			AutoApply:              inputs.GetBoolPtr("auto_apply"),
+			ExecutionMode:          githubactions.GetInput("execution_mode"),
+			FileTriggersEnabled:    inputs.GetBoolPtr("file_triggers_enabled"),
+			GlobalRemoteState:      inputs.GetBoolPtr("global_remote_state"),
+			Organization:           org,
+			QueueAllRuns:           inputs.GetBoolPtr("queue_all_runs"),
+			RemoteStateConsumerIDs: githubactions.GetInput("remote_state_consumer_ids"),
+			SpeculativeEnabled:     inputs.GetBoolPtr("speculative_enabled"),
+			TerraformVersion:       githubactions.GetInput("terraform_version"),
+			SSHKeyID:               githubactions.GetInput("ssh_key_id"),
+			VCSIngressSubmodules:   inputs.GetBool("vcs_ingress_submodules"),
+			VCSRepo:                githubactions.GetInput("vcs_repo"),
+			VCSTokenID:             githubactions.GetInput("vcs_token_id"),
+			VCSType:                githubactions.GetInput("vcs_type"),
+		},
+		WorkspaceVariables: map[string]WorkspaceVariable{
+			"workspace_names": {
+				Type: "set(string)",
+			},
+		},
+		RemoteStates: remoteStates,
+		Variables:    vars,
+		TeamAccess:   teamAccess,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create new workspace configuration: %s", err)
+	}
 
 	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
-		log.Fatalf("Failed marshal workspace configuration: %s", err)
+		log.Fatalf("Failed to marshal workspace configuration: %s", err)
+	}
+
+	workDir, err := ioutil.TempDir("", name)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
@@ -217,7 +206,7 @@ func main() {
 			}
 		}
 
-		for _, ta := range *teamAccess {
+		for _, ta := range teamAccess {
 			err = ImportTeamAccess(ctx, tf, client, org, ta.WorkspaceName, ta.TeamName)
 			if err != nil {
 				log.Fatalf("Error importing team access: %s\n", err)

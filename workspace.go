@@ -16,7 +16,8 @@ type WorkspaceConfig struct {
 }
 
 type WorkspaceBackend struct {
-	S3 S3BackendConfig `json:"s3,omitempty"`
+	S3    *S3BackendConfig    `json:"s3,omitempty"`
+	Local *LocalBackendConfig `json:"local,omitempty"`
 }
 
 type WorkspaceTerraform struct {
@@ -24,6 +25,10 @@ type WorkspaceTerraform struct {
 }
 
 type S3BackendConfig struct{}
+
+type LocalBackendConfig struct {
+	Path string `json:"path,omitempty"`
+}
 
 type WorkspaceVariable struct {
 	Type        string      `json:"type,omitempty"`
@@ -42,11 +47,11 @@ type RemoteStateBackendConfigWorkspaces struct {
 }
 
 type RemoteStateBackendConfig struct {
-	Key          *string                             `json:"key,omitempty"`
-	Bucket       *string                             `json:"bucket,omitempty"`
-	Region       *string                             `json:"region,omitempty"`
-	Hostname     *string                             `json:"hostname,omitempty"`
-	Organization *string                             `json:"organization,omitempty"`
+	Key          string                              `json:"key,omitempty"`
+	Bucket       string                              `json:"bucket,omitempty"`
+	Region       string                              `json:"region,omitempty"`
+	Hostname     string                              `json:"hostname,omitempty"`
+	Organization string                              `json:"organization,omitempty"`
 	Workspaces   *RemoteStateBackendConfigWorkspaces `json:"workspaces,omitempty"`
 }
 
@@ -117,7 +122,7 @@ func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organizatio
 	return vcsClient.OAuthTokens[0].ID, nil
 }
 
-type WorkspaceConfigOptions struct {
+type WorkspaceResourceOptions struct {
 	AgentPoolID            string
 	AutoApply              *bool
 	ExecutionMode          string
@@ -137,7 +142,7 @@ type WorkspaceConfigOptions struct {
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
-func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config WorkspaceConfigOptions) (*WorkspaceWorkspaceResource, error) {
+func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*WorkspaceWorkspaceResource, error) {
 	ws := &WorkspaceWorkspaceResource{
 		ForEach:      "${var.workspace_names}",
 		Name:         "${each.value}",
@@ -260,8 +265,8 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 
 	for _, ta := range teamAccess {
 
-		_, exists := ws.Data["tfe_team"][ta.TeamName]
-		if !exists {
+		_, ok := ws.Data["tfe_team"][ta.TeamName]
+		if !ok {
 			ws.Data["tfe_team"][ta.TeamName] = TeamDataResource{
 				Name:         ta.TeamName,
 				Organization: organization,
@@ -283,4 +288,38 @@ func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) 
 	for name, block := range remoteStates {
 		ws.Data["terraform_remote_state"][name] = block
 	}
+}
+
+type NewWorkspaceConfigOptions struct {
+	TerraformBackendConfig   *WorkspaceTerraform
+	WorkspaceVariables       map[string]WorkspaceVariable
+	RemoteStates             map[string]RemoteState
+	Variables                []Variable
+	TeamAccess               []TeamAccess
+	WorkspaceResourceOptions *WorkspaceResourceOptions
+}
+
+// NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
+func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*WorkspaceConfig, error) {
+	wsResource, err := NewWorkspaceResource(ctx, client, config.WorkspaceResourceOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	wsConfig := &WorkspaceConfig{
+		Terraform: *config.TerraformBackendConfig,
+		Variables: config.WorkspaceVariables,
+		Data:      map[string]map[string]interface{}{},
+		Resources: map[string]map[string]interface{}{
+			"tfe_workspace": {
+				"workspace": wsResource,
+			},
+		},
+	}
+
+	wsConfig.AddRemoteStates(config.RemoteStates)
+	wsConfig.AddVariables(config.Variables)
+	wsConfig.AddTeamAccess(config.TeamAccess, wsResource.Organization)
+
+	return wsConfig, nil
 }
