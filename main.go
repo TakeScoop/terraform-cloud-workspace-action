@@ -39,6 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating temp dir: %s", err)
 	}
+
 	defer os.RemoveAll(tmpDir)
 
 	execPath, err := tfinstall.Find(

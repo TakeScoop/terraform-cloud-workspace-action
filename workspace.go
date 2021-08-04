@@ -75,6 +75,7 @@ type WorkspaceWorkspaceResource struct {
 	TerraformVersion       string             `json:"terraform_version,omitempty"`
 	SSHKeyID               string             `json:"ssh_key_id,omitempty"`
 	VCSRepo                *WorkspaceVCSBlock `json:"vcs_repo,omitempty"`
+	WorkingDirectory       string             `json:"working_directory,omitempty"`
 }
 
 type WorkspaceVariableResource struct {
@@ -137,6 +138,7 @@ type WorkspaceConfigOptions struct {
 	VCSRepo                string
 	VCSTokenID             string
 	VCSType                string
+	WorkingDirectory       string
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
@@ -198,6 +200,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config Worksp
 	ws.SpeculativeEnabled = config.SpeculativeEnabled
 	ws.FileTriggersEnabled = config.FileTriggersEnabled
 	ws.SSHKeyID = config.SSHKeyID
+	ws.WorkingDirectory = config.WorkingDirectory
 
 	return ws, nil
 }
