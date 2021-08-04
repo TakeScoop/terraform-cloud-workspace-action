@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
-	"gotest.tools/v3/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var basicOauthClientResponse string = `
@@ -353,7 +353,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 			Organization: "org",
 			VCSType:      "github",
 		})
-		assert.ErrorContains(t, err, "VCS repository must be passed")
+		assert.EqualError(t, err, "VCS repository must be passed if VCS type or a VCS token ID is passed")
 	})
 
 	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
@@ -393,7 +393,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 		}
 
 		assert.Equal(t, *ws.GlobalRemoteState, false)
-		assert.DeepEqual(t, ws.RemoteStateConsumerIDs, []string{"123", "456", "789"})
+		assert.Equal(t, ws.RemoteStateConsumerIDs, []string{"123", "456", "789"})
 	})
 
 	t.Run("add no remote IDs when none are passed", func(t *testing.T) {
@@ -406,7 +406,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 		}
 
 		assert.Equal(t, *ws.GlobalRemoteState, false)
-		assert.DeepEqual(t, ws.RemoteStateConsumerIDs, []string{})
+		assert.Equal(t, ws.RemoteStateConsumerIDs, []string{})
 	})
 }
 
@@ -436,16 +436,16 @@ func TestAddTeamAccess(t *testing.T) {
 		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
 	}, "org")
 
-	assert.DeepEqual(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
 		Name:         "Writers",
 		Organization: "org",
 	})
-	assert.DeepEqual(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
 		Name:         "Readers",
 		Organization: "org",
 	})
 
-	assert.DeepEqual(t,
+	assert.Equal(t,
 		wsConfig.Resources["tfe_team_access"]["workspace-Writers"],
 		&WorkspaceTeamAccessResource{
 			TeamID:      "${data.tfe_team.Writers.id}",
@@ -453,7 +453,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Access:      "write",
 		},
 	)
-	assert.DeepEqual(t,
+	assert.Equal(t,
 		wsConfig.Resources["tfe_team_access"]["workspace-Readers"],
 		&WorkspaceTeamAccessResource{
 			TeamID:      "${data.tfe_team.Readers.id}",

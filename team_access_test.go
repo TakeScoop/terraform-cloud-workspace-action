@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"gotest.tools/v3/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeWorkspaceIDs(t *testing.T) {
-	assert.DeepEqual(t,
+	assert.Equal(t,
 		MergeWorkspaceIDs(
 			[]TeamAccess{
 				{Access: "read", TeamName: "readers"},
