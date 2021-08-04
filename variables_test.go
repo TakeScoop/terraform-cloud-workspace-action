@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"gotest.tools/v3/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 type WorkspaceTestCase struct {
@@ -156,7 +156,7 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 			sortVariables(vars)
 			sortVariables(c.AssertEqual)
 
-			assert.DeepEqual(t, vars, c.AssertEqual)
+			assert.Equal(t, vars, c.AssertEqual)
 		})
 	}
 
@@ -171,6 +171,6 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 				}},
 			},
 		)
-		assert.ErrorContains(t, err, fmt.Sprintf("workspace %q was not found", "bar"))
+		assert.EqualError(t, err, fmt.Sprintf("workspace %q was not found in planned workspaces [foo]", "bar"))
 	})
 }
