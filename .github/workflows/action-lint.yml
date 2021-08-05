@@ -7,7 +7,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download actionlint
         run: |
-          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.5.3/actionlint_1.5.3_linux_386.tar.gz -o actionlint.tgz
+          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.5.3/actionlint_1.5.3_linux_amd64.tar.gz -o actionlint.tgz
           sudo tar xfz actionlint.tgz -C /usr/local/bin
       - name: Check workflow files
         run:  actionlint
