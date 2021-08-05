@@ -6,8 +6,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download actionlint
+        env:
+          ACTIONLINT_VERSION: 1.5.3
         run: |
-          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.5.3/actionlint_1.5.3_linux_amd64.tar.gz -o actionlint.tgz
+          curl -fsSL  -o actionlint.tgz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
           sudo tar xfz actionlint.tgz -C /usr/local/bin
       - name: Check workflow files
         run:  actionlint
