@@ -14,8 +14,8 @@ jobs:
       - uses: takescoop/terraform-cloud-workspace-action@v0
         with:
           terraform_token: "${{ secrets.TF_TOKEN }}"
-          terraform_organization: "${{ takescoop }}"
-          apply: "${{ github.ref == 'refs/heads/main' }}"
+          terraform_organization: "my-org"
+          apply: "${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
 ```
 
 ## Inputs
