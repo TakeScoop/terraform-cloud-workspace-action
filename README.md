@@ -11,7 +11,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
       - uses: takescoop/terraform-cloud-workspace-action@v0
         with:
           terraform_token: "${{ secrets.TF_TOKEN }}"
