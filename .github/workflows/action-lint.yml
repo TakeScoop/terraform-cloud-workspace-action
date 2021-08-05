@@ -1,0 +1,15 @@
+name: Lint GitHub Action
+on: [push]
+jobs:
+  action-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download actionlint
+        env:
+          ACTIONLINT_VERSION: 1.5.3
+        run: |
+          curl -fsSL  -o actionlint.tgz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          sudo tar xfz actionlint.tgz -C /usr/local/bin
+      - name: Check workflow files
+        run:  actionlint
