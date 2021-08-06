@@ -130,7 +130,11 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		b, err := json.MarshalIndent(WorkspaceConfig{
 			Terraform: WorkspaceTerraform{
 				Backend: WorkspaceBackend{
-					S3: &S3BackendConfig{},
+					S3: &S3BackendConfig{
+						Bucket: "my-bucket",
+						Key:    "foo.tfstate",
+						Region: "us-east-1",
+					},
 				},
 			},
 			Variables: map[string]WorkspaceVariable{
@@ -175,7 +179,11 @@ func TestWorkspaceJSONRender(t *testing.T) {
 		assert.Equal(t, string(b), `{
 	"terraform": {
 		"backend": {
-			"s3": {}
+			"s3": {
+				"bucket": "my-bucket",
+				"key": "foo.tfstate",
+				"region": "us-east-1"
+			}
 		}
 	},
 	"variable": {

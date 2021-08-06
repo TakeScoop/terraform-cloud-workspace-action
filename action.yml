@@ -23,8 +23,7 @@ inputs:
     description: Comma separated list of workspaces
     default: ""
   backend_config:
-    description: Backend config block
-    default: ""
+    description: YAML encoded backend configurations
   apply:
     description: Whether to apply the proposed Terraform changes
     required: true

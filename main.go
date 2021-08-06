@@ -106,11 +106,14 @@ func main() {
 
 	teamAccess := MergeWorkspaceIDs(teamInputs, workspaces)
 
+	wsBackend, err := ParseBackend(githubactions.GetInput("backend_config"))
+	if err != nil {
+		log.Fatalf("Failed to parse backend: %s", err)
+	}
+
 	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
 		TerraformBackendConfig: &WorkspaceTerraform{
-			Backend: WorkspaceBackend{
-				S3: &S3BackendConfig{},
-			},
+			Backend: *wsBackend,
 		},
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
@@ -161,17 +164,7 @@ func main() {
 		log.Fatalf("error creating Terraform client: %s", err)
 	}
 
-	bcfg := strings.Split(
-		strings.TrimSpace(githubactions.GetInput("backend_config")),
-		"\n",
-	)
-
-	var backendConfigs []tfexec.InitOption
-	for _, val := range bcfg {
-		backendConfigs = append(backendConfigs, tfexec.BackendConfig(val))
-	}
-
-	if err = tf.Init(ctx, backendConfigs...); err != nil {
+	if err = tf.Init(ctx); err != nil {
 		log.Fatalf("error running Init: %s", err)
 	}
 
