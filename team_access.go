@@ -4,6 +4,7 @@ type TeamAccess struct {
 	Access        string                 `yaml:"access,omitempty"`
 	Permissions   *TeamAccessPermissions `yaml:"permissions,omitempty"`
 	TeamName      string                 `yaml:"team_name"`
+	ResourceName  string                 `yaml:"resource_name"`
 	WorkspaceName string
 }
 
@@ -29,4 +30,12 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) []TeamA
 	}
 
 	return ts
+}
+
+func (ta TeamAccess) GetResourceName() string {
+	if ta.ResourceName != "" {
+		return ta.ResourceName
+	}
+
+	return ta.TeamName
 }

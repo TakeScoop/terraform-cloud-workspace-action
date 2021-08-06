@@ -621,6 +621,17 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
+			RemoteStates: map[string]RemoteState{
+				"tfe": {
+					Backend: "remote",
+					Config: RemoteStateBackendConfig{
+						Organization: "org",
+						Workspaces: &RemoteStateBackendConfigWorkspaces{
+							Name: "tfe",
+						},
+					},
+				},
+			},
 			TeamAccess: []TeamAccess{
 				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
 				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
@@ -630,6 +641,12 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
 				}},
+				{
+					ResourceName:  "engineering_department",
+					TeamName:      "${data.terraform_remote_state.tfe.outputs[\"Engineering (Department)\"].name}",
+					WorkspaceName: name,
+					Access:        "read",
+				},
 			},
 		})
 		if err != nil {
