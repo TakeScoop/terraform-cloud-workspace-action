@@ -150,8 +150,6 @@ func main() {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
 
-	fmt.Println(string(b))
-
 	workDir, err := ioutil.TempDir("", name)
 	if err != nil {
 		log.Fatal(err)
@@ -165,16 +163,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating Terraform client: %s", err)
 	}
-
-	// bcfg := strings.Split(
-	// 	strings.TrimSpace(githubactions.GetInput("backend_config")),
-	// 	"\n",
-	// )
-
-	// var backendConfigs []tfexec.InitOption
-	// for _, val := range bcfg {
-	// 	backendConfigs = append(backendConfigs, tfexec.BackendConfig(val))
-	// }
 
 	if err = tf.Init(ctx); err != nil {
 		log.Fatalf("error running Init: %s", err)
