@@ -150,8 +150,6 @@ func main() {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
 
-	fmt.Println(string(b))
-
 	workDir, err := ioutil.TempDir("", name)
 	if err != nil {
 		log.Fatal(err)
