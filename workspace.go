@@ -15,19 +15,8 @@ type WorkspaceConfig struct {
 	Data      map[string]map[string]interface{} `json:"data,omitempty"`
 }
 
-type WorkspaceBackend struct {
-	S3    *S3BackendConfig    `json:"s3,omitempty"`
-	Local *LocalBackendConfig `json:"local,omitempty"`
-}
-
 type WorkspaceTerraform struct {
 	Backend WorkspaceBackend `json:"backend"`
-}
-
-type S3BackendConfig struct{}
-
-type LocalBackendConfig struct {
-	Path string `json:"path,omitempty"`
 }
 
 type WorkspaceVariable struct {

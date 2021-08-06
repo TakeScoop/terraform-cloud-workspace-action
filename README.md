@@ -16,6 +16,11 @@ jobs:
           terraform_token: "${{ secrets.TF_TOKEN }}"
           terraform_organization: "my-org"
           apply: "${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
+          backend_config: |-
+            s3:
+              bucket: my-bucket
+              key: foo.tfstate
+              region: us-east-1
 ```
 
 ## Inputs
@@ -27,7 +32,7 @@ jobs:
 | `terraform_token`  | (required) Terraform Cloud token | |
 | `agent_pool_id` | ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent" | |
 | `auto_apply` | Whether to set auto_apply on the workspace or workspaces | true |
-| `backend_config` | Backend config block | `""` |
+| `backend_config` | YAML encoded backend configurations | |
 | `execution_mode` | Execution mode to use for the workspace | |
 | `file_triggers_enabled` | Whether to filter runs based on the changed files in a VCS push | |
 | `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |
@@ -50,6 +55,23 @@ jobs:
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | `""` |
 | `workspaces` | Comma separated list of workspaces | `""` |
+
+### Backend Config
+
+This project supports two backend types, `S3` and `local`
+
+```yml
+with:
+  ...
+  backend_config: |-
+    s3:
+      bucket: my-bucket
+      key: foo.tfstate
+      region: us-east-1
+      role_arn: arn:aws:iam::123456789:role/terraform
+      access_key: xxx
+      secret_key: xxx
+```
 
 ### Variables and Workspace Variables
 
