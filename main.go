@@ -26,6 +26,7 @@ func main() {
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
+	verbose := inputs.GetBool(githubactions.GetInput("verbose"))
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", host),
@@ -148,6 +149,10 @@ func main() {
 	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
+	}
+
+	if verbose {
+		fmt.Println(string(b))
 	}
 
 	workDir, err := ioutil.TempDir("", name)

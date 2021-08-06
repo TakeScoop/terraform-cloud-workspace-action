@@ -75,6 +75,9 @@ inputs:
   team_access:
     description: YAML encoded teams and their associated permissions to be granted to the created workspaces
     required: false
+  verbose:
+    description: Log additional run information
+    default: false
 outputs:
   plan:
     description: Human readable Terraform plan
