@@ -444,27 +444,27 @@ func TestAddTeamAccess(t *testing.T) {
 		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
 	}, "org")
 
-	assert.Equal(t, wsConfig.Data["tfe_team"]["team_access_0"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
 		Name:         "Writers",
 		Organization: "org",
 	})
-	assert.Equal(t, wsConfig.Data["tfe_team"]["team_access_1"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
 		Name:         "Readers",
 		Organization: "org",
 	})
 
 	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-team_access_0"],
+		wsConfig.Resources["tfe_team_access"]["workspace-Writers"],
 		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.team_access_0.id}",
+			TeamID:      "${data.tfe_team.Writers.id}",
 			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 			Access:      "write",
 		},
 	)
 	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-team_access_1"],
+		wsConfig.Resources["tfe_team_access"]["workspace-Readers"],
 		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.team_access_1.id}",
+			TeamID:      "${data.tfe_team.Readers.id}",
 			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 			Access:      "read",
 		},

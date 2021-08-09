@@ -199,8 +199,8 @@ func main() {
 			}
 		}
 
-		for i, ta := range teamAccess {
-			if err = ta.Import(ctx, tf, client, org, ta.GetResourceName(i), opts...); err != nil {
+		for _, ta := range teamAccess {
+			if err = ta.Import(ctx, tf, client, org, opts...); err != nil {
 				log.Fatalf("Error importing team access: %s\n", err)
 			}
 		}

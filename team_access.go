@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -41,17 +42,19 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) []TeamA
 }
 
 // GetResourceName returns the resource name used for the team and access resources in the Terraform configuration
-func (ta TeamAccess) GetResourceName(teamAccessIndex int) string {
-	return fmt.Sprintf("team_access_%d", teamAccessIndex)
+func (ta TeamAccess) GetResourceName() string {
+	//  Remove all non word characters
+	rx := regexp.MustCompile(`\W`)
+	return rx.ReplaceAllString(ta.TeamName, "")
 }
 
 // Import imports a team access resource by looking up an existing relation
-func (ta *TeamAccess) Import(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, resourceName string, opts ...tfexec.ImportOption) error {
+func (ta *TeamAccess) Import(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, opts ...tfexec.ImportOption) error {
 	if strings.HasPrefix("${", ta.TeamName) {
 		return fmt.Errorf("importing remote state team access references is not currently supported, use real team name and revert if desired")
 	}
 
-	address := fmt.Sprintf("tfe_team_access[\"%s-%s\"]", ta.WorkspaceName, resourceName)
+	address := fmt.Sprintf("tfe_team_access[\"%s-%s\"]", ta.WorkspaceName, ta.GetResourceName())
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
