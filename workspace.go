@@ -229,9 +229,9 @@ type WorkspaceTeamAccessResource struct {
 }
 
 // NewWorkspaceTeamAccessResource takes a Team object and uses it to fill a new WorkspaceTeamAccessResource
-func NewWorkspaceTeamAccessResource(ta *TeamAccess) *WorkspaceTeamAccessResource {
+func NewWorkspaceTeamAccessResource(ta *TeamAccess, resourceName string) *WorkspaceTeamAccessResource {
 	return &WorkspaceTeamAccessResource{
-		TeamID:      fmt.Sprintf("${data.tfe_team.%s.id}", ta.TeamName),
+		TeamID:      fmt.Sprintf("${data.tfe_team.%s.id}", resourceName),
 		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", ta.WorkspaceName),
 		Access:      ta.Access,
 		Permissions: ta.Permissions,
@@ -252,17 +252,18 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 	ws.Data["tfe_team"] = map[string]interface{}{}
 	ws.Resources["tfe_team_access"] = map[string]interface{}{}
 
-	for _, ta := range teamAccess {
+	for i, ta := range teamAccess {
+		resourceName := ta.GetResourceName(i)
 
-		_, ok := ws.Data["tfe_team"][ta.TeamName]
+		_, ok := ws.Data["tfe_team"][resourceName]
 		if !ok {
-			ws.Data["tfe_team"][ta.TeamName] = TeamDataResource{
+			ws.Data["tfe_team"][resourceName] = TeamDataResource{
 				Name:         ta.TeamName,
 				Organization: organization,
 			}
 		}
 
-		ws.Resources["tfe_team_access"][fmt.Sprintf("%s-%s", ta.WorkspaceName, ta.TeamName)] = NewWorkspaceTeamAccessResource(&ta)
+		ws.Resources["tfe_team_access"][fmt.Sprintf("%s-%s", ta.WorkspaceName, resourceName)] = NewWorkspaceTeamAccessResource(&ta, resourceName)
 	}
 }
 
