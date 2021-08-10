@@ -76,8 +76,8 @@ func main() {
 	if githubactions.GetInput("workspaces") == "" {
 		workspaces = append(workspaces, name)
 	} else {
-		for _, ws := range strings.Split(githubactions.GetInput("workspaces"), ",") {
-			workspaces = append(workspaces, fmt.Sprintf("%s-%s", name, strings.TrimSpace(ws)))
+		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), workspaces); err != nil {
+			log.Fatalf("Failed to parse workspaces: %s", err)
 		}
 	}
 
