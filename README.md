@@ -47,6 +47,7 @@ jobs:
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
 | `terraform_version` | Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
+| `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
 | `variables` | YAML encoded variables to apply to all workspaces | `""`
 | `vcs_ingress_submodules` | Whether to allow submodule ingress | `false` |
 | `vcs_repo` | Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed | `"${{ github.repository }}"` |

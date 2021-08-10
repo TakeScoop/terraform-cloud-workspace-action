@@ -112,9 +112,7 @@ func main() {
 	}
 
 	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-		TerraformBackendConfig: &WorkspaceTerraform{
-			Backend: *wsBackend,
-		},
+		Backend: wsBackend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 			AutoApply:              inputs.GetBoolPtr("auto_apply"),
@@ -140,6 +138,16 @@ func main() {
 		RemoteStates: remoteStates,
 		Variables:    vars,
 		TeamAccess:   teamAccess,
+		Providers: []Provider{
+			{
+				Name:    "tfe",
+				Version: githubactions.GetInput("tfe_provider_version"),
+				Source:  "hashicorp/tfe",
+				Config: TFEProvider{
+					Hostname: host,
+				},
+			},
+		},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create new workspace configuration: %s", err)
