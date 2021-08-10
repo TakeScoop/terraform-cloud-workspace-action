@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type Workspace struct {
@@ -348,4 +349,19 @@ func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
 
 	ws.Providers = providerConfigs
 	ws.Terraform.RequiredProviders = versions
+}
+
+// PlanWorkspaceDeletion takes a Terraform plan and looks for whether the delete action is associated with any tfe_workspace resource
+func PlanForDeletion(plan *tfjson.Plan, targetType string) bool {
+	for _, res := range plan.ResourceChanges {
+		if res.Type == targetType {
+			for _, change := range res.Change.Actions {
+				if change == tfjson.ActionDelete {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

@@ -78,6 +78,9 @@ inputs:
   team_access:
     description: YAML encoded teams and their associated permissions to be granted to the created workspaces
     required: false
+  allow_workspace_deletion:
+    description: Whether to allow deletion for the workspace resources
+    default: false
 outputs:
   plan:
     description: Human readable Terraform plan

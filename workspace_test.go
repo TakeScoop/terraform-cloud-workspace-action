@@ -622,3 +622,53 @@ func TestNewWorkspaceConfig(t *testing.T) {
 		assert.Equal(t, output.Valid, true, output.Diagnostics)
 	})
 }
+
+func planWithWorkspaceAction(actions tfjson.Actions) *tfjson.Plan {
+	return &tfjson.Plan{
+		ResourceChanges: []*tfjson.ResourceChange{
+			{
+				Address:      "tfe_variable.deployments-test-environment",
+				Mode:         "managed",
+				Type:         "tfe_variable",
+				Name:         "deployments-test-environment",
+				ProviderName: "registry.terraform.io/hashicorp/tfe",
+				Change: &tfjson.Change{
+					Actions: tfjson.Actions{
+						tfjson.ActionCreate,
+					},
+					Before:       map[string]interface{}{},
+					After:        map[string]interface{}{},
+					AfterUnknown: map[string]interface{}{},
+				},
+			},
+			{
+				Address:      "tfe_workspace.workspace[\"workspace-foo\"]",
+				Mode:         "managed",
+				Type:         "tfe_workspace",
+				Name:         "workspace",
+				Index:        "workspace-foo",
+				ProviderName: "registry.terraform.io/hashicorp/tfe",
+				Change: &tfjson.Change{
+					Actions:      actions,
+					Before:       map[string]interface{}{},
+					After:        map[string]interface{}{},
+					AfterUnknown: map[string]interface{}{},
+				},
+			},
+		},
+	}
+}
+
+func TestPlanWorkspaceDeletion(t *testing.T) {
+	t.Run("return false when a tfe_workspace not set for deletion", func(t *testing.T) {
+		plan := planWithWorkspaceAction(tfjson.Actions{tfjson.ActionCreate})
+
+		assert.Equal(t, PlanForDeletion(plan, "tfe_workspace"), false)
+	})
+
+	t.Run("return true when a tfe_workspace is set to be deleted", func(t *testing.T) {
+		plan := planWithWorkspaceAction(tfjson.Actions{tfjson.ActionDelete})
+
+		assert.Equal(t, PlanForDeletion(plan, "tfe_workspace"), true)
+	})
+}
