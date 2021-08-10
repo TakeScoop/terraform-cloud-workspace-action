@@ -16,13 +16,13 @@ type TeamAccessPermissions struct {
 }
 
 // MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaceNames []string) []TeamAccess {
-	ts := make([]TeamAccess, len(teamAccess)*len(workspaceNames))
+func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamAccess {
+	ts := make([]TeamAccess, len(teamAccess)*len(workspaces))
 
 	i := 0
 	for _, team := range teamAccess {
-		for _, name := range workspaceNames {
-			team.WorkspaceName = name
+		for _, ws := range workspaces {
+			team.WorkspaceName = ws.Name
 			ts[i] = team
 			i = i + 1
 		}
