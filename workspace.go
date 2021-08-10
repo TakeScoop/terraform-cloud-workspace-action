@@ -13,11 +13,18 @@ type WorkspaceConfig struct {
 	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
 	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
 	Data      map[string]map[string]interface{} `json:"data,omitempty"`
-	Providers map[string]WorkspaceProvider      `json:"provider"`
+	Providers map[string]ProviderConfig         `json:"provider,omitempty"`
+}
+
+type ProviderVersion struct {
+	Source  string `json:"source,omitempty"`
+	Version string `json:"version"`
 }
 
 type WorkspaceTerraform struct {
-	Backend WorkspaceBackend `json:"backend"`
+	Backend           WorkspaceBackend           `json:"backend"`
+	RequiredVersion   string                     `json:"required_version,omitempty"`
+	RequiredProviders map[string]ProviderVersion `json:"required_providers,omitempty"`
 }
 
 type WorkspaceVariable struct {
@@ -76,12 +83,6 @@ type WorkspaceVariableResource struct {
 	Category    string `json:"category,omitempty"`
 	WorkspaceID string `json:"workspace_id,omitempty"`
 	Sensitive   bool   `json:"sensitive,omitempty"`
-}
-
-type WorkspaceProvider struct {
-	Version  string `json:"version"`
-	Hostname string `json:"hostname"`
-	Token    string `json:"token,omitempty"`
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
@@ -287,13 +288,13 @@ func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) 
 }
 
 type NewWorkspaceConfigOptions struct {
-	TerraformBackendConfig   *WorkspaceTerraform
+	Backend                  *WorkspaceBackend
 	WorkspaceVariables       map[string]WorkspaceVariable
 	RemoteStates             map[string]RemoteState
 	Variables                []Variable
 	TeamAccess               []TeamAccess
 	WorkspaceResourceOptions *WorkspaceResourceOptions
-	Providers                map[string]WorkspaceProvider
+	Providers                []Provider
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
@@ -304,7 +305,9 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 	}
 
 	wsConfig := &WorkspaceConfig{
-		Terraform: *config.TerraformBackendConfig,
+		Terraform: WorkspaceTerraform{
+			Backend: *config.Backend,
+		},
 		Variables: config.WorkspaceVariables,
 		Data:      map[string]map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{
@@ -312,12 +315,32 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 				"workspace": wsResource,
 			},
 		},
-		Providers: config.Providers,
 	}
 
 	wsConfig.AddRemoteStates(config.RemoteStates)
 	wsConfig.AddVariables(config.Variables)
 	wsConfig.AddTeamAccess(config.TeamAccess, wsResource.Organization)
+	wsConfig.AddProviders(config.Providers)
 
 	return wsConfig, nil
+}
+
+func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
+	if len(providers) == 0 {
+		return
+	}
+
+	versions := map[string]ProviderVersion{}
+	providerConfigs := map[string]ProviderConfig{}
+
+	for _, p := range providers {
+		versions[p.Name] = ProviderVersion{
+			Source:  p.Source,
+			Version: p.Version,
+		}
+		providerConfigs[p.Name] = p.Config
+	}
+
+	ws.Providers = providerConfigs
+	ws.Terraform.RequiredProviders = versions
 }

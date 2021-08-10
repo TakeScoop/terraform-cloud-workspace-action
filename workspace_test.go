@@ -374,6 +374,21 @@ func TestAddTeamAccess(t *testing.T) {
 	)
 }
 
+func TestAddProviders(t *testing.T) {
+	wsConfig := WorkspaceConfig{
+		Data:      map[string]map[string]interface{}{},
+		Resources: map[string]map[string]interface{}{},
+	}
+
+	wsConfig.AddProviders([]Provider{
+		{Name: "tfe", Version: "0.25.0", Source: "hashicorp/tfe", Config: TFEProvider{Hostname: "app.terraform.io"}},
+	})
+
+	assert.Equal(t, wsConfig.Providers["tfe"].(TFEProvider).Hostname, "app.terraform.io")
+	assert.Equal(t, wsConfig.Terraform.RequiredProviders["tfe"].Source, "hashicorp/tfe")
+	assert.Equal(t, wsConfig.Terraform.RequiredProviders["tfe"].Version, "0.25.0")
+}
+
 func RunValidate(ctx context.Context, name string, tfexecPath string, wsConfig *WorkspaceConfig) (*tfjson.ValidateOutput, error) {
 	b, err := json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
@@ -445,10 +460,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate basic workspace config", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			TerraformBackendConfig: &WorkspaceTerraform{
-				Backend: WorkspaceBackend{
-					Local: &LocalBackendConfig{},
-				},
+			Backend: &WorkspaceBackend{
+				Local: &LocalBackendConfig{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
@@ -458,10 +471,40 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
-			Providers: map[string]WorkspaceProvider{
-				"tfe": {
-					Version:  "~> 0.25.3",
-					Hostname: "app.terraform.io",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate workspace with passed providers", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			Backend: &WorkspaceBackend{
+				Local: &LocalBackendConfig{},
+			},
+			Providers: []Provider{
+				{
+					Name:    "tfe",
+					Version: "0.25.0",
+					Source:  "hashicorp/tfe",
+					Config: TFEProvider{
+						Hostname: "app.terraform.io",
+					},
+				},
+			},
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]WorkspaceVariable{
+				"workspace_names": {
+					Type: "set(string)",
 				},
 			},
 		})
@@ -479,16 +522,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with remote states", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			TerraformBackendConfig: &WorkspaceTerraform{
-				Backend: WorkspaceBackend{
-					Local: &LocalBackendConfig{},
-				},
-			},
-			Providers: map[string]WorkspaceProvider{
-				"tfe": {
-					Version:  "~> 0.25.3",
-					Hostname: "app.terraform.io",
-				},
+			Backend: &WorkspaceBackend{
+				Local: &LocalBackendConfig{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
@@ -523,16 +558,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with team access", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			TerraformBackendConfig: &WorkspaceTerraform{
-				Backend: WorkspaceBackend{
-					Local: &LocalBackendConfig{},
-				},
-			},
-			Providers: map[string]WorkspaceProvider{
-				"tfe": {
-					Version:  "~> 0.25.3",
-					Hostname: "app.terraform.io",
-				},
+			Backend: &WorkspaceBackend{
+				Local: &LocalBackendConfig{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
@@ -567,16 +594,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with variables", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			TerraformBackendConfig: &WorkspaceTerraform{
-				Backend: WorkspaceBackend{
-					Local: &LocalBackendConfig{},
-				},
-			},
-			Providers: map[string]WorkspaceProvider{
-				"tfe": {
-					Version:  "~> 0.25.3",
-					Hostname: "app.terraform.io",
-				},
+			Backend: &WorkspaceBackend{
+				Local: &LocalBackendConfig{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
