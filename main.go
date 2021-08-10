@@ -157,6 +157,7 @@ func main() {
 				Source:  "hashicorp/tfe",
 				Config: TFEProvider{
 					Hostname: host,
+					Token:    token,
 				},
 			},
 		},
