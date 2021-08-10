@@ -13,6 +13,7 @@ type WorkspaceConfig struct {
 	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
 	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
 	Data      map[string]map[string]interface{} `json:"data,omitempty"`
+	Providers map[string]WorkspaceProvider      `json:"provider"`
 }
 
 type WorkspaceTerraform struct {
@@ -75,6 +76,12 @@ type WorkspaceVariableResource struct {
 	Category    string `json:"category,omitempty"`
 	WorkspaceID string `json:"workspace_id,omitempty"`
 	Sensitive   bool   `json:"sensitive,omitempty"`
+}
+
+type WorkspaceProvider struct {
+	Version  string `json:"version"`
+	Hostname string `json:"hostname"`
+	Token    string `json:"token,omitempty"`
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
@@ -286,6 +293,7 @@ type NewWorkspaceConfigOptions struct {
 	Variables                []Variable
 	TeamAccess               []TeamAccess
 	WorkspaceResourceOptions *WorkspaceResourceOptions
+	Providers                map[string]WorkspaceProvider
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
@@ -304,6 +312,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 				"workspace": wsResource,
 			},
 		},
+		Providers: config.Providers,
 	}
 
 	wsConfig.AddRemoteStates(config.RemoteStates)

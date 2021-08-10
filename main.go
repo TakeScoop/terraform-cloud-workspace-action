@@ -140,6 +140,12 @@ func main() {
 		RemoteStates: remoteStates,
 		Variables:    vars,
 		TeamAccess:   teamAccess,
+		Providers: map[string]WorkspaceProvider{
+			"tfe": {
+				Version:  githubactions.GetInput("tfe_provider_version"),
+				Hostname: host,
+			},
+		},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create new workspace configuration: %s", err)

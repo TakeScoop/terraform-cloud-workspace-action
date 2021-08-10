@@ -125,103 +125,6 @@ func TestWorkspaceJSONRender(t *testing.T) {
 	"terraform_version": "${var.terraform_version}"
 }`)
 	})
-
-	t.Run("render a full JSON workspace configuration", func(t *testing.T) {
-		b, err := json.MarshalIndent(WorkspaceConfig{
-			Terraform: WorkspaceTerraform{
-				Backend: WorkspaceBackend{
-					S3: &S3BackendConfig{
-						Bucket: "my-bucket",
-						Key:    "foo.tfstate",
-						Region: "us-east-1",
-					},
-				},
-			},
-			Variables: map[string]WorkspaceVariable{
-				"workspace_names": {
-					Type: "set(string)",
-				},
-				"variables": {
-					Type: "set(map(string))",
-				},
-			},
-			Resources: map[string]map[string]interface{}{
-				"tfe_workspace": {
-					"workspace": WorkspaceWorkspaceResource{
-						ForEach:          "${var.workspace_names}",
-						Name:             "${each.value}",
-						Organization:     "org",
-						AutoApply:        boolPtr(false),
-						TerraformVersion: "1.0.0",
-						VCSRepo: &WorkspaceVCSBlock{
-							OauthTokenID:      "12345",
-							Identifier:        "org/repo",
-							IngressSubmodules: true,
-						},
-					},
-				},
-				"tfe_variable": {
-					"variables": WorkspaceVariableResource{
-						ForEach:     "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" => v }}",
-						Description: "${each.value.description}",
-						Key:         "${each.value.key}",
-						Value:       "${each.value.value}",
-						Category:    "${each.value.category}",
-						WorkspaceID: "${tfe_workspace.workspace[each.value.workspace_name].id}",
-					},
-				},
-			},
-		}, "", "\t")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assert.Equal(t, string(b), `{
-	"terraform": {
-		"backend": {
-			"s3": {
-				"bucket": "my-bucket",
-				"key": "foo.tfstate",
-				"region": "us-east-1"
-			}
-		}
-	},
-	"variable": {
-		"variables": {
-			"type": "set(map(string))"
-		},
-		"workspace_names": {
-			"type": "set(string)"
-		}
-	},
-	"resource": {
-		"tfe_variable": {
-			"variables": {
-				"for_each": "${{ for k, v in var.variables : \"${v.workspace_name}-${v.key}\" =\u003e v }}",
-				"key": "${each.value.key}",
-				"value": "${each.value.value}",
-				"description": "${each.value.description}",
-				"category": "${each.value.category}",
-				"workspace_id": "${tfe_workspace.workspace[each.value.workspace_name].id}"
-			}
-		},
-		"tfe_workspace": {
-			"workspace": {
-				"for_each": "${var.workspace_names}",
-				"auto_apply": false,
-				"name": "${each.value}",
-				"organization": "org",
-				"terraform_version": "1.0.0",
-				"vcs_repo": {
-					"oauth_token_id": "12345",
-					"identifier": "org/repo",
-					"ingress_submodules": true
-				}
-			}
-		}
-	}
-}`)
-	})
 }
 
 func TestNewWorkspaceResource(t *testing.T) {
@@ -555,6 +458,12 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
+			Providers: map[string]WorkspaceProvider{
+				"tfe": {
+					Version:  "~> 0.25.3",
+					Hostname: "app.terraform.io",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -573,6 +482,12 @@ func TestNewWorkspaceConfig(t *testing.T) {
 			TerraformBackendConfig: &WorkspaceTerraform{
 				Backend: WorkspaceBackend{
 					Local: &LocalBackendConfig{},
+				},
+			},
+			Providers: map[string]WorkspaceProvider{
+				"tfe": {
+					Version:  "~> 0.25.3",
+					Hostname: "app.terraform.io",
 				},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
@@ -613,6 +528,12 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Local: &LocalBackendConfig{},
 				},
 			},
+			Providers: map[string]WorkspaceProvider{
+				"tfe": {
+					Version:  "~> 0.25.3",
+					Hostname: "app.terraform.io",
+				},
+			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -649,6 +570,12 @@ func TestNewWorkspaceConfig(t *testing.T) {
 			TerraformBackendConfig: &WorkspaceTerraform{
 				Backend: WorkspaceBackend{
 					Local: &LocalBackendConfig{},
+				},
+			},
+			Providers: map[string]WorkspaceProvider{
+				"tfe": {
+					Version:  "~> 0.25.3",
+					Hostname: "app.terraform.io",
 				},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{

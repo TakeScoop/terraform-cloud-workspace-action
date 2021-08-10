@@ -13,6 +13,9 @@ inputs:
   terraform_organization:
     description: Terraform Cloud organization
     required: true
+  tfe_provider_version:
+    description: Terraform Cloud provider version
+    default: ~> 0.25.0
   name:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`)
     default: "${{ github.event.repository.name }}"
