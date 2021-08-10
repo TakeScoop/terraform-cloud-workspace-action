@@ -27,6 +27,7 @@ jobs:
 
 | Name | Description | Default |
 | --- | --- | --- |
+| `allow_workspace_deletion` | Whether to allow the lan run to proceed if the a workspace is planned for deletion | `false` |
 | `apply` | (required) Whether to apply the proposed Terraform changes | |
 | `terraform_organization` | (required) Terraform Cloud organization | |
 | `terraform_token`  | (required) Terraform Cloud token | |
