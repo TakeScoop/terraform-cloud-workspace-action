@@ -71,13 +71,25 @@ func main() {
 		log.Fatalf("Failed to parse remote state blocks%s", err)
 	}
 
-	var workspaces []string
+	var workspaces []*Workspace
 
 	if githubactions.GetInput("workspaces") == "" {
-		workspaces = append(workspaces, name)
+		workspaces = append(workspaces, &Workspace{
+			Name:      name,
+			Workspace: "default",
+		})
 	} else {
-		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), workspaces); err != nil {
+		var wsNames []string
+
+		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), wsNames); err != nil {
 			log.Fatalf("Failed to parse workspaces: %s", err)
+		}
+
+		for _, wsn := range wsNames {
+			workspaces = append(workspaces, &Workspace{
+				Name:      fmt.Sprintf("%s-%s", name, wsn),
+				Workspace: wsn,
+			})
 		}
 	}
 
@@ -176,7 +188,12 @@ func main() {
 		log.Fatalf("error running Init: %s", err)
 	}
 
-	wsBytes, err := json.Marshal(workspaces)
+	wsNames := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		wsNames[i] = ws.Name
+	}
+
+	wsBytes, err := json.Marshal(wsNames)
 	if err != nil {
 		log.Fatalf("error marshalling workspaces input: %s", err)
 	}
@@ -193,8 +210,8 @@ func main() {
 			opts[i] = v
 		}
 
-		for _, name := range workspaces {
-			err = ImportWorkspace(ctx, tf, client, name, org, opts...)
+		for _, ws := range workspaces {
+			err = ImportWorkspace(ctx, tf, client, ws.Name, org, opts...)
 			if err != nil {
 				log.Fatal(err)
 			}

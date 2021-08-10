@@ -13,13 +13,16 @@ func TestMergeWorkspaceIDs(t *testing.T) {
 				{Access: "read", TeamName: "readers"},
 				{Access: "write", TeamName: "writers"},
 			},
-			[]string{"staging", "production"},
+			[]*Workspace{
+				{Name: "api-staging", Workspace: "staging"},
+				{Name: "api-production", Workspace: "staging"},
+			},
 		),
 		[]TeamAccess{
-			{Access: "read", TeamName: "readers", WorkspaceName: "staging"},
-			{Access: "read", TeamName: "readers", WorkspaceName: "production"},
-			{Access: "write", TeamName: "writers", WorkspaceName: "staging"},
-			{Access: "write", TeamName: "writers", WorkspaceName: "production"},
+			{Access: "read", TeamName: "readers", WorkspaceName: "api-staging"},
+			{Access: "read", TeamName: "readers", WorkspaceName: "api-production"},
+			{Access: "write", TeamName: "writers", WorkspaceName: "api-staging"},
+			{Access: "write", TeamName: "writers", WorkspaceName: "api-production"},
 		},
 	)
 }
