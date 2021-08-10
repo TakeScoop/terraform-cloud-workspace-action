@@ -13,15 +13,6 @@ type Variable struct {
 	WorkspaceName string
 }
 
-func contains(strings []string, target string) bool {
-	for _, v := range strings {
-		if v == target {
-			return true
-		}
-	}
-	return false
-}
-
 func findWorkspace(workspaces []*Workspace, target string) *Workspace {
 	for _, v := range workspaces {
 		if v.Workspace == target {
