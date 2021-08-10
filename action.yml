@@ -69,6 +69,9 @@ inputs:
     description: Whether the workspace should start automatically performing runs immediately after creation
   speculative_enabled:
     description: Whether the workspace allows speculative plans
+  skip_validate:
+    description: Whether to skip `terraform validate` for the proposed resources
+    default: false
   ssh_key_id:
     description: SSH key ID to assign the workspace
   file_triggers_enabled:

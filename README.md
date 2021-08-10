@@ -43,6 +43,7 @@ jobs:
 | `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
+| `skip_validate` | Whether to skip `terraform validate` for the proposed resources | `false` |
 | `ssh_key_id` | SSH key ID to assign the workspace | |
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
 | `terraform_version` | Terraform version | `1.0.3` |

@@ -188,6 +188,17 @@ func main() {
 		log.Fatalf("error running Init: %s", err)
 	}
 
+	if !inputs.GetBool("skip_validate") {
+		output, err := tf.Validate(ctx)
+		if err != nil {
+			log.Fatalf("error validating the workspace: %s", err)
+		}
+
+		if !output.Valid {
+			log.Fatalf("validation failure: %v", output.Diagnostics)
+		}
+	}
+
 	wsNames := make([]string, len(workspaces))
 	for i, ws := range workspaces {
 		wsNames[i] = ws.Name
