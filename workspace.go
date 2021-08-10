@@ -351,7 +351,7 @@ func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
 	ws.Terraform.RequiredProviders = versions
 }
 
-// PlanWorkspaceDeletion takes a Terraform plan and looks for whether the delete action is associated with any tfe_workspace resource
+// PlanWorkspaceDeletion parses a plan to look for whether the delete action is associated with any target resource
 func PlanForDeletion(plan *tfjson.Plan, targetType string) bool {
 	for _, res := range plan.ResourceChanges {
 		if res.Type == targetType {
