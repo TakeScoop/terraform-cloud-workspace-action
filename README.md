@@ -54,7 +54,7 @@ jobs:
 | `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | `""` |
-| `workspaces` | Comma separated list of workspaces | `""` |
+| `workspaces` | YAML encoded list of workspace names | |
 
 ### Backend Config
 
@@ -80,7 +80,9 @@ Variables are applied to all created workspaces, where workspace variables are a
 ```yml
 ...
 with:
-  workspaces: "staging,production"
+  workspaces: |-
+    - staging
+    - production
   variables: |-
     - key: general-secret
       value: "${{ secrets.SECRET }}"
