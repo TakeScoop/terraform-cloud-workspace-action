@@ -76,8 +76,8 @@ func main() {
 	if githubactions.GetInput("workspaces") == "" {
 		workspaces = append(workspaces, name)
 	} else {
-		for _, ws := range strings.Split(githubactions.GetInput("workspaces"), ",") {
-			workspaces = append(workspaces, fmt.Sprintf("%s-%s", name, strings.TrimSpace(ws)))
+		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), workspaces); err != nil {
+			log.Fatalf("Failed to parse workspaces: %s", err)
 		}
 	}
 
@@ -112,9 +112,7 @@ func main() {
 	}
 
 	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-		TerraformBackendConfig: &WorkspaceTerraform{
-			Backend: *wsBackend,
-		},
+		Backend: wsBackend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 			AutoApply:              inputs.GetBoolPtr("auto_apply"),
@@ -140,6 +138,16 @@ func main() {
 		RemoteStates: remoteStates,
 		Variables:    vars,
 		TeamAccess:   teamAccess,
+		Providers: []Provider{
+			{
+				Name:    "tfe",
+				Version: githubactions.GetInput("tfe_provider_version"),
+				Source:  "hashicorp/tfe",
+				Config: TFEProvider{
+					Hostname: host,
+				},
+			},
+		},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create new workspace configuration: %s", err)

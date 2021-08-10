@@ -47,6 +47,7 @@ jobs:
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
 | `terraform_version` | Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
+| `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
 | `variables` | YAML encoded variables to apply to all workspaces | `""`
 | `vcs_ingress_submodules` | Whether to allow submodule ingress | `false` |
 | `vcs_repo` | Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed | `"${{ github.repository }}"` |
@@ -54,7 +55,7 @@ jobs:
 | `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | `""` |
-| `workspaces` | Comma separated list of workspaces | `""` |
+| `workspaces` | YAML encoded list of workspace names | |
 
 ### Backend Config
 
@@ -80,7 +81,9 @@ Variables are applied to all created workspaces, where workspace variables are a
 ```yml
 ...
 with:
-  workspaces: "staging,production"
+  workspaces: |-
+    - staging
+    - production
   variables: |-
     - key: general-secret
       value: "${{ secrets.SECRET }}"
