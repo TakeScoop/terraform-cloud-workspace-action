@@ -351,8 +351,8 @@ func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
 	ws.Terraform.RequiredProviders = versions
 }
 
-// PlanWorkspaceDeletion parses a plan to look for whether the delete action is associated with any target resource
-func PlanForDeletion(plan *tfjson.Plan, targetType string) bool {
+// WillDestroy parses a plan to look for whether the delete action is associated with any target resource
+func WillDestroy(plan *tfjson.Plan, targetType string) bool {
 	for _, rc := range plan.ResourceChanges {
 		if rc.Type == targetType {
 			for _, action := range rc.Change.Actions {
