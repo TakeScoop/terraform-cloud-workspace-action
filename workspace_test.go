@@ -343,33 +343,63 @@ func TestAddTeamAccess(t *testing.T) {
 	}
 
 	wsConfig.AddTeamAccess([]TeamAccess{
-		{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
-		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
+		{TeamName: "Writers", Access: "write", WorkspaceName: "workspace", ResourceName: "writers"},
+		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace", ResourceName: "readers"},
+		{
+			TeamName:      "${data.terraform_remote_state.team.outputs.team}",
+			WorkspaceName: "workspace",
+			ResourceName:  "custom",
+			Permissions: &TeamAccessPermissions{
+				Runs:             "read",
+				Variables:        "read",
+				StateVersions:    "none",
+				SentinelMocks:    "none",
+				WorkspaceLocking: true,
+			},
+		},
 	}, "org")
 
-	assert.Equal(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["writers"], TeamDataResource{
 		Name:         "Writers",
 		Organization: "org",
 	})
-	assert.Equal(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
+	assert.Equal(t, wsConfig.Data["tfe_team"]["readers"], TeamDataResource{
 		Name:         "Readers",
+		Organization: "org",
+	})
+	assert.Equal(t, wsConfig.Data["tfe_team"]["custom"], TeamDataResource{
+		Name:         "${data.terraform_remote_state.team.outputs.team}",
 		Organization: "org",
 	})
 
 	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-Writers"],
+		wsConfig.Resources["tfe_team_access"]["workspace-writers"],
 		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.Writers.id}",
+			TeamID:      "${data.tfe_team.writers.id}",
 			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 			Access:      "write",
 		},
 	)
 	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-Readers"],
+		wsConfig.Resources["tfe_team_access"]["workspace-readers"],
 		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.Readers.id}",
+			TeamID:      "${data.tfe_team.readers.id}",
 			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 			Access:      "read",
+		},
+	)
+	assert.Equal(t,
+		wsConfig.Resources["tfe_team_access"]["workspace-custom"],
+		&WorkspaceTeamAccessResource{
+			TeamID:      "${data.tfe_team.custom.id}",
+			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+			Permissions: &TeamAccessPermissions{
+				Runs:             "read",
+				Variables:        "read",
+				StateVersions:    "none",
+				SentinelMocks:    "none",
+				WorkspaceLocking: true,
+			},
 		},
 	)
 }
@@ -582,15 +612,15 @@ func TestNewWorkspaceConfig(t *testing.T) {
 				},
 			},
 			TeamAccess: []TeamAccess{
-				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
+				{TeamName: "Readers", WorkspaceName: name, Access: "read", ResourceName: "readers"},
 				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
 					Runs:             "read",
 					Variables:        "read",
 					StateVersions:    "read",
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
-				}},
-				{TeamName: "${data.terraform_remote_state.teams.outputs.team}", WorkspaceName: name, Access: "read"},
+				}, ResourceName: "writers"},
+				{TeamName: "${data.terraform_remote_state.teams.outputs.team}", WorkspaceName: name, Access: "read", ResourceName: "custom"},
 			},
 		})
 		if err != nil {

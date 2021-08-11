@@ -110,7 +110,7 @@ func main() {
 		log.Fatalf("Failed to parse variables: %s", err)
 	}
 
-	var teamInputs []TeamAccess
+	var teamInputs map[string]TeamAccess
 
 	if err = yaml.Unmarshal([]byte(githubactions.GetInput("team_access")), &teamInputs); err != nil {
 		log.Fatalf("Failed to parse teams: %s", err)

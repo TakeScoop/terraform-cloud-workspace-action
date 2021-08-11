@@ -130,16 +130,27 @@ with:
 ```yml
 with:
   team_access: |-
-    - team_name: Readers
+    readers:
+      team_name: Readers
       access: read
-    - team_name: Custom
+    custom:
+      team_name: ${data.terraform_remote_state.teams.outputs.team_name}
       permissions:
         runs: read
         variables: read
         state_versions: read
         sentinel_mocks: read
         workspace_locking: true
+  remote_states: |-
+    team:
+      backend: remote
+      config:
+        bucket: s3-bucket
+        key: terraform.tfstate
+        region: us-east-1
 ```
+
+**Note** Import for referenced `team_name` attributes is currently not supported. Use the real team name in the import phase, and then revert back to the remote state reference after import.
 
 ### Importing existing resources
 

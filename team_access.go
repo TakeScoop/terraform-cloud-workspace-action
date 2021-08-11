@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -15,6 +14,7 @@ type TeamAccess struct {
 	Permissions   *TeamAccessPermissions `yaml:"permissions,omitempty"`
 	TeamName      string                 `yaml:"team_name"`
 	WorkspaceName string
+	ResourceName  string
 }
 
 type TeamAccessPermissions struct {
@@ -26,13 +26,14 @@ type TeamAccessPermissions struct {
 }
 
 // MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamAccess {
+func MergeWorkspaceIDs(teamAccess map[string]TeamAccess, workspaces []*Workspace) []TeamAccess {
 	ts := make([]TeamAccess, len(teamAccess)*len(workspaces))
 
 	i := 0
-	for _, team := range teamAccess {
+	for resourceName, team := range teamAccess {
 		for _, ws := range workspaces {
 			team.WorkspaceName = ws.Name
+			team.ResourceName = resourceName
 			ts[i] = team
 			i = i + 1
 		}
@@ -41,20 +42,13 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamA
 	return ts
 }
 
-// GetResourceName returns the resource name used for the team and access resources in the Terraform configuration
-func (ta TeamAccess) GetResourceName() string {
-	//  Remove all non word characters
-	rx := regexp.MustCompile(`\W`)
-	return rx.ReplaceAllString(ta.TeamName, "")
-}
-
 // Import imports a team access resource by looking up an existing relation
 func (ta *TeamAccess) Import(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, opts ...tfexec.ImportOption) error {
 	if strings.HasPrefix("${", ta.TeamName) {
 		return fmt.Errorf("Team access only supports importing statically named teams, but an expression (${}) was found. Convert the team name to a static string to allow import.")
 	}
 
-	address := fmt.Sprintf("tfe_team_access[\"%s-%s\"]", ta.WorkspaceName, ta.GetResourceName())
+	address := fmt.Sprintf("tfe_team_access[\"%s-%s\"]", ta.WorkspaceName, ta.ResourceName)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
