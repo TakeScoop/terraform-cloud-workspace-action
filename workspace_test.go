@@ -623,52 +623,112 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 }
 
-func planWithWorkspaceAction(actions tfjson.Actions) *tfjson.Plan {
-	return &tfjson.Plan{
-		ResourceChanges: []*tfjson.ResourceChange{
-			{
-				Address:      "tfe_variable.deployments-test-environment",
-				Mode:         "managed",
-				Type:         "tfe_variable",
-				Name:         "deployments-test-environment",
-				ProviderName: "registry.terraform.io/hashicorp/tfe",
-				Change: &tfjson.Change{
-					Actions: tfjson.Actions{
-						tfjson.ActionCreate,
-					},
-					Before:       map[string]interface{}{},
-					After:        map[string]interface{}{},
-					AfterUnknown: map[string]interface{}{},
-				},
-			},
-			{
-				Address:      "tfe_workspace.workspace[\"workspace-foo\"]",
-				Mode:         "managed",
-				Type:         "tfe_workspace",
-				Name:         "workspace",
-				Index:        "workspace-foo",
-				ProviderName: "registry.terraform.io/hashicorp/tfe",
-				Change: &tfjson.Change{
-					Actions:      actions,
-					Before:       map[string]interface{}{},
-					After:        map[string]interface{}{},
-					AfterUnknown: map[string]interface{}{},
-				},
-			},
-		},
-	}
-}
-
 func TestWillDestroy(t *testing.T) {
-	t.Run("return false when a tfe_workspace not set for deletion", func(t *testing.T) {
-		plan := planWithWorkspaceAction(tfjson.Actions{tfjson.ActionCreate})
+	t.Run("return true when a resource is scheduled for deletion", func(t *testing.T) {
+		ctx := context.Background()
 
-		assert.Equal(t, WillDestroy(plan, "tfe_workspace"), false)
+		workDir, err := ioutil.TempDir("", "deletion")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer os.RemoveAll(workDir)
+
+		tf, err := NewTerraformExec(ctx, workDir, "1.0.3")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b := []byte(`
+resource "random_pet" "first" {}
+resource "random_pet" "second" {}
+`)
+
+		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err = tf.Init(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		if err = tf.Apply(ctx); err != nil {
+			t.Fatal()
+		}
+
+		b = []byte(`
+resource "random_pet" "first" {}
+`)
+		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		planPath := "plan.txt"
+
+		if _, err = tf.Plan(ctx, tfexec.Out(planPath)); err != nil {
+			t.Fatal(err)
+		}
+
+		plan, err := tf.ShowPlanFile(ctx, planPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, WillDestroy(plan, "random_pet"), true)
 	})
 
-	t.Run("return true when a tfe_workspace is set to be deleted", func(t *testing.T) {
-		plan := planWithWorkspaceAction(tfjson.Actions{tfjson.ActionDelete})
+	t.Run("return false when a resource is not scheduled for deletion", func(t *testing.T) {
+		ctx := context.Background()
 
-		assert.Equal(t, WillDestroy(plan, "tfe_workspace"), true)
+		workDir, err := ioutil.TempDir("", "no-deletion")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer os.RemoveAll(workDir)
+
+		tf, err := NewTerraformExec(ctx, workDir, "1.0.3")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b := []byte(`
+resource "random_pet" "first" {}
+resource "random_pet" "second" {}
+`)
+
+		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err = tf.Init(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		if err = tf.Apply(ctx); err != nil {
+			t.Fatal()
+		}
+
+		b = []byte(`
+resource "random_pet" "first" {}
+resource "random_pet" "second" {}
+resource "random_pet" "third" {}
+`)
+		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		planPath := "plan.txt"
+
+		if _, err = tf.Plan(ctx, tfexec.Out(planPath)); err != nil {
+			t.Fatal(err)
+		}
+
+		plan, err := tf.ShowPlanFile(ctx, planPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, WillDestroy(plan, "random_pet"), false)
 	})
 }
