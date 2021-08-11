@@ -268,7 +268,7 @@ func main() {
 		githubactions.SetOutput("plan_json", string(b))
 
 		if !inputs.GetBool("allow_workspace_deletion") && PlanForDeletion(plan, "tfe_workspace") {
-			log.Fatal("Error: Workspace planned for deletion. If this is indented, set allow_workspace_deletion to true to proceed.")
+			log.Fatal("Error: Workspace planned for deletion. If this is intententional, set allow_workspace_deletion to true to proceed.")
 		}
 
 		if inputs.GetBool("apply") {
