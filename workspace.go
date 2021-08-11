@@ -269,16 +269,16 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 	dataForEach := map[string]TeamDataResource{}
 	resourceForEach := map[string]WorkspaceTeamAccessResource{}
 
-	for _, ta := range teamAccess {
-		dataForEach[ta.TeamName] = TeamDataResource{
-			Name:         ta.TeamName,
+	for _, access := range teamAccess {
+		dataForEach[access.TeamName] = TeamDataResource{
+			Name:         access.TeamName,
 			Organization: organization,
 		}
-		resourceForEach[fmt.Sprintf("%s-%s", ta.WorkspaceName, ta.TeamName)] = WorkspaceTeamAccessResource{
-			TeamID:      fmt.Sprintf("${data.tfe_team.teams[%q].id}", ta.TeamName),
-			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", ta.WorkspaceName),
-			Access:      ta.Access,
-			Permissions: ta.Permissions,
+		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, access.TeamName)] = WorkspaceTeamAccessResource{
+			TeamID:      fmt.Sprintf("${data.tfe_team.teams[%q].id}", access.TeamName),
+			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
+			Access:      access.Access,
+			Permissions: access.Permissions,
 		}
 	}
 

@@ -225,8 +225,8 @@ func main() {
 			}
 		}
 
-		for _, ta := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, ta.WorkspaceName, ta.TeamName, opts...); err != nil {
+		for _, access := range teamAccess {
+			if err = ImportTeamAccess(ctx, tf, client, org, access.WorkspaceName, access.TeamName, opts...); err != nil {
 				log.Fatalf("Error importing team access: %s\n", err)
 			}
 		}
