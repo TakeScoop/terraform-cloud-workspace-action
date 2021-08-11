@@ -51,7 +51,7 @@ func (ta TeamAccess) GetResourceName() string {
 // Import imports a team access resource by looking up an existing relation
 func (ta *TeamAccess) Import(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, opts ...tfexec.ImportOption) error {
 	if strings.HasPrefix("${", ta.TeamName) {
-		return fmt.Errorf("importing remote state team access references is not currently supported, use real team name and revert if desired")
+		return fmt.Errorf("Team access only supports importing statically named teams, but an expression (${}) was found. Convert the team name to a static string to allow import.")
 	}
 
 	address := fmt.Sprintf("tfe_team_access[\"%s-%s\"]", ta.WorkspaceName, ta.GetResourceName())
