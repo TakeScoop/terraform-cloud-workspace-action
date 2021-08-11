@@ -353,9 +353,9 @@ func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
 
 // PlanWorkspaceDeletion parses a plan to look for whether the delete action is associated with any target resource
 func PlanForDeletion(plan *tfjson.Plan, targetType string) bool {
-	for _, res := range plan.ResourceChanges {
+	for _, rc := range plan.ResourceChanges {
 		if res.Type == targetType {
-			for _, change := range res.Change.Actions {
+			for _, action := range res.Change.Actions {
 				if change == tfjson.ActionDelete {
 					return true
 				}
