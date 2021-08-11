@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type Workspace struct {
@@ -348,4 +349,19 @@ func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
 
 	ws.Providers = providerConfigs
 	ws.Terraform.RequiredProviders = versions
+}
+
+// WillDestroy parses a plan to look for whether the delete action is associated with any target resource
+func WillDestroy(plan *tfjson.Plan, targetType string) bool {
+	for _, rc := range plan.ResourceChanges {
+		if rc.Type == targetType {
+			for _, action := range rc.Change.Actions {
+				if action == tfjson.ActionDelete {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

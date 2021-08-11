@@ -12,7 +12,6 @@ import (
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 	"github.com/sethvargo/go-githubactions"
 	yaml "gopkg.in/yaml.v2"
 
@@ -35,19 +34,16 @@ func main() {
 		log.Fatalf("error configuring Terraform client: %s", err)
 	}
 
-	tmpDir, err := ioutil.TempDir("", "tfinstall")
+	workDir, err := ioutil.TempDir("", name)
 	if err != nil {
 		log.Fatalf("error creating temp dir: %s", err)
 	}
 
-	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(workDir)
 
-	execPath, err := tfinstall.Find(
-		ctx,
-		tfinstall.ExactVersion(githubactions.GetInput("runner_terraform_version"), tmpDir),
-	)
+	tf, err := NewTerraformExec(ctx, workDir, githubactions.GetInput("runner_terraform_version"))
 	if err != nil {
-		log.Fatalf("error locating Terraform binary: %s", err)
+		log.Fatalf("error creating Terraform client: %s", err)
 	}
 
 	b := []byte(fmt.Sprintf(`credentials "%s" {
@@ -171,18 +167,8 @@ func main() {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
 
-	workDir, err := ioutil.TempDir("", name)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		log.Fatal(err)
-	}
-
-	tf, err := tfexec.NewTerraform(workDir, execPath)
-	if err != nil {
-		log.Fatalf("error creating Terraform client: %s", err)
 	}
 
 	if err = tf.Init(ctx); err != nil {
@@ -267,6 +253,10 @@ func main() {
 		}
 
 		githubactions.SetOutput("plan_json", string(b))
+
+		if !inputs.GetBool("allow_workspace_deletion") && WillDestroy(plan, "tfe_workspace") {
+			log.Fatal("Error: Workspace planned for deletion. If this is intentional, set allow_workspace_deletion to true to proceed.")
+		}
 
 		if inputs.GetBool("apply") {
 			fmt.Println("Applying...")
