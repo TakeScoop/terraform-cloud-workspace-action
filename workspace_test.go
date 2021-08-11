@@ -624,60 +624,115 @@ func TestNewWorkspaceConfig(t *testing.T) {
 }
 
 func TestWillDestroy(t *testing.T) {
-	t.Run("return true when a resource is scheduled for deletion", func(t *testing.T) {
-		ctx := context.Background()
+	// 	t.Run("return true when a resource is scheduled for deletion", func(t *testing.T) {
+	// 		ctx := context.Background()
 
-		workDir, err := ioutil.TempDir("", "deletion")
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 		workDir, err := ioutil.TempDir("", "deletion")
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		defer os.RemoveAll(workDir)
+	// 		defer os.RemoveAll(workDir)
 
-		tf, err := NewTerraformExec(ctx, workDir, "1.0.3")
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 		tf, err := NewTerraformExec(ctx, workDir, "1.0.3")
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		b := []byte(`
-resource "random_pet" "first" {}
-resource "random_pet" "second" {}
-`)
+	// 		b := []byte(`
+	// resource "random_pet" "first" {}
+	// resource "random_pet" "second" {}
+	// `)
 
-		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
-			t.Fatal(err)
-		}
+	// 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		if err = tf.Init(ctx); err != nil {
-			t.Fatal(err)
-		}
+	// 		if err = tf.Init(ctx); err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		if err = tf.Apply(ctx); err != nil {
-			t.Fatal()
-		}
+	// 		if err = tf.Apply(ctx); err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		b = []byte(`
-resource "random_pet" "first" {}
-`)
-		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
-			t.Fatal(err)
-		}
+	// 		b = []byte(`
+	// resource "random_pet" "first" {}
+	// `)
+	// 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		planPath := "plan.txt"
+	// 		planPath := "plan.txt"
 
-		if _, err = tf.Plan(ctx, tfexec.Out(planPath)); err != nil {
-			t.Fatal(err)
-		}
+	// 		if _, err = tf.Plan(ctx, tfexec.Out(planPath)); err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		plan, err := tf.ShowPlanFile(ctx, planPath)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 		plan, err := tf.ShowPlanFile(ctx, planPath)
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
 
-		assert.Equal(t, WillDestroy(plan, "random_pet"), true)
-	})
+	// 		assert.Equal(t, WillDestroy(plan, "random_pet"), true)
+	// 	})
 
-	t.Run("return false when a resource is not scheduled for deletion", func(t *testing.T) {
+	// 	t.Run("return false when a resource is not scheduled for deletion", func(t *testing.T) {
+	// 		ctx := context.Background()
+
+	// 		workDir, err := ioutil.TempDir("", "no-deletion")
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		defer os.RemoveAll(workDir)
+
+	// 		tf, err := NewTerraformExec(ctx, workDir, "1.0.3")
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		b := []byte(`
+	// resource "random_pet" "first" {}
+	// resource "random_pet" "second" {}
+	// `)
+
+	// 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		if err = tf.Init(ctx); err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		if err = tf.Apply(ctx); err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		b = []byte(`
+	// resource "random_pet" "first" {}
+	// resource "random_pet" "second" {}
+	// resource "random_pet" "third" {}
+	// `)
+	// 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		planPath := "plan.txt"
+
+	// 		if _, err = tf.Plan(ctx, tfexec.Out(planPath)); err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		plan, err := tf.ShowPlanFile(ctx, planPath)
+	// 		if err != nil {
+	// 			t.Fatal(err)
+	// 		}
+
+	// 		assert.Equal(t, WillDestroy(plan, "random_pet"), false)
+	// 	})
+
+	t.Run("return false when a non targetted resource is scheduled for deletion", func(t *testing.T) {
 		ctx := context.Background()
 
 		workDir, err := ioutil.TempDir("", "no-deletion")
@@ -693,8 +748,10 @@ resource "random_pet" "first" {}
 		}
 
 		b := []byte(`
-resource "random_pet" "first" {}
-resource "random_pet" "second" {}
+resource "random_pet" "pet" {}
+resource "random_id" "id" {
+	byte_length = 8
+}
 `)
 
 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
@@ -706,13 +763,11 @@ resource "random_pet" "second" {}
 		}
 
 		if err = tf.Apply(ctx); err != nil {
-			t.Fatal()
+			t.Fatal(err)
 		}
 
 		b = []byte(`
-resource "random_pet" "first" {}
-resource "random_pet" "second" {}
-resource "random_pet" "third" {}
+resource "random_pet" "pet" {}
 `)
 		if err = ioutil.WriteFile(path.Join(workDir, "main.tf"), b, 0644); err != nil {
 			t.Fatal(err)
