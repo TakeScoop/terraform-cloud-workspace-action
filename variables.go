@@ -13,35 +13,41 @@ type Variable struct {
 	WorkspaceName string
 }
 
-func contains(strings []string, target string) bool {
-	for _, v := range strings {
-		if v == target {
-			return true
+func findWorkspace(workspaces []*Workspace, target string) *Workspace {
+	for _, v := range workspaces {
+		if v.Workspace == target {
+			return v
 		}
 	}
-	return false
+	return nil
 }
 
 // ParseVariablesByWorkspace takes a list of workspace names, general variables and workspaced variables and flattens them into a single set
-func ParseVariablesByWorkspace(names []string, generalVars *[]Variable, workspaceVars *map[string][]Variable) ([]Variable, error) {
+func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars *[]Variable, workspaceVars *map[string][]Variable) ([]Variable, error) {
 	vars := []Variable{}
 	for _, v := range *generalVars {
-		for _, ws := range names {
+		for _, ws := range workspaces {
 			newVar := v
 
-			newVar.WorkspaceName = ws
+			newVar.WorkspaceName = ws.Name
 
 			vars = append(vars, newVar)
 		}
 	}
 
-	for ws, vs := range *workspaceVars {
-		if !contains(names, ws) {
-			return nil, fmt.Errorf("workspace %q was not found in planned workspaces %v", ws, names)
+	workspacesNames := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		workspacesNames[i] = ws.Workspace
+	}
+
+	for wsName, vs := range *workspaceVars {
+		w := findWorkspace(workspaces, wsName)
+		if w == nil {
+			return nil, fmt.Errorf("workspace %q was not found in planned workspaces %v", wsName, workspacesNames)
 		}
 
 		for _, v := range vs {
-			v.WorkspaceName = ws
+			v.WorkspaceName = w.Name
 
 			vars = append(vars, v)
 		}

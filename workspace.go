@@ -8,6 +8,11 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 )
 
+type Workspace struct {
+	Name      string
+	Workspace string
+}
+
 type WorkspaceConfig struct {
 	Terraform WorkspaceTerraform                `json:"terraform"`
 	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`

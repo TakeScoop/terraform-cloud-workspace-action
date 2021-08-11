@@ -10,7 +10,7 @@ import (
 
 type WorkspaceTestCase struct {
 	Name               string
-	Workspaces         []string
+	Workspaces         []*Workspace
 	Variables          []Variable
 	WorkspaceVariables map[string][]Variable
 	AssertEqual        []Variable
@@ -26,19 +26,19 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 	workspaceTestCases := []WorkspaceTestCase{
 		{
 			Name:               "apply single variable to single workspace",
-			Workspaces:         []string{"staging"},
+			Workspaces:         []*Workspace{{Name: "app", Workspace: "default"}},
 			Variables:          []Variable{{Key: "foo", Value: "bar"}},
 			WorkspaceVariables: map[string][]Variable{},
 			AssertEqual: []Variable{{
 				Key:           "foo",
 				Value:         "bar",
-				WorkspaceName: "staging",
+				WorkspaceName: "app",
 				Category:      "env",
 			}},
 		},
 		{
 			Name:       "apply multiple variables to single workspace",
-			Workspaces: []string{"staging"},
+			Workspaces: []*Workspace{{Name: "app", Workspace: "default"}},
 			Variables: []Variable{
 				{Key: "foo", Value: "bar"},
 				{Key: "baz", Value: "woz"},
@@ -48,48 +48,54 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 				{
 					Key:           "baz",
 					Value:         "woz",
-					WorkspaceName: "staging",
+					WorkspaceName: "app",
 					Category:      "env",
 				},
 				{
 					Key:           "foo",
 					Value:         "bar",
-					WorkspaceName: "staging",
+					WorkspaceName: "app",
 					Category:      "env",
 				},
 			},
 		},
 		{
-			Name:               "apply nothing when variables or workspace variables are passed",
-			Workspaces:         []string{"staging"},
+			Name:               "apply nothing when neither variables nor workspace variables are passed",
+			Workspaces:         []*Workspace{{Name: "app", Workspace: "default"}},
 			Variables:          []Variable{},
 			WorkspaceVariables: map[string][]Variable{},
 			AssertEqual:        []Variable{},
 		},
 		{
-			Name:               "apply variables to all workspaces",
-			Workspaces:         []string{"staging", "production"},
+			Name: "apply variables to all workspaces",
+			Workspaces: []*Workspace{
+				{Name: "app-staging", Workspace: "staging"},
+				{Name: "app-production", Workspace: "production"},
+			},
 			Variables:          []Variable{{Key: "foo", Value: "bar"}},
 			WorkspaceVariables: map[string][]Variable{},
 			AssertEqual: []Variable{
 				{
 					Key:           "foo",
 					Value:         "bar",
-					WorkspaceName: "production",
+					WorkspaceName: "app-staging",
 					Category:      "env",
 				},
 				{
 					Key:           "foo",
 					Value:         "bar",
-					WorkspaceName: "staging",
+					WorkspaceName: "app-production",
 					Category:      "env",
 				},
 			},
 		},
 		{
-			Name:       "apply workspace variables to named workspaces",
-			Workspaces: []string{"staging", "production"},
-			Variables:  []Variable{},
+			Name: "apply workspace variables to named workspaces",
+			Workspaces: []*Workspace{
+				{Name: "app-staging", Workspace: "staging"},
+				{Name: "app-production", Workspace: "production"},
+			},
+			Variables: []Variable{},
 			WorkspaceVariables: map[string][]Variable{
 				"staging": {
 					{
@@ -108,21 +114,24 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 				{
 					Key:           "environment",
 					Value:         "staging",
-					WorkspaceName: "staging",
+					WorkspaceName: "app-staging",
 					Category:      "env",
 				},
 				{
 					Key:           "environment",
 					Value:         "production",
-					WorkspaceName: "production",
+					WorkspaceName: "app-production",
 					Category:      "env",
 				},
 			},
 		},
 		{
-			Name:       "apply workspace variables to single workspaces",
-			Workspaces: []string{"staging", "production"},
-			Variables:  []Variable{},
+			Name: "apply workspace variables to single workspaces",
+			Workspaces: []*Workspace{
+				{Name: "app-staging", Workspace: "staging"},
+				{Name: "app-production", Workspace: "production"},
+			},
+			Variables: []Variable{},
 			WorkspaceVariables: map[string][]Variable{
 				"staging": {
 					{
@@ -135,7 +144,7 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 				{
 					Key:           "environment",
 					Value:         "staging",
-					WorkspaceName: "staging",
+					WorkspaceName: "app-staging",
 					Category:      "env",
 				},
 			},
@@ -162,7 +171,9 @@ func TestParseVariablesByWorkspace(t *testing.T) {
 
 	t.Run("error when workspace variable workspace is not found in passed workspace names", func(t *testing.T) {
 		_, err := ParseVariablesByWorkspace(
-			[]string{"foo"},
+			[]*Workspace{
+				{Name: "api", Workspace: "foo"},
+			},
 			&[]Variable{},
 			&map[string][]Variable{
 				"bar": {{
