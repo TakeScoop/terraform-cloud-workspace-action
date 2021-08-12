@@ -3,6 +3,8 @@ name: Approve Markdown Changes
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - '**.md'
 
 permissions:
   contents: read
