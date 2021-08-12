@@ -18,7 +18,7 @@ jobs:
       - id: diff
         name: git diff
         continue-on-error: true
-        run: git diff origin/${{ github.base_ref }} ':!**.md' --exit-code
+        run: git diff --exit-code origin/${{ github.base_ref }} ':!**.md'
       - uses: hmarr/auto-approve-action@v2
         if: ${{ steps.diff.outcome == 'success' }}
         with:
