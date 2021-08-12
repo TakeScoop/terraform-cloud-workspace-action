@@ -40,7 +40,7 @@ jobs:
 | `import` | Whether to attempt to import existing matching resources using the resource name | `false` |
 | `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
 | `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
-| `remote_state_consumer_ids` | Comma separated list | default `""`
+| `remote_state_consumer_ids` | Comma separated list | |
 | `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
@@ -49,18 +49,18 @@ jobs:
 | `terraform_version` | Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
 | `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
-| `variables` | YAML encoded variables to apply to all workspaces | `""`
+| `variables` | YAML encoded variables to apply to all workspaces | |
 | `vcs_ingress_submodules` | Whether to allow submodule ingress | `false` |
 | `vcs_repo` | Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed | `"${{ github.repository }}"` |
 | `vcs_token_id` | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added. | |
 | `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
-| `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | `""` |
+| `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | |
 | `workspaces` | YAML encoded list of workspace names | |
 
 ### Backend Config
 
-This project supports two backend types, `S3` and `local`
+This project supports two backend types, `s3` and `local`
 
 ```yml
 with:
@@ -77,7 +77,7 @@ with:
 
 ### Variables and Workspace Variables
 
-Variables are applied to all created workspaces, where workspace variables are applied to the noted workspace
+`variables` are applied to all created workspaces, where `workspace_variables` are applied to the noted workspace
 
 ```yml
 ...
@@ -153,13 +153,13 @@ with:
         region: us-east-1
 ```
 
-To import existing team access resources, a static value for `team_id` must be supplied
+To import existing team access resources, a static value for team `id` must be supplied
 
 ```yml
 with:
   import: true
   team_access: |-
-    - id: team-abc123
+    - id: team-abc123 # this is correct
       access: write
     - id: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].id} # this will error
       access: read
