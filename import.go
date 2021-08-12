@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -152,6 +153,10 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 	if teamID == "" {
 		fmt.Println("Skipping team access import, required team ID was not passed")
 		return nil
+	}
+
+	if !strings.HasPrefix(teamID, "team-") {
+		return fmt.Errorf("team ID passed for team access import, but it was not of the static format team-xxx: %s", teamID)
 	}
 
 	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamID)

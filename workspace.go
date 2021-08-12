@@ -264,47 +264,57 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 		return
 	}
 
-	ws.Data["tfe_team"] = map[string]interface{}{}
-	ws.Resources["tfe_team_access"] = map[string]interface{}{}
-
 	dataForEach := map[string]TeamDataResource{}
 	resourceForEach := map[string]WorkspaceTeamAccessResource{}
 
 	for _, access := range teamAccess {
-		dataForEach[access.TeamName] = TeamDataResource{
-			Name:         access.TeamName,
-			Organization: organization,
+		teamIDRef := access.TeamID
+
+		if teamIDRef == "" {
+			dataForEach[access.TeamName] = TeamDataResource{
+				Name:         access.TeamName,
+				Organization: organization,
+			}
+
+			teamIDRef = fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 		}
-		resourceForEach[fmt.Sprintf("%s-${data.tfe_team.teams[\"%s\"].id}", access.WorkspaceName, access.TeamName)] = WorkspaceTeamAccessResource{
-			TeamID:      fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName),
+
+		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, teamIDRef)] = WorkspaceTeamAccessResource{
+			TeamID:      teamIDRef,
 			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
 			Access:      access.Access,
 			Permissions: access.Permissions,
 		}
 	}
 
-	ws.Data["tfe_team"]["teams"] = TeamDataResource{
-		ForEach:      dataForEach,
-		Name:         "${each.value.name}",
-		Organization: "${each.value.organization}",
+	if len(dataForEach) > 0 {
+		ws.Data["tfe_team"] = map[string]interface{}{
+			"teams": TeamDataResource{
+				ForEach:      dataForEach,
+				Name:         "${each.value.name}",
+				Organization: "${each.value.organization}",
+			},
+		}
 	}
 
-	ws.Resources["tfe_team_access"]["teams"] = WorkspaceTeamAccessResource{
-		ForEach:     resourceForEach,
-		TeamID:      "${each.value.team_id}",
-		WorkspaceID: "${each.value.workspace_id}",
-		Access:      "${lookup(each.value, \"access\", null)}",
-		DynamicPermissions: &DynamicPermissions{
-			Permission: []DynamicPermissionEntry{{
-				ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
-				Content: DyanmicPermissionsContent{
-					Runs:             "${each.value.permissions.runs}",
-					Variables:        "${each.value.permissions.variables}",
-					StateVersions:    "${each.value.permissions.state_versions}",
-					SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
-					WorkspaceLocking: "${each.value.permissions.workspace_locking}",
-				},
-			}},
+	ws.Resources["tfe_team_access"] = map[string]interface{}{
+		"teams": WorkspaceTeamAccessResource{
+			ForEach:     resourceForEach,
+			TeamID:      "${each.value.team_id}",
+			WorkspaceID: "${each.value.workspace_id}",
+			Access:      "${lookup(each.value, \"access\", null)}",
+			DynamicPermissions: &DynamicPermissions{
+				Permission: []DynamicPermissionEntry{{
+					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
+					Content: DyanmicPermissionsContent{
+						Runs:             "${each.value.permissions.runs}",
+						Variables:        "${each.value.permissions.variables}",
+						StateVersions:    "${each.value.permissions.state_versions}",
+						SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
+						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+					},
+				}},
+			},
 		},
 	}
 }
