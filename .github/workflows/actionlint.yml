@@ -1,7 +1,15 @@
-name: Lint GitHub Action
-on: [push]
+name: Actionlint
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
 jobs:
-  action-lint:
+  actionlint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
