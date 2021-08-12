@@ -43,7 +43,7 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clie
 		return nil
 	}
 
-	ws, err := GetWorkspaceIfExists(ctx, client, organization, name)
+	ws, err := GetWorkspace(ctx, client, organization, name)
 	if err != nil {
 		return err
 	}
@@ -88,8 +88,8 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 	return nil, nil
 }
 
-// GetWorkspaceIfExists returns the requested workspace, nil if the workspace does not exist, an error for any other issues fetching the workspace
-func GetWorkspaceIfExists(ctx context.Context, client *tfe.Client, organization string, workspace string) (*tfe.Workspace, error) {
+// GetWorkspace returns the requested workspace, nil if the workspace does not exist, an error for any other issues fetching the workspace
+func GetWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace string) (*tfe.Workspace, error) {
 	ws, err := client.Workspaces.Read(ctx, organization, workspace)
 	if err != nil {
 		if err.Error() == "resource not found" {
@@ -116,7 +116,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 
 	fmt.Printf("Importing variable: %q\n", address)
 
-	ws, err := GetWorkspaceIfExists(ctx, client, organization, workspace)
+	ws, err := GetWorkspace(ctx, client, organization, workspace)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 		return nil
 	}
 
-	ws, err := GetWorkspaceIfExists(ctx, client, organization, workspace)
+	ws, err := GetWorkspace(ctx, client, organization, workspace)
 	if err != nil {
 		return err
 	}

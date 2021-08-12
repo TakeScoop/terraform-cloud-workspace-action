@@ -128,16 +128,16 @@ with:
 
 ### Team access
 
-Create or update existing team access resources. `team_id` takes precedence over `team_name` if both are supplied. Expressions can be used to reference remote state attributes.
+Create or update existing team access resources. Team `id` and `name` cannot both be simultaneously set.
 
 ```yml
 with:
   team_access: |-
-    - team_name: Readers
+    - name: Readers
       access: read
-    - team_id: team-12345
+    - id: team-abc123
       access: write
-    - team_name: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].name}
+    - name: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].name}
       permissions:
         runs: read
         variables: read
@@ -159,13 +159,11 @@ To import existing team access resources, a static value for `team_id` must be s
 with:
   import: true
   team_access: |-
-    - team_name: Readers
-      team_id: team-12345
-      access: read
-    - team_id: team-67891
+    - id: team-abc123
       access: write
-    - access: read
-      team_id: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].id} # this will error
+    - id: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].id} # this will error
+      access: read
+      
 ```
 
 ### Importing existing resources

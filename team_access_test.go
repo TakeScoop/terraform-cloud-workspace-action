@@ -26,3 +26,20 @@ func TestMergeWorkspaceIDs(t *testing.T) {
 		},
 	)
 }
+
+func TestTeamAccessValidate(t *testing.T) {
+	t.Run("valid with team name", func(t *testing.T) {
+		access := TeamAccess{TeamName: "foo", WorkspaceName: "workspace"}
+		assert.NoError(t, access.Validate())
+	})
+
+	t.Run("valid with team ID", func(t *testing.T) {
+		access := TeamAccess{TeamID: "team-abc123", WorkspaceName: "workspace"}
+		assert.NoError(t, access.Validate())
+	})
+
+	t.Run("not valid with team ID and team name", func(t *testing.T) {
+		access := TeamAccess{TeamName: "foo", TeamID: "team-abc123", WorkspaceName: "workspace"}
+		assert.Error(t, access.Validate())
+	})
+}

@@ -114,6 +114,12 @@ func main() {
 
 	teamAccess := MergeWorkspaceIDs(teamInputs, workspaces)
 
+	for _, access := range teamAccess {
+		if err := access.Validate(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	wsBackend, err := ParseBackend(githubactions.GetInput("backend_config"))
 	if err != nil {
 		log.Fatalf("Failed to parse backend: %s", err)
@@ -166,8 +172,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
-
-	fmt.Println(string(b))
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		log.Fatal(err)
