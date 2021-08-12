@@ -128,23 +128,47 @@ with:
 
 ### Team access
 
+Create or update existing team access resources. Team `id` and `name` cannot both be simultaneously set.
+
 ```yml
 with:
   team_access: |-
-    - team_name: Readers
+    - name: Readers
       access: read
-    - team_name: Custom
+    - id: team-abc123
+      access: write
+    - name: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].name}
       permissions:
         runs: read
         variables: read
         state_versions: read
         sentinel_mocks: read
         workspace_locking: true
+  remote_states: |-
+    tfe:
+      backend: remote
+      config:
+        bucket: s3-bucket
+        key: terraform.tfstate
+        region: us-east-1
+```
+
+To import existing team access resources, a static value for `team_id` must be supplied
+
+```yml
+with:
+  import: true
+  team_access: |-
+    - id: team-abc123
+      access: write
+    - id: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].id} # this will error
+      access: read
+      
 ```
 
 ### Importing existing resources
 
-Set `import` to `true` for the action to try to import the resources that it plans to create. Resources are looked up by name against resources that exist in the given Terraform Cloud organization.
+Set `import` to `true` for the action to attempt to import existing resources of matching values within the Terraform Cloud organization
 
 ```yml
 ...

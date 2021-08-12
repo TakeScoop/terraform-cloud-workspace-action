@@ -1,9 +1,12 @@
 package main
 
+import "fmt"
+
 type TeamAccess struct {
 	Access        string                 `yaml:"access,omitempty"`
 	Permissions   *TeamAccessPermissions `yaml:"permissions,omitempty"`
-	TeamName      string                 `yaml:"team_name"`
+	TeamName      string                 `yaml:"name"`
+	TeamID        string                 `yaml:"id"`
 	WorkspaceName string
 }
 
@@ -29,4 +32,12 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamA
 	}
 
 	return ts
+}
+
+func (ta TeamAccess) Validate() error {
+	if ta.TeamID != "" && ta.TeamName != "" {
+		return fmt.Errorf("team name and team ID cannot both be set: %s, %s", ta.TeamID, ta.TeamName)
+	}
+
+	return nil
 }

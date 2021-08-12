@@ -337,41 +337,181 @@ func TestAddRemoteStates(t *testing.T) {
 }
 
 func TestAddTeamAccess(t *testing.T) {
-	wsConfig := WorkspaceConfig{
-		Data:      map[string]map[string]interface{}{},
-		Resources: map[string]map[string]interface{}{},
-	}
 
-	wsConfig.AddTeamAccess([]TeamAccess{
-		{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
-		{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
-	}, "org")
+	t.Run("Add basic team access", func(t *testing.T) {
+		ws := WorkspaceConfig{
+			Data:      map[string]map[string]interface{}{},
+			Resources: map[string]map[string]interface{}{},
+		}
+		ws.AddTeamAccess([]TeamAccess{
+			{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
+			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
+		}, "org")
 
-	assert.Equal(t, wsConfig.Data["tfe_team"]["Writers"], TeamDataResource{
-		Name:         "Writers",
-		Organization: "org",
+		assert.Equal(t, ws.Data["tfe_team"]["teams"], TeamDataResource{
+			ForEach: map[string]TeamDataResource{
+				"Readers": {
+					Name:         "Readers",
+					Organization: "org",
+				},
+				"Writers": {
+					Name:         "Writers",
+					Organization: "org",
+				},
+			},
+			Name:         "${each.value.name}",
+			Organization: "${each.value.organization}",
+		})
+
+		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"], WorkspaceTeamAccessResource{
+			ForEach: map[string]WorkspaceTeamAccessResource{
+				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
+					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
+					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+					Access:      "write",
+				},
+				"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+					TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
+					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+					Access:      "read",
+				},
+			},
+			TeamID:      "${each.value.team_id}",
+			WorkspaceID: "${each.value.workspace_id}",
+			Access:      "${lookup(each.value, \"access\", null)}",
+			DynamicPermissions: &DynamicPermissions{
+				Permission: []DynamicPermissionEntry{{
+					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
+					Content: DyanmicPermissionsContent{
+						Runs:             "${each.value.permissions.runs}",
+						Variables:        "${each.value.permissions.variables}",
+						StateVersions:    "${each.value.permissions.state_versions}",
+						SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
+						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+					},
+				}},
+			},
+		})
 	})
-	assert.Equal(t, wsConfig.Data["tfe_team"]["Readers"], TeamDataResource{
-		Name:         "Readers",
-		Organization: "org",
+
+	t.Run("Add team access with a team ID", func(t *testing.T) {
+		ws := WorkspaceConfig{
+			Data:      map[string]map[string]interface{}{},
+			Resources: map[string]map[string]interface{}{},
+		}
+
+		ws.AddTeamAccess([]TeamAccess{
+			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
+			{TeamID: "team-12345", Access: "read", WorkspaceName: "workspace"},
+		}, "org")
+
+		assert.Equal(t, ws.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
+			"Writers": {
+				Name:         "Writers",
+				Organization: "org",
+			},
+		})
+
+		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+			"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
+				TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "write",
+			},
+			"workspace-team-12345": {
+				TeamID:      "team-12345",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "read",
+			},
+		})
 	})
 
-	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-Writers"],
-		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.Writers.id}",
-			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-			Access:      "write",
-		},
-	)
-	assert.Equal(t,
-		wsConfig.Resources["tfe_team_access"]["workspace-Readers"],
-		&WorkspaceTeamAccessResource{
-			TeamID:      "${data.tfe_team.Readers.id}",
-			WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-			Access:      "read",
-		},
-	)
+	t.Run("Add only team access items containing team IDs", func(t *testing.T) {
+		ws := WorkspaceConfig{
+			Data:      map[string]map[string]interface{}{},
+			Resources: map[string]map[string]interface{}{},
+		}
+
+		ws.AddTeamAccess([]TeamAccess{
+			{TeamID: "team-12345", Access: "write", WorkspaceName: "workspace"},
+			{TeamID: "team-67890", Access: "read", WorkspaceName: "workspace"},
+		}, "org")
+
+		assert.Equal(t, ws.Data["tfe_team"]["teams"], nil)
+
+		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+			"workspace-team-12345": {
+				TeamID:      "team-12345",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "write",
+			},
+			"workspace-team-67890": {
+				TeamID:      "team-67890",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "read",
+			},
+		})
+	})
+
+	t.Run("Add with team ID expression", func(t *testing.T) {
+		ws := WorkspaceConfig{
+			Data:      map[string]map[string]interface{}{},
+			Resources: map[string]map[string]interface{}{},
+		}
+
+		ws.AddTeamAccess([]TeamAccess{
+			{TeamID: "${data.terraform_remote_state.teams.output.teams[\"team\"].id}", Access: "write", WorkspaceName: "workspace"},
+		}, "org")
+
+		assert.Equal(t, ws.Data["tfe_team"]["teams"], nil)
+
+		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+			"workspace-${data.terraform_remote_state.teams.output.teams[\"team\"].id}": {
+				TeamID:      "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "write",
+			},
+		})
+	})
+
+	t.Run("Add with permissions block", func(t *testing.T) {
+		ws := WorkspaceConfig{
+			Data:      map[string]map[string]interface{}{},
+			Resources: map[string]map[string]interface{}{},
+		}
+
+		ws.AddTeamAccess([]TeamAccess{
+			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissions{
+				Runs:             "read",
+				Variables:        "read",
+				StateVersions:    "none",
+				SentinelMocks:    "none",
+				WorkspaceLocking: true,
+			}},
+		}, "org")
+
+		assert.Equal(t, ws.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
+			"Readers": {
+				Name:         "Readers",
+				Organization: "org",
+			},
+		})
+
+		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
+				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				Access:      "",
+				Permissions: &TeamAccessPermissions{
+					Runs:             "read",
+					Variables:        "read",
+					StateVersions:    "none",
+					SentinelMocks:    "none",
+					WorkspaceLocking: true,
+				},
+			},
+		})
+	})
 }
 
 func TestAddProviders(t *testing.T) {
@@ -569,6 +709,18 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
+			RemoteStates: map[string]RemoteState{
+				"teams": {
+					Backend: "remote",
+					Config: RemoteStateBackendConfig{
+						Organization: "org",
+						Hostname:     "app.terraform.io",
+						Workspaces: &RemoteStateBackendConfigWorkspaces{
+							Name: "teams",
+						},
+					},
+				},
+			},
 			TeamAccess: []TeamAccess{
 				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
 				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
@@ -578,6 +730,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
 				}},
+				{TeamName: "${data.terraform_remote_state.teams.outputs.team}", WorkspaceName: name, Access: "read"},
 			},
 		})
 		if err != nil {

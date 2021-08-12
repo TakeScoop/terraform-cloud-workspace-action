@@ -236,25 +236,26 @@ func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
 }
 
 type WorkspaceTeamAccessResource struct {
-	TeamID      string                 `json:"team_id"`
-	WorkspaceID string                 `json:"workspace_id"`
-	Access      string                 `json:"access,omitempty"`
-	Permissions *TeamAccessPermissions `json:"permissions,omitempty"`
-}
-
-// NewWorkspaceTeamAccessResource takes a Team object and uses it to fill a new WorkspaceTeamAccessResource
-func NewWorkspaceTeamAccessResource(ta *TeamAccess) *WorkspaceTeamAccessResource {
-	return &WorkspaceTeamAccessResource{
-		TeamID:      fmt.Sprintf("${data.tfe_team.%s.id}", ta.TeamName),
-		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", ta.WorkspaceName),
-		Access:      ta.Access,
-		Permissions: ta.Permissions,
-	}
+	ForEach            map[string]WorkspaceTeamAccessResource `json:"for_each,omitempty"`
+	TeamID             string                                 `json:"team_id"`
+	WorkspaceID        string                                 `json:"workspace_id"`
+	Access             string                                 `json:"access,omitempty"`
+	Permissions        *TeamAccessPermissions                 `json:"permissions,omitempty"`
+	DynamicPermissions *DynamicPermissions                    `json:"dynamic,omitempty"`
 }
 
 type TeamDataResource struct {
-	Name         string `json:"name"`
-	Organization string `json:"organization"`
+	ForEach      map[string]TeamDataResource `json:"for_each,omitempty"`
+	Name         string                      `json:"name"`
+	Organization string                      `json:"organization"`
+}
+
+type DyanmicPermissionsContent struct {
+	Runs             string `json:"runs"`
+	Variables        string `json:"variables"`
+	StateVersions    string `json:"state_versions"`
+	SentinelMocks    string `json:"sentinel_mocks"`
+	WorkspaceLocking string `json:"workspace_locking"`
 }
 
 // AddTeamAccess adds the passed teams to the calling workspace
@@ -263,21 +264,68 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 		return
 	}
 
-	ws.Data["tfe_team"] = map[string]interface{}{}
-	ws.Resources["tfe_team_access"] = map[string]interface{}{}
+	dataForEach := map[string]TeamDataResource{}
+	resourceForEach := map[string]WorkspaceTeamAccessResource{}
 
-	for _, ta := range teamAccess {
+	for _, access := range teamAccess {
+		teamIDRef := access.TeamID
 
-		_, ok := ws.Data["tfe_team"][ta.TeamName]
-		if !ok {
-			ws.Data["tfe_team"][ta.TeamName] = TeamDataResource{
-				Name:         ta.TeamName,
+		if teamIDRef == "" {
+			dataForEach[access.TeamName] = TeamDataResource{
+				Name:         access.TeamName,
 				Organization: organization,
 			}
+
+			teamIDRef = fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 		}
 
-		ws.Resources["tfe_team_access"][fmt.Sprintf("%s-%s", ta.WorkspaceName, ta.TeamName)] = NewWorkspaceTeamAccessResource(&ta)
+		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, teamIDRef)] = WorkspaceTeamAccessResource{
+			TeamID:      teamIDRef,
+			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
+			Access:      access.Access,
+			Permissions: access.Permissions,
+		}
 	}
+
+	if len(dataForEach) > 0 {
+		ws.Data["tfe_team"] = map[string]interface{}{
+			"teams": TeamDataResource{
+				ForEach:      dataForEach,
+				Name:         "${each.value.name}",
+				Organization: "${each.value.organization}",
+			},
+		}
+	}
+
+	ws.Resources["tfe_team_access"] = map[string]interface{}{
+		"teams": WorkspaceTeamAccessResource{
+			ForEach:     resourceForEach,
+			TeamID:      "${each.value.team_id}",
+			WorkspaceID: "${each.value.workspace_id}",
+			Access:      "${lookup(each.value, \"access\", null)}",
+			DynamicPermissions: &DynamicPermissions{
+				Permission: []DynamicPermissionEntry{{
+					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
+					Content: DyanmicPermissionsContent{
+						Runs:             "${each.value.permissions.runs}",
+						Variables:        "${each.value.permissions.variables}",
+						StateVersions:    "${each.value.permissions.state_versions}",
+						SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
+						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+					},
+				}},
+			},
+		},
+	}
+}
+
+type DynamicPermissionEntry struct {
+	ForEach string                    `json:"for_each"`
+	Content DyanmicPermissionsContent `json:"content"`
+}
+
+type DynamicPermissions struct {
+	Permission []DynamicPermissionEntry `json:"permissions,omitempty"`
 }
 
 // AddRemoteStates adds the passed remote state to the calling workspace
