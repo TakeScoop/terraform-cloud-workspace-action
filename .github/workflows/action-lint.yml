@@ -1,5 +1,13 @@
 name: Lint GitHub Action
-on: [push]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
 jobs:
   action-lint:
     runs-on: ubuntu-latest
