@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -30,7 +29,7 @@ func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bo
 	return true, nil
 }
 
-func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, tfc *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
+func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
 	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
 
 	imp, err := shouldImport(ctx, tf, address)
@@ -43,19 +42,24 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, tfc *tfe.Client,
 		return nil
 	}
 
-	ws, err := tfc.Workspaces.Read(ctx, organization, name)
+	ws, err := GetWorkspaceIfExists(ctx, client, organization, name)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Importing workspace: %s\n", name)
+	if ws == nil {
+		fmt.Printf("Workspace %q not found, skipping import\n", name)
+		return nil
+	}
+
+	fmt.Printf("Importing workspace: %s\n", ws.Name)
 
 	err = tf.Import(ctx, address, ws.ID, opts...)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Successful workspace import: %s\n", name)
+	fmt.Printf("Successful workspace import: %s\n", ws.Name)
 
 	return nil
 }
@@ -83,6 +87,19 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 	return nil, nil
 }
 
+// GetWorkspaceIfExists returns the requested workspace, nil if the workspace does not exist, an error for any other issues fetching the workspace
+func GetWorkspaceIfExists(ctx context.Context, client *tfe.Client, organization string, workspace string) (*tfe.Workspace, error) {
+	ws, err := client.Workspaces.Read(ctx, organization, workspace)
+	if err != nil {
+		if err.Error() == "resource not found" {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return ws, nil
+}
+
 func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, key string, workspace string, organization string, opts ...tfexec.ImportOption) error {
 	address := fmt.Sprintf("tfe_variable.%s-%s", workspace, key)
 
@@ -98,9 +115,14 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 
 	fmt.Printf("Importing variable: %q\n", address)
 
-	ws, err := client.Workspaces.Read(ctx, organization, workspace)
+	ws, err := GetWorkspaceIfExists(ctx, client, organization, workspace)
 	if err != nil {
 		return err
+	}
+
+	if ws == nil {
+		fmt.Printf("Workspace %q not found, skipping import\n", workspace)
+		return nil
 	}
 
 	v, err := fetchVariableByKey(ctx, client, key, ws.ID, 1)
@@ -126,12 +148,12 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 }
 
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, workspace string, team string, opts ...tfexec.ImportOption) error {
-	if strings.HasPrefix("${", team) {
-		return fmt.Errorf("team access only supports importing statically named teams, but an expression (${}) was found, convert the team name to a static string to allow import")
+func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
+	if teamID == "" {
+		return fmt.Errorf("team access imports require a passed team ID")
 	}
 
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, team)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -143,12 +165,17 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 		return nil
 	}
 
-	fmt.Printf("Importing team access: %q\n", address)
-
-	ws, err := client.Workspaces.Read(ctx, organization, workspace)
+	ws, err := GetWorkspaceIfExists(ctx, client, organization, workspace)
 	if err != nil {
 		return err
 	}
+
+	if ws == nil {
+		fmt.Printf("Workspace %q not found, skipping import\n", workspace)
+		return nil
+	}
+
+	fmt.Printf("Importing team access: %q\n", address)
 
 	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		WorkspaceID: &ws.ID,
@@ -160,13 +187,13 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 	var teamAccessID string
 
 	for _, access := range teamAccess.Items {
-		if access.Team.Name == team {
+		if access.Team.ID == teamID {
 			teamAccessID = access.ID
 		}
 	}
 
 	if teamAccessID == "" {
-		fmt.Printf("Team access %q for workspace %q not found, skipping import\n", team, workspace)
+		fmt.Printf("Team access %q for workspace %q not found, skipping import\n", teamID, workspace)
 		return nil
 	}
 

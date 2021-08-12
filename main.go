@@ -167,6 +167,8 @@ func main() {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
 
+	fmt.Println(string(b))
+
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		log.Fatal(err)
 	}
@@ -212,7 +214,7 @@ func main() {
 		}
 
 		for _, access := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, access.WorkspaceName, access.TeamName, opts...); err != nil {
+			if err = ImportTeamAccess(ctx, tf, client, org, access.WorkspaceName, access.TeamID, opts...); err != nil {
 				log.Fatalf("Error importing team access: %s\n", err)
 			}
 		}

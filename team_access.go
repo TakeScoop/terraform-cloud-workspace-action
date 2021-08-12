@@ -4,6 +4,7 @@ type TeamAccess struct {
 	Access        string                 `yaml:"access,omitempty"`
 	Permissions   *TeamAccessPermissions `yaml:"permissions,omitempty"`
 	TeamName      string                 `yaml:"team_name"`
+	TeamID        string                 `yaml:"team_id"`
 	WorkspaceName string
 }
 
