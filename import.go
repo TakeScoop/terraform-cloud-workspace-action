@@ -150,7 +150,8 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 // ImportTeamAccess imports a team access resource by looking up an existing relation
 func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
 	if teamID == "" {
-		return fmt.Errorf("team access imports require a passed team ID")
+		fmt.Println("Skipping team access import, required team ID was not passed")
+		return nil
 	}
 
 	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamID)

@@ -167,8 +167,6 @@ func main() {
 		log.Fatalf("Failed to marshal workspace configuration: %s", err)
 	}
 
-	fmt.Println(string(b))
-
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		log.Fatal(err)
 	}

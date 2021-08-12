@@ -20,7 +20,6 @@ type WorkspaceConfig struct {
 	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
 	Data      map[string]map[string]interface{} `json:"data,omitempty"`
 	Providers map[string]ProviderConfig         `json:"provider,omitempty"`
-	Locals    map[string]interface{}            `json:"locals,omitempty"`
 }
 
 type ProviderVersion struct {
@@ -267,9 +266,6 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 
 	ws.Data["tfe_team"] = map[string]interface{}{}
 	ws.Resources["tfe_team_access"] = map[string]interface{}{}
-	// ws.Locals["workspaces_by_id"] = "${{for key, team in data.tfe_team.teams: team.id => team}}"
-	// ws.Locals["ws_name"] = "Platform"
-	ws.Locals["ws_name_to_id"] = "${{for key, team in data.tfe_team.teams: team.name => team.id }}"
 
 	dataForEach := map[string]TeamDataResource{}
 	resourceForEach := map[string]WorkspaceTeamAccessResource{}
@@ -279,16 +275,13 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 			Name:         access.TeamName,
 			Organization: organization,
 		}
-		resourceForEach[fmt.Sprintf("%s-${local.ws_name_to_id[\"%s\"]}", access.WorkspaceName, access.TeamName)] = WorkspaceTeamAccessResource{
+		resourceForEach[fmt.Sprintf("%s-${data.tfe_team.teams[\"%s\"].id}", access.WorkspaceName, access.TeamName)] = WorkspaceTeamAccessResource{
 			TeamID:      fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName),
 			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
 			Access:      access.Access,
 			Permissions: access.Permissions,
 		}
 	}
-
-	ws.Locals["teams_data"] = dataForEach
-	ws.Locals["teams_resources"] = resourceForEach
 
 	ws.Data["tfe_team"]["teams"] = TeamDataResource{
 		ForEach:      dataForEach,
@@ -300,7 +293,7 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 		ForEach:     resourceForEach,
 		TeamID:      "${each.value.team_id}",
 		WorkspaceID: "${each.value.workspace_id}",
-		Access:      "${each.value.access}",
+		Access:      "${lookup(each.value, \"access\", null)}",
 		DynamicPermissions: &DynamicPermissions{
 			Permission: []DynamicPermissionEntry{{
 				ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
@@ -361,7 +354,6 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 		Variables: config.WorkspaceVariables,
 		Data:      map[string]map[string]interface{}{},
-		Locals:    map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{
 			"tfe_workspace": {
 				"workspace": wsResource,
