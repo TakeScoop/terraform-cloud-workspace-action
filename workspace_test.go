@@ -328,16 +328,17 @@ func TestAddRemoteStates(t *testing.T) {
 
 	foo := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
 	bar := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
+
 	wsConfig.AddRemoteStates(map[string]RemoteState{
 		"foo": foo,
 		"bar": bar,
 	})
+
 	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["foo"], foo)
 	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["bar"], bar)
 }
 
 func TestAddTeamAccess(t *testing.T) {
-
 	t.Run("Add basic team access", func(t *testing.T) {
 		ws := WorkspaceConfig{
 			Data:      map[string]map[string]interface{}{},

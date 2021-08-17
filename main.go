@@ -13,9 +13,8 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/sethvargo/go-githubactions"
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/inputs"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func main() {
@@ -90,12 +89,14 @@ func main() {
 	}
 
 	genVars := []Variable{}
+
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("variables")), &genVars)
 	if err != nil {
 		log.Fatalf("Failed to parse variables %s", err)
 	}
 
 	wsVars := map[string][]Variable{}
+
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspace_variables")), &wsVars)
 	if err != nil {
 		log.Fatalf("Failed to parse workspace variables %s", err)

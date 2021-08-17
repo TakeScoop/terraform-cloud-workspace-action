@@ -23,6 +23,7 @@ func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamA
 	ts := make([]TeamAccess, len(teamAccess)*len(workspaces))
 
 	i := 0
+
 	for _, team := range teamAccess {
 		for _, ws := range workspaces {
 			team.WorkspaceName = ws.Name

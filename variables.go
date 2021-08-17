@@ -19,12 +19,14 @@ func findWorkspace(workspaces []*Workspace, target string) *Workspace {
 			return v
 		}
 	}
+
 	return nil
 }
 
 // ParseVariablesByWorkspace takes a list of workspace names, general variables and workspaced variables and flattens them into a single set
 func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars *[]Variable, workspaceVars *map[string][]Variable) ([]Variable, error) {
 	vars := []Variable{}
+
 	for _, v := range *generalVars {
 		for _, ws := range workspaces {
 			newVar := v
