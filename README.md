@@ -182,3 +182,23 @@ with:
 | --- | --- |
 | `plan` | A human friendly output of the Terraform plan |
 | `plan_json` | A JSON representation of the Terraform plan |
+
+## Development
+
+### Test
+
+To test the project
+
+`go test`
+
+### Lint
+
+This project uses [`golangci-lint`](https://github.com/golangci/golangci-lint)
+
+To lint the project
+
+`golangci-lint run`
+
+To auto fix issues where supported
+
+`golangci-lint run  --fix`

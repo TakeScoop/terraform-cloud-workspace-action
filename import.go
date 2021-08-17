@@ -95,6 +95,7 @@ func GetWorkspace(ctx context.Context, client *tfe.Client, organization string, 
 		if err.Error() == "resource not found" {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
