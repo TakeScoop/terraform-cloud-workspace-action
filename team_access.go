@@ -1,38 +1,47 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
+)
 
 type TeamAccess struct {
-	Access        string                 `yaml:"access,omitempty"`
-	Permissions   *TeamAccessPermissions `yaml:"permissions,omitempty"`
-	TeamName      string                 `yaml:"name"`
-	TeamID        string                 `yaml:"id"`
+	Access      string                 `yaml:"access,omitempty"`
+	Permissions *TeamAccessPermissions `yaml:"permissions,omitempty"`
+	TeamName    string                 `yaml:"name"`
+	TeamID      string                 `yaml:"id"`
+
+	// TODO: remove this, objects should not store data on behalf of callers
 	WorkspaceName string
 }
 
-type TeamAccessPermissions struct {
-	Runs             string `yaml:"runs" json:"runs"`
-	Variables        string `yaml:"variables" json:"variables"`
-	StateVersions    string `yaml:"state_versions" json:"state_versions"`
-	SentinelMocks    string `yaml:"sentinel_mocks" json:"sentinel_mocks"`
-	WorkspaceLocking bool   `yaml:"workspace_locking" json:"workspace_locking"`
-}
+// ToResource converts the TeamAccess input to a Terraform resource
+func (ta TeamAccess) ToResource() *tfeprovider.TeamAccess {
+	resource := &tfeprovider.TeamAccess{
+		Access: ta.Access,
+		TeamID: ta.TeamID,
+	}
 
-// MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamAccess {
-	ts := make([]TeamAccess, len(teamAccess)*len(workspaces))
-
-	i := 0
-
-	for _, team := range teamAccess {
-		for _, ws := range workspaces {
-			team.WorkspaceName = ws.Name
-			ts[i] = team
-			i = i + 1
+	if ta.Permissions != nil {
+		resource.Permissions = &tfeprovider.TeamAccessPermissions{
+			Runs:             ta.Permissions.Runs,
+			Variables:        ta.Permissions.Variables,
+			StateVersions:    ta.Permissions.StateVersions,
+			SentinelMocks:    ta.Permissions.SentinelMocks,
+			WorkspaceLocking: ta.Permissions.WorkspaceLocking,
 		}
 	}
 
-	return ts
+	return resource
+}
+
+type TeamAccessPermissions struct {
+	Runs             string `yaml:"runs"`
+	Variables        string `yaml:"variables"`
+	StateVersions    string `yaml:"state_versions"`
+	SentinelMocks    string `yaml:"sentinel_mocks"`
+	WorkspaceLocking bool   `yaml:"workspace_locking"`
 }
 
 func (ta TeamAccess) Validate() error {

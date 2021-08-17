@@ -15,6 +15,7 @@ import (
 	"github.com/sethvargo/go-githubactions"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/inputs"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -60,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var remoteStates map[string]RemoteState
+	var remoteStates map[string]tfconfig.RemoteState
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_states")), &remoteStates)
 	if err != nil {
@@ -159,7 +160,7 @@ func main() {
 				Name:    "tfe",
 				Version: githubactions.GetInput("tfe_provider_version"),
 				Source:  "hashicorp/tfe",
-				Config: TFEProvider{
+				Config: tfeprovider.Config{
 					Hostname: host,
 					Token:    token,
 				},

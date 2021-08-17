@@ -10,8 +10,3 @@ type Provider struct {
 	Name    string
 	Config  tfconfig.ProviderConfig
 }
-
-type TFEProvider struct {
-	Hostname string `json:"hostname"`
-	Token    string `json:"token,omitempty"`
-}
