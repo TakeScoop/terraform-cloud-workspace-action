@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/sethvargo/go-githubactions"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/inputs"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -121,13 +122,13 @@ func main() {
 		}
 	}
 
-	wsBackend, err := ParseBackend(githubactions.GetInput("backend_config"))
+	backend, err := tfconfig.ParseBackend(githubactions.GetInput("backend_config"))
 	if err != nil {
 		log.Fatalf("Failed to parse backend: %s", err)
 	}
 
 	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-		Backend: wsBackend,
+		Backend: backend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
 			AutoApply:              inputs.GetBoolPtr("auto_apply"),
@@ -145,7 +146,7 @@ func main() {
 			VCSTokenID:             githubactions.GetInput("vcs_token_id"),
 			VCSType:                githubactions.GetInput("vcs_type"),
 		},
-		WorkspaceVariables: map[string]WorkspaceVariable{
+		WorkspaceVariables: map[string]tfconfig.Variable{
 			"workspace_names": {
 				Type: "set(string)",
 			},

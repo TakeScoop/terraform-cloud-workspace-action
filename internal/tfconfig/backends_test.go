@@ -1,4 +1,4 @@
-package main
+package tfconfig
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ s3:
 		assert.Equal(t, be.S3.Bucket, "foo")
 		assert.Equal(t, be.S3.Key, "bar")
 		assert.Equal(t, be.S3.Region, "us-east-1")
-		assert.Equal(t, be.Local, (*LocalBackendConfig)(nil))
+		assert.Equal(t, be.Local, (*LocalBackend)(nil))
 	})
 
 	t.Run("Parse Local backend with minimal inputs", func(t *testing.T) {
@@ -34,7 +34,7 @@ local:
 		assert.NoError(t, err)
 
 		assert.Equal(t, be.Local.Path, "foo/terraform.tfstate")
-		assert.Equal(t, be.S3, (*S3BackendConfig)(nil))
+		assert.Equal(t, be.S3, (*S3Backend)(nil))
 	})
 
 	t.Run("Error on unsupported backend type", func(t *testing.T) {

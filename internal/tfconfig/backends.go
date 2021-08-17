@@ -1,4 +1,4 @@
-package main
+package tfconfig
 
 import (
 	"fmt"
@@ -6,12 +6,15 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type WorkspaceBackend struct {
-	S3    *S3BackendConfig    `yaml:"s3,omitempty" json:"s3,omitempty"`
-	Local *LocalBackendConfig `yaml:"s3,omitempty" json:"local,omitempty"`
+type Backend struct {
+	S3    *S3Backend    `yaml:"s3,omitempty" json:"s3,omitempty"`
+	Local *LocalBackend `yaml:"s3,omitempty" json:"local,omitempty"`
 }
 
-type S3BackendConfig struct {
+// TODO: Support arbitrary backend types
+// Avoid parsing into sepcific structs for specific backend types
+
+type S3Backend struct {
 	Bucket    string `yaml:"bucket" json:"bucket"`
 	Key       string `yaml:"key" json:"key"`
 	Region    string `yaml:"region" json:"region"`
@@ -20,21 +23,21 @@ type S3BackendConfig struct {
 	RoleArn   string `yaml:"role_arn" json:"role_arn,omitempty"`
 }
 
-type LocalBackendConfig struct {
+type LocalBackend struct {
 	Path string `json:"path,omitempty"`
 }
 
-func ParseBackend(backendInput string) (*WorkspaceBackend, error) {
+func ParseBackend(backendInput string) (*Backend, error) {
 	var backend map[string]interface{}
 
-	wsBackend := &WorkspaceBackend{}
+	wsBackend := &Backend{}
 
 	if err := yaml.Unmarshal([]byte(backendInput), &backend); err != nil {
 		return nil, err
 	}
 
 	if _, ok := backend["s3"]; ok {
-		var s3Backend map[string]S3BackendConfig
+		var s3Backend map[string]S3Backend
 
 		if err := yaml.Unmarshal([]byte(backendInput), &s3Backend); err != nil {
 			return nil, err
@@ -47,7 +50,7 @@ func ParseBackend(backendInput string) (*WorkspaceBackend, error) {
 	}
 
 	if _, ok := backend["local"]; ok {
-		var localBackend map[string]LocalBackendConfig
+		var localBackend map[string]LocalBackend
 
 		if err := yaml.Unmarshal([]byte(backendInput), &localBackend); err != nil {
 			return nil, err

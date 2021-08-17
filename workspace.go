@@ -7,36 +7,12 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 )
 
 type Workspace struct {
 	Name      string
 	Workspace string
-}
-
-type WorkspaceConfig struct {
-	Terraform WorkspaceTerraform                `json:"terraform"`
-	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
-	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
-	Data      map[string]map[string]interface{} `json:"data,omitempty"`
-	Providers map[string]ProviderConfig         `json:"provider,omitempty"`
-}
-
-type ProviderVersion struct {
-	Source  string `json:"source,omitempty"`
-	Version string `json:"version"`
-}
-
-type WorkspaceTerraform struct {
-	Backend           WorkspaceBackend           `json:"backend"`
-	RequiredVersion   string                     `json:"required_version,omitempty"`
-	RequiredProviders map[string]ProviderVersion `json:"required_providers,omitempty"`
-}
-
-type WorkspaceVariable struct {
-	Type        string      `json:"type,omitempty"`
-	Default     interface{} `json:"default,omitempty"`
-	Description string      `json:"description,omitempty"`
 }
 
 type WorkspaceVCSBlock struct {
@@ -209,7 +185,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 }
 
 // AddVariable adds the passed variables to the calling workspace
-func (ws *WorkspaceConfig) AddVariables(vars []Variable) {
+func AddVariables(module *tfconfig.Module, vars []Variable) {
 	if len(vars) == 0 {
 		return
 	}
@@ -220,7 +196,7 @@ func (ws *WorkspaceConfig) AddVariables(vars []Variable) {
 		varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(v)
 	}
 
-	ws.Resources["tfe_variable"] = varResources
+	module.Resources["tfe_variable"] = varResources
 }
 
 // NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
@@ -259,7 +235,7 @@ type DyanmicPermissionsContent struct {
 }
 
 // AddTeamAccess adds the passed teams to the calling workspace
-func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization string) {
+func AddTeamAccess(module *tfconfig.Module, teamAccess []TeamAccess, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
@@ -288,7 +264,7 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 	}
 
 	if len(dataForEach) > 0 {
-		ws.Data["tfe_team"] = map[string]interface{}{
+		module.Data["tfe_team"] = map[string]interface{}{
 			"teams": TeamDataResource{
 				ForEach:      dataForEach,
 				Name:         "${each.value.name}",
@@ -297,7 +273,7 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 		}
 	}
 
-	ws.Resources["tfe_team_access"] = map[string]interface{}{
+	module.Resources["tfe_team_access"] = map[string]interface{}{
 		"teams": WorkspaceTeamAccessResource{
 			ForEach:     resourceForEach,
 			TeamID:      "${each.value.team_id}",
@@ -329,21 +305,21 @@ type DynamicPermissions struct {
 }
 
 // AddRemoteStates adds the passed remote state to the calling workspace
-func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) {
+func AddRemoteStates(module *tfconfig.Module, remoteStates map[string]RemoteState) {
 	if len(remoteStates) == 0 {
 		return
 	}
 
-	ws.Data["terraform_remote_state"] = map[string]interface{}{}
+	module.Data["terraform_remote_state"] = map[string]interface{}{}
 
 	for name, block := range remoteStates {
-		ws.Data["terraform_remote_state"][name] = block
+		module.Data["terraform_remote_state"][name] = block
 	}
 }
 
 type NewWorkspaceConfigOptions struct {
-	Backend                  *WorkspaceBackend
-	WorkspaceVariables       map[string]WorkspaceVariable
+	Backend                  *tfconfig.Backend
+	WorkspaceVariables       map[string]tfconfig.Variable
 	RemoteStates             map[string]RemoteState
 	Variables                []Variable
 	TeamAccess               []TeamAccess
@@ -352,14 +328,14 @@ type NewWorkspaceConfigOptions struct {
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
-func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*WorkspaceConfig, error) {
+func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*tfconfig.Module, error) {
 	wsResource, err := NewWorkspaceResource(ctx, client, config.WorkspaceResourceOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	wsConfig := &WorkspaceConfig{
-		Terraform: WorkspaceTerraform{
+	module := &tfconfig.Module{
+		Terraform: tfconfig.Terraform{
 			Backend: *config.Backend,
 		},
 		Variables: config.WorkspaceVariables,
@@ -371,32 +347,32 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 	}
 
-	wsConfig.AddRemoteStates(config.RemoteStates)
-	wsConfig.AddVariables(config.Variables)
-	wsConfig.AddTeamAccess(config.TeamAccess, wsResource.Organization)
-	wsConfig.AddProviders(config.Providers)
+	AddRemoteStates(module, config.RemoteStates)
+	AddVariables(module, config.Variables)
+	AddTeamAccess(module, config.TeamAccess, wsResource.Organization)
+	AddProviders(module, config.Providers)
 
-	return wsConfig, nil
+	return module, nil
 }
 
-func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
+func AddProviders(module *tfconfig.Module, providers []Provider) {
 	if len(providers) == 0 {
 		return
 	}
 
-	versions := map[string]ProviderVersion{}
-	providerConfigs := map[string]ProviderConfig{}
+	versions := map[string]tfconfig.RequiredProvider{}
+	providerConfigs := map[string]tfconfig.ProviderConfig{}
 
 	for _, p := range providers {
-		versions[p.Name] = ProviderVersion{
+		versions[p.Name] = tfconfig.RequiredProvider{
 			Source:  p.Source,
 			Version: p.Version,
 		}
 		providerConfigs[p.Name] = p.Config
 	}
 
-	ws.Providers = providerConfigs
-	ws.Terraform.RequiredProviders = versions
+	module.Providers = providerConfigs
+	module.Terraform.RequiredProviders = versions
 }
 
 // WillDestroy parses a plan to look for whether the delete action is associated with any target resource
