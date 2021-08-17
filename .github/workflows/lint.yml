@@ -1,12 +1,13 @@
-name: lint
+name: Lint
 on:
   push:
-    tags:
-      - v*
     branches:
       - master
-      - main
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
 jobs:
   lint:
     runs-on: ubuntu-latest
