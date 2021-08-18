@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"context"
@@ -7,88 +7,13 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
 type Workspace struct {
 	Name      string
 	Workspace string
-}
-
-type WorkspaceConfig struct {
-	Terraform WorkspaceTerraform                `json:"terraform"`
-	Variables map[string]WorkspaceVariable      `json:"variable,omitempty"`
-	Resources map[string]map[string]interface{} `json:"resource,omitempty"`
-	Data      map[string]map[string]interface{} `json:"data,omitempty"`
-	Providers map[string]ProviderConfig         `json:"provider,omitempty"`
-}
-
-type ProviderVersion struct {
-	Source  string `json:"source,omitempty"`
-	Version string `json:"version"`
-}
-
-type WorkspaceTerraform struct {
-	Backend           WorkspaceBackend           `json:"backend"`
-	RequiredVersion   string                     `json:"required_version,omitempty"`
-	RequiredProviders map[string]ProviderVersion `json:"required_providers,omitempty"`
-}
-
-type WorkspaceVariable struct {
-	Type        string      `json:"type,omitempty"`
-	Default     interface{} `json:"default,omitempty"`
-	Description string      `json:"description,omitempty"`
-}
-
-type WorkspaceVCSBlock struct {
-	OauthTokenID      string `json:"oauth_token_id"`
-	Identifier        string `json:"identifier"`
-	IngressSubmodules bool   `json:"ingress_submodules"`
-}
-
-type RemoteStateBackendConfigWorkspaces struct {
-	Name string `json:"name"`
-}
-
-type RemoteStateBackendConfig struct {
-	Key          string                              `json:"key,omitempty"`
-	Bucket       string                              `json:"bucket,omitempty"`
-	Region       string                              `json:"region,omitempty"`
-	Hostname     string                              `json:"hostname,omitempty"`
-	Organization string                              `json:"organization,omitempty"`
-	Workspaces   *RemoteStateBackendConfigWorkspaces `json:"workspaces,omitempty"`
-}
-
-type RemoteState struct {
-	Config  RemoteStateBackendConfig `json:"config" yaml:"config"`
-	Backend string                   `json:"backend" yaml:"backend"`
-}
-
-type WorkspaceWorkspaceResource struct {
-	ForEach                string             `json:"for_each,omitempty"`
-	AgentPoolID            string             `json:"agent_pool_id,omitempty"`
-	AutoApply              *bool              `json:"auto_apply,omitempty"`
-	ExecutionMode          string             `json:"execution_mode,omitempty"`
-	FileTriggersEnabled    *bool              `json:"file_triggers_enabled,omitempty"`
-	GlobalRemoteState      *bool              `json:"global_remote_state,omitempty"`
-	Name                   string             `json:"name"`
-	Organization           string             `json:"organization"`
-	QueueAllRuns           *bool              `json:"queue_all_runs,omitempty"`
-	RemoteStateConsumerIDs []string           `json:"remote_state_consumer_ids,omitempty"`
-	SpeculativeEnabled     *bool              `json:"speculative_enabled,omitempty"`
-	TerraformVersion       string             `json:"terraform_version,omitempty"`
-	SSHKeyID               string             `json:"ssh_key_id,omitempty"`
-	VCSRepo                *WorkspaceVCSBlock `json:"vcs_repo,omitempty"`
-	WorkingDirectory       string             `json:"working_directory,omitempty"`
-}
-
-type WorkspaceVariableResource struct {
-	ForEach     string `json:"for_each,omitempty"`
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Description string `json:"description,omitempty"`
-	Category    string `json:"category,omitempty"`
-	WorkspaceID string `json:"workspace_id,omitempty"`
-	Sensitive   bool   `json:"sensitive,omitempty"`
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
@@ -145,8 +70,8 @@ type WorkspaceResourceOptions struct {
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
-func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*WorkspaceWorkspaceResource, error) {
-	ws := &WorkspaceWorkspaceResource{
+func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*tfeprovider.Workspace, error) {
+	ws := &tfeprovider.Workspace{
 		ForEach:      "${var.workspace_names}",
 		Name:         "${each.value}",
 		Organization: config.Organization,
@@ -156,7 +81,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 		ws.AutoApply = config.AutoApply
 	}
 
-	var vcs *WorkspaceVCSBlock
+	var vcs *tfeprovider.VCSRepo
 
 	if config.VCSType != "" || config.VCSTokenID != "" {
 		if config.VCSRepo == "" {
@@ -175,7 +100,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 			vcsTokenID = config.VCSTokenID
 		}
 
-		vcs = &WorkspaceVCSBlock{
+		vcs = &tfeprovider.VCSRepo{
 			OauthTokenID:      vcsTokenID,
 			Identifier:        config.VCSRepo,
 			IngressSubmodules: config.VCSIngressSubmodules,
@@ -209,7 +134,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 }
 
 // AddVariable adds the passed variables to the calling workspace
-func (ws *WorkspaceConfig) AddVariables(vars []Variable) {
+func AddVariables(module *tfconfig.Module, vars []VariablesInputItem) {
 	if len(vars) == 0 {
 		return
 	}
@@ -220,12 +145,12 @@ func (ws *WorkspaceConfig) AddVariables(vars []Variable) {
 		varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(v)
 	}
 
-	ws.Resources["tfe_variable"] = varResources
+	module.Resources["tfe_variable"] = varResources
 }
 
 // NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
-func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
-	return &WorkspaceVariableResource{
+func NewWorkspaceVariableResource(v VariablesInputItem) *tfeprovider.Variable {
+	return &tfeprovider.Variable{
 		Key:         v.Key,
 		Value:       v.Value,
 		Description: v.Description,
@@ -235,37 +160,20 @@ func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
 	}
 }
 
-type WorkspaceTeamAccessResource struct {
-	ForEach            map[string]WorkspaceTeamAccessResource `json:"for_each,omitempty"`
-	TeamID             string                                 `json:"team_id"`
-	WorkspaceID        string                                 `json:"workspace_id"`
-	Access             string                                 `json:"access,omitempty"`
-	Permissions        *TeamAccessPermissions                 `json:"permissions,omitempty"`
-	DynamicPermissions *DynamicPermissions                    `json:"dynamic,omitempty"`
-}
-
 type TeamDataResource struct {
 	ForEach      map[string]TeamDataResource `json:"for_each,omitempty"`
 	Name         string                      `json:"name"`
 	Organization string                      `json:"organization"`
 }
 
-type DyanmicPermissionsContent struct {
-	Runs             string `json:"runs"`
-	Variables        string `json:"variables"`
-	StateVersions    string `json:"state_versions"`
-	SentinelMocks    string `json:"sentinel_mocks"`
-	WorkspaceLocking string `json:"workspace_locking"`
-}
-
 // AddTeamAccess adds the passed teams to the calling workspace
-func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization string) {
+func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
 
 	dataForEach := map[string]TeamDataResource{}
-	resourceForEach := map[string]WorkspaceTeamAccessResource{}
+	resourceForEach := map[string]tfeprovider.TeamAccess{}
 
 	for _, access := range teamAccess {
 		teamIDRef := access.TeamID
@@ -279,16 +187,16 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 			teamIDRef = fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 		}
 
-		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, teamIDRef)] = WorkspaceTeamAccessResource{
+		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, teamIDRef)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
 			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
 			Access:      access.Access,
-			Permissions: access.Permissions,
+			Permissions: access.ToResource().Permissions,
 		}
 	}
 
 	if len(dataForEach) > 0 {
-		ws.Data["tfe_team"] = map[string]interface{}{
+		module.Data["tfe_team"] = map[string]interface{}{
 			"teams": TeamDataResource{
 				ForEach:      dataForEach,
 				Name:         "${each.value.name}",
@@ -297,16 +205,16 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 		}
 	}
 
-	ws.Resources["tfe_team_access"] = map[string]interface{}{
-		"teams": WorkspaceTeamAccessResource{
+	module.Resources["tfe_team_access"] = map[string]interface{}{
+		"teams": tfeprovider.TeamAccess{
 			ForEach:     resourceForEach,
 			TeamID:      "${each.value.team_id}",
 			WorkspaceID: "${each.value.workspace_id}",
 			Access:      "${lookup(each.value, \"access\", null)}",
-			DynamicPermissions: &DynamicPermissions{
-				Permission: []DynamicPermissionEntry{{
+			DynamicPermissions: &tfeprovider.DynamicPermissions{
+				Permission: []tfeprovider.DynamicPermissionEntry{{
 					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
-					Content: DyanmicPermissionsContent{
+					Content: &tfeprovider.TeamAccessPermissions{
 						Runs:             "${each.value.permissions.runs}",
 						Variables:        "${each.value.permissions.variables}",
 						StateVersions:    "${each.value.permissions.state_versions}",
@@ -319,47 +227,38 @@ func (ws *WorkspaceConfig) AddTeamAccess(teamAccess []TeamAccess, organization s
 	}
 }
 
-type DynamicPermissionEntry struct {
-	ForEach string                    `json:"for_each"`
-	Content DyanmicPermissionsContent `json:"content"`
-}
-
-type DynamicPermissions struct {
-	Permission []DynamicPermissionEntry `json:"permissions,omitempty"`
-}
-
 // AddRemoteStates adds the passed remote state to the calling workspace
-func (ws *WorkspaceConfig) AddRemoteStates(remoteStates map[string]RemoteState) {
+func AddRemoteStates(module *tfconfig.Module, remoteStates map[string]tfconfig.RemoteState) {
 	if len(remoteStates) == 0 {
 		return
 	}
 
-	ws.Data["terraform_remote_state"] = map[string]interface{}{}
+	module.Data["terraform_remote_state"] = map[string]interface{}{}
 
 	for name, block := range remoteStates {
-		ws.Data["terraform_remote_state"][name] = block
+		module.Data["terraform_remote_state"][name] = block
 	}
 }
 
 type NewWorkspaceConfigOptions struct {
-	Backend                  *WorkspaceBackend
-	WorkspaceVariables       map[string]WorkspaceVariable
-	RemoteStates             map[string]RemoteState
-	Variables                []Variable
-	TeamAccess               []TeamAccess
+	Backend                  *tfconfig.Backend
+	WorkspaceVariables       map[string]tfconfig.Variable
+	RemoteStates             map[string]tfconfig.RemoteState
+	Variables                []VariablesInputItem
+	TeamAccess               TeamAccessInput
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
-func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*WorkspaceConfig, error) {
+func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*tfconfig.Module, error) {
 	wsResource, err := NewWorkspaceResource(ctx, client, config.WorkspaceResourceOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	wsConfig := &WorkspaceConfig{
-		Terraform: WorkspaceTerraform{
+	module := &tfconfig.Module{
+		Terraform: tfconfig.Terraform{
 			Backend: *config.Backend,
 		},
 		Variables: config.WorkspaceVariables,
@@ -371,32 +270,32 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 	}
 
-	wsConfig.AddRemoteStates(config.RemoteStates)
-	wsConfig.AddVariables(config.Variables)
-	wsConfig.AddTeamAccess(config.TeamAccess, wsResource.Organization)
-	wsConfig.AddProviders(config.Providers)
+	AddRemoteStates(module, config.RemoteStates)
+	AddVariables(module, config.Variables)
+	AddTeamAccess(module, config.TeamAccess, wsResource.Organization)
+	AddProviders(module, config.Providers)
 
-	return wsConfig, nil
+	return module, nil
 }
 
-func (ws *WorkspaceConfig) AddProviders(providers []Provider) {
+func AddProviders(module *tfconfig.Module, providers []Provider) {
 	if len(providers) == 0 {
 		return
 	}
 
-	versions := map[string]ProviderVersion{}
-	providerConfigs := map[string]ProviderConfig{}
+	versions := map[string]tfconfig.RequiredProvider{}
+	providerConfigs := map[string]tfconfig.ProviderConfig{}
 
 	for _, p := range providers {
-		versions[p.Name] = ProviderVersion{
+		versions[p.Name] = tfconfig.RequiredProvider{
 			Source:  p.Source,
 			Version: p.Version,
 		}
 		providerConfigs[p.Name] = p.Config
 	}
 
-	ws.Providers = providerConfigs
-	ws.Terraform.RequiredProviders = versions
+	module.Providers = providerConfigs
+	module.Terraform.RequiredProviders = versions
 }
 
 // WillDestroy parses a plan to look for whether the delete action is associated with any target resource
@@ -412,4 +311,73 @@ func WillDestroy(plan *tfjson.Plan, targetType string) bool {
 	}
 
 	return false
+}
+
+// MergeWorkspaceIDs returns a new slice of TeamAccess structs
+func MergeWorkspaceIDs(teamAccess TeamAccessInput, workspaces []*Workspace) TeamAccessInput {
+	ts := make(TeamAccessInput, len(teamAccess)*len(workspaces))
+
+	i := 0
+
+	for _, team := range teamAccess {
+		for _, ws := range workspaces {
+			team.WorkspaceName = ws.Name
+			ts[i] = team
+			i = i + 1
+		}
+	}
+
+	return ts
+}
+
+func findWorkspace(workspaces []*Workspace, target string) *Workspace {
+	for _, v := range workspaces {
+		if v.Workspace == target {
+			return v
+		}
+	}
+
+	return nil
+}
+
+// ParseVariablesByWorkspace takes a list of workspace names, general variables and workspaced variables and flattens them into a single set
+// TODO: remove 'general' and clarify usage in description
+func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars VariablesInput, workspaceVars WorkspaceVariablesInput) ([]VariablesInputItem, error) {
+	vars := []VariablesInputItem{}
+
+	for _, v := range generalVars {
+		for _, ws := range workspaces {
+			newVar := v
+
+			newVar.WorkspaceName = ws.Name
+
+			vars = append(vars, newVar)
+		}
+	}
+
+	workspacesNames := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		workspacesNames[i] = ws.Workspace
+	}
+
+	for wsName, vs := range workspaceVars {
+		w := findWorkspace(workspaces, wsName)
+		if w == nil {
+			return nil, fmt.Errorf("workspace %q was not found in planned workspaces %v", wsName, workspacesNames)
+		}
+
+		for _, v := range vs {
+			v.WorkspaceName = w.Name
+
+			vars = append(vars, v)
+		}
+	}
+
+	for i := range vars {
+		if vars[i].Category == "" {
+			vars[i].Category = "env"
+		}
+	}
+
+	return vars, nil
 }

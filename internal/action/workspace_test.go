@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"context"
@@ -16,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
 var basicOauthClientResponse string = `
@@ -105,7 +107,7 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 
 func TestWorkspaceJSONRender(t *testing.T) {
 	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
-		b, err := json.MarshalIndent(WorkspaceWorkspaceResource{
+		b, err := json.MarshalIndent(tfeprovider.Workspace{
 			ForEach:          "${var.workspace_names}",
 			Name:             "${each.value}",
 			Organization:     "${var.organization}",
@@ -321,35 +323,19 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 }
 
-func TestAddRemoteStates(t *testing.T) {
-	wsConfig := WorkspaceConfig{
-		Data: map[string]map[string]interface{}{},
-	}
-
-	foo := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
-	bar := RemoteState{Backend: "S3", Config: RemoteStateBackendConfig{}}
-
-	wsConfig.AddRemoteStates(map[string]RemoteState{
-		"foo": foo,
-		"bar": bar,
-	})
-
-	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["foo"], foo)
-	assert.Equal(t, wsConfig.Data["terraform_remote_state"]["bar"], bar)
-}
-
 func TestAddTeamAccess(t *testing.T) {
 	t.Run("Add basic team access", func(t *testing.T) {
-		ws := WorkspaceConfig{
+		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
-		ws.AddTeamAccess([]TeamAccess{
+
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
 			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
 		}, "org")
 
-		assert.Equal(t, ws.Data["tfe_team"]["teams"], TeamDataResource{
+		assert.Equal(t, module.Data["tfe_team"]["teams"], TeamDataResource{
 			ForEach: map[string]TeamDataResource{
 				"Readers": {
 					Name:         "Readers",
@@ -364,8 +350,8 @@ func TestAddTeamAccess(t *testing.T) {
 			Organization: "${each.value.organization}",
 		})
 
-		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"], WorkspaceTeamAccessResource{
-			ForEach: map[string]WorkspaceTeamAccessResource{
+		assert.Equal(t, module.Resources["tfe_team_access"]["teams"], tfeprovider.TeamAccess{
+			ForEach: map[string]tfeprovider.TeamAccess{
 				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
@@ -380,10 +366,10 @@ func TestAddTeamAccess(t *testing.T) {
 			TeamID:      "${each.value.team_id}",
 			WorkspaceID: "${each.value.workspace_id}",
 			Access:      "${lookup(each.value, \"access\", null)}",
-			DynamicPermissions: &DynamicPermissions{
-				Permission: []DynamicPermissionEntry{{
+			DynamicPermissions: &tfeprovider.DynamicPermissions{
+				Permission: []tfeprovider.DynamicPermissionEntry{{
 					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
-					Content: DyanmicPermissionsContent{
+					Content: &tfeprovider.TeamAccessPermissions{
 						Runs:             "${each.value.permissions.runs}",
 						Variables:        "${each.value.permissions.variables}",
 						StateVersions:    "${each.value.permissions.state_versions}",
@@ -396,24 +382,24 @@ func TestAddTeamAccess(t *testing.T) {
 	})
 
 	t.Run("Add team access with a team ID", func(t *testing.T) {
-		ws := WorkspaceConfig{
+		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		ws.AddTeamAccess([]TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
 			{TeamID: "team-12345", Access: "read", WorkspaceName: "workspace"},
 		}, "org")
 
-		assert.Equal(t, ws.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
+		assert.Equal(t, module.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
 			"Writers": {
 				Name:         "Writers",
 				Organization: "org",
 			},
 		})
 
-		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
 			"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
 				TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
@@ -428,19 +414,19 @@ func TestAddTeamAccess(t *testing.T) {
 	})
 
 	t.Run("Add only team access items containing team IDs", func(t *testing.T) {
-		ws := WorkspaceConfig{
+		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		ws.AddTeamAccess([]TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamID: "team-12345", Access: "write", WorkspaceName: "workspace"},
 			{TeamID: "team-67890", Access: "read", WorkspaceName: "workspace"},
 		}, "org")
 
-		assert.Equal(t, ws.Data["tfe_team"]["teams"], nil)
+		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
 
-		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
 			"workspace-team-12345": {
 				TeamID:      "team-12345",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
@@ -455,18 +441,18 @@ func TestAddTeamAccess(t *testing.T) {
 	})
 
 	t.Run("Add with team ID expression", func(t *testing.T) {
-		ws := WorkspaceConfig{
+		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		ws.AddTeamAccess([]TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamID: "${data.terraform_remote_state.teams.output.teams[\"team\"].id}", Access: "write", WorkspaceName: "workspace"},
 		}, "org")
 
-		assert.Equal(t, ws.Data["tfe_team"]["teams"], nil)
+		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
 
-		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
 			"workspace-${data.terraform_remote_state.teams.output.teams[\"team\"].id}": {
 				TeamID:      "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
@@ -476,13 +462,13 @@ func TestAddTeamAccess(t *testing.T) {
 	})
 
 	t.Run("Add with permissions block", func(t *testing.T) {
-		ws := WorkspaceConfig{
+		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		ws.AddTeamAccess([]TeamAccess{
-			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissions{
+		AddTeamAccess(module, TeamAccessInput{
+			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",
 				StateVersions:    "none",
@@ -491,19 +477,19 @@ func TestAddTeamAccess(t *testing.T) {
 			}},
 		}, "org")
 
-		assert.Equal(t, ws.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
+		assert.Equal(t, module.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
 			"Readers": {
 				Name:         "Readers",
 				Organization: "org",
 			},
 		})
 
-		assert.Equal(t, ws.Resources["tfe_team_access"]["teams"].(WorkspaceTeamAccessResource).ForEach, map[string]WorkspaceTeamAccessResource{
+		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
 			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
 				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 				Access:      "",
-				Permissions: &TeamAccessPermissions{
+				Permissions: &tfeprovider.TeamAccessPermissions{
 					Runs:             "read",
 					Variables:        "read",
 					StateVersions:    "none",
@@ -516,22 +502,22 @@ func TestAddTeamAccess(t *testing.T) {
 }
 
 func TestAddProviders(t *testing.T) {
-	wsConfig := WorkspaceConfig{
+	module := &tfconfig.Module{
 		Data:      map[string]map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{},
 	}
 
-	wsConfig.AddProviders([]Provider{
-		{Name: "tfe", Version: "0.25.0", Source: "hashicorp/tfe", Config: TFEProvider{Hostname: "app.terraform.io"}},
+	AddProviders(module, []Provider{
+		{Name: "tfe", Version: "0.25.0", Source: "hashicorp/tfe", Config: tfeprovider.Config{Hostname: "app.terraform.io"}},
 	})
 
-	assert.Equal(t, wsConfig.Providers["tfe"].(TFEProvider).Hostname, "app.terraform.io")
-	assert.Equal(t, wsConfig.Terraform.RequiredProviders["tfe"].Source, "hashicorp/tfe")
-	assert.Equal(t, wsConfig.Terraform.RequiredProviders["tfe"].Version, "0.25.0")
+	assert.Equal(t, module.Providers["tfe"].(tfeprovider.Config).Hostname, "app.terraform.io")
+	assert.Equal(t, module.Terraform.RequiredProviders["tfe"].Source, "hashicorp/tfe")
+	assert.Equal(t, module.Terraform.RequiredProviders["tfe"].Version, "0.25.0")
 }
 
-func RunValidate(ctx context.Context, name string, tfexecPath string, wsConfig *WorkspaceConfig) (*tfjson.ValidateOutput, error) {
-	b, err := json.MarshalIndent(wsConfig, "", "\t")
+func RunValidate(ctx context.Context, name string, tfexecPath string, module *tfconfig.Module) (*tfjson.ValidateOutput, error) {
+	b, err := json.MarshalIndent(module, "", "\t")
 	if err != nil {
 		return nil, err
 	}
@@ -601,13 +587,13 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate basic workspace config", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &WorkspaceBackend{
-				Local: &LocalBackendConfig{},
+			Backend: &tfconfig.Backend{
+				Local: &tfconfig.LocalBackend{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
-			WorkspaceVariables: map[string]WorkspaceVariable{
+			WorkspaceVariables: map[string]tfconfig.Variable{
 				"workspace_names": {
 					Type: "set(string)",
 				},
@@ -627,15 +613,15 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with passed providers", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &WorkspaceBackend{
-				Local: &LocalBackendConfig{},
+			Backend: &tfconfig.Backend{
+				Local: &tfconfig.LocalBackend{},
 			},
 			Providers: []Provider{
 				{
 					Name:    "tfe",
 					Version: "0.25.0",
 					Source:  "hashicorp/tfe",
-					Config: TFEProvider{
+					Config: tfeprovider.Config{
 						Hostname: "app.terraform.io",
 					},
 				},
@@ -643,7 +629,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
-			WorkspaceVariables: map[string]WorkspaceVariable{
+			WorkspaceVariables: map[string]tfconfig.Variable{
 				"workspace_names": {
 					Type: "set(string)",
 				},
@@ -663,21 +649,21 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with remote states", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &WorkspaceBackend{
-				Local: &LocalBackendConfig{},
+			Backend: &tfconfig.Backend{
+				Local: &tfconfig.LocalBackend{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
-			WorkspaceVariables: map[string]WorkspaceVariable{
+			WorkspaceVariables: map[string]tfconfig.Variable{
 				"workspace_names": {
 					Type: "set(string)",
 				},
 			},
-			RemoteStates: map[string]RemoteState{
+			RemoteStates: map[string]tfconfig.RemoteState{
 				"foo": {
 					Backend: "s3",
-					Config: RemoteStateBackendConfig{
+					Config: tfconfig.RemoteStateBackendConfig{
 						Key:    "key",
 						Bucket: "bucket",
 						Region: "us-east-1",
@@ -699,32 +685,32 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with team access", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &WorkspaceBackend{
-				Local: &LocalBackendConfig{},
+			Backend: &tfconfig.Backend{
+				Local: &tfconfig.LocalBackend{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
-			WorkspaceVariables: map[string]WorkspaceVariable{
+			WorkspaceVariables: map[string]tfconfig.Variable{
 				"workspace_names": {
 					Type: "set(string)",
 				},
 			},
-			RemoteStates: map[string]RemoteState{
+			RemoteStates: map[string]tfconfig.RemoteState{
 				"teams": {
 					Backend: "remote",
-					Config: RemoteStateBackendConfig{
+					Config: tfconfig.RemoteStateBackendConfig{
 						Organization: "org",
 						Hostname:     "app.terraform.io",
-						Workspaces: &RemoteStateBackendConfigWorkspaces{
+						Workspaces: &tfconfig.RemoteStateBackendConfigWorkspaces{
 							Name: "teams",
 						},
 					},
 				},
 			},
-			TeamAccess: []TeamAccess{
+			TeamAccess: TeamAccessInput{
 				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
-				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
+				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissionsInput{
 					Runs:             "read",
 					Variables:        "read",
 					StateVersions:    "read",
@@ -748,18 +734,18 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with variables", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &WorkspaceBackend{
-				Local: &LocalBackendConfig{},
+			Backend: &tfconfig.Backend{
+				Local: &tfconfig.LocalBackend{},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
-			WorkspaceVariables: map[string]WorkspaceVariable{
+			WorkspaceVariables: map[string]tfconfig.Variable{
 				"workspace_names": {
 					Type: "set(string)",
 				},
 			},
-			Variables: []Variable{
+			Variables: []VariablesInputItem{
 				{Key: "foo", Value: "bar", Category: "env", WorkspaceName: name},
 				{Key: "baz", Value: "woz", Category: "env", WorkspaceName: name},
 			},
