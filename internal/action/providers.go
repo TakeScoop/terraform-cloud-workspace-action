@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"

@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"context"
@@ -14,16 +14,6 @@ import (
 type Workspace struct {
 	Name      string
 	Workspace string
-}
-
-type WorkspaceVariableResource struct {
-	ForEach     string `json:"for_each,omitempty"`
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Description string `json:"description,omitempty"`
-	Category    string `json:"category,omitempty"`
-	WorkspaceID string `json:"workspace_id,omitempty"`
-	Sensitive   bool   `json:"sensitive,omitempty"`
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
@@ -144,7 +134,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 }
 
 // AddVariable adds the passed variables to the calling workspace
-func AddVariables(module *tfconfig.Module, vars []Variable) {
+func AddVariables(module *tfconfig.Module, vars []VariablesInputItem) {
 	if len(vars) == 0 {
 		return
 	}
@@ -159,8 +149,8 @@ func AddVariables(module *tfconfig.Module, vars []Variable) {
 }
 
 // NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
-func NewWorkspaceVariableResource(v Variable) *WorkspaceVariableResource {
-	return &WorkspaceVariableResource{
+func NewWorkspaceVariableResource(v VariablesInputItem) *tfeprovider.Variable {
+	return &tfeprovider.Variable{
 		Key:         v.Key,
 		Value:       v.Value,
 		Description: v.Description,
@@ -177,7 +167,7 @@ type TeamDataResource struct {
 }
 
 // AddTeamAccess adds the passed teams to the calling workspace
-func AddTeamAccess(module *tfconfig.Module, teamAccess []TeamAccess, organization string) {
+func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
@@ -254,8 +244,8 @@ type NewWorkspaceConfigOptions struct {
 	Backend                  *tfconfig.Backend
 	WorkspaceVariables       map[string]tfconfig.Variable
 	RemoteStates             map[string]tfconfig.RemoteState
-	Variables                []Variable
-	TeamAccess               []TeamAccess
+	Variables                []VariablesInputItem
+	TeamAccess               TeamAccessInput
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
 }
@@ -324,8 +314,8 @@ func WillDestroy(plan *tfjson.Plan, targetType string) bool {
 }
 
 // MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess []TeamAccess, workspaces []*Workspace) []TeamAccess {
-	ts := make([]TeamAccess, len(teamAccess)*len(workspaces))
+func MergeWorkspaceIDs(teamAccess TeamAccessInput, workspaces []*Workspace) TeamAccessInput {
+	ts := make(TeamAccessInput, len(teamAccess)*len(workspaces))
 
 	i := 0
 
@@ -351,10 +341,11 @@ func findWorkspace(workspaces []*Workspace, target string) *Workspace {
 }
 
 // ParseVariablesByWorkspace takes a list of workspace names, general variables and workspaced variables and flattens them into a single set
-func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars *[]Variable, workspaceVars *map[string][]Variable) ([]Variable, error) {
-	vars := []Variable{}
+// TODO: remove 'general' and clarify usage in description
+func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars VariablesInput, workspaceVars WorkspaceVariablesInput) ([]VariablesInputItem, error) {
+	vars := []VariablesInputItem{}
 
-	for _, v := range *generalVars {
+	for _, v := range generalVars {
 		for _, ws := range workspaces {
 			newVar := v
 
@@ -369,7 +360,7 @@ func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars *[]Variable,
 		workspacesNames[i] = ws.Workspace
 	}
 
-	for wsName, vs := range *workspaceVars {
+	for wsName, vs := range workspaceVars {
 		w := findWorkspace(workspaces, wsName)
 		if w == nil {
 			return nil, fmt.Errorf("workspace %q was not found in planned workspaces %v", wsName, workspacesNames)

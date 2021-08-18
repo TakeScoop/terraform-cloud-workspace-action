@@ -1,6 +1,10 @@
-package main
+package action
 
-type Variable struct {
+type VariablesInput []VariablesInputItem
+
+type WorkspaceVariablesInput map[string]VariablesInput
+
+type VariablesInputItem struct {
 	Key         string `yaml:"key"`
 	Value       string `yaml:"value"`
 	Description string `yaml:"description,omitempty"`

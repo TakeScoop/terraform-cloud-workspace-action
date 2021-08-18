@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"context"
@@ -330,7 +330,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, []TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
 			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
 		}, "org")
@@ -387,7 +387,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, []TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
 			{TeamID: "team-12345", Access: "read", WorkspaceName: "workspace"},
 		}, "org")
@@ -419,7 +419,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, []TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamID: "team-12345", Access: "write", WorkspaceName: "workspace"},
 			{TeamID: "team-67890", Access: "read", WorkspaceName: "workspace"},
 		}, "org")
@@ -446,7 +446,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, []TeamAccess{
+		AddTeamAccess(module, TeamAccessInput{
 			{TeamID: "${data.terraform_remote_state.teams.output.teams[\"team\"].id}", Access: "write", WorkspaceName: "workspace"},
 		}, "org")
 
@@ -467,8 +467,8 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, []TeamAccess{
-			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissions{
+		AddTeamAccess(module, TeamAccessInput{
+			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",
 				StateVersions:    "none",
@@ -708,9 +708,9 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					},
 				},
 			},
-			TeamAccess: []TeamAccess{
+			TeamAccess: TeamAccessInput{
 				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
-				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissions{
+				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissionsInput{
 					Runs:             "read",
 					Variables:        "read",
 					StateVersions:    "read",
@@ -745,7 +745,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
-			Variables: []Variable{
+			Variables: []VariablesInputItem{
 				{Key: "foo", Value: "bar", Category: "env", WorkspaceName: name},
 				{Key: "baz", Value: "woz", Category: "env", WorkspaceName: name},
 			},
