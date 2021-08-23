@@ -746,13 +746,13 @@ func TestNewWorkspaceConfig(t *testing.T) {
 				},
 			},
 			Variables: Variables{
-				VariablesItem{
+				Variable{
 					Key:       "foo",
 					Value:     "bar",
 					Category:  "env",
 					Workspace: &Workspace{Name: name},
 				},
-				VariablesItem{
+				Variable{
 					Key:       "baz",
 					Value:     "woz",
 					Category:  "env",

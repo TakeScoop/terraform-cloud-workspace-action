@@ -113,7 +113,7 @@ func Run() {
 
 	for _, ws := range workspaces {
 		for _, v := range genVars {
-			variables = append(variables, *NewVariablesItem(v, ws))
+			variables = append(variables, *NewVariable(v, ws))
 		}
 	}
 
@@ -125,7 +125,7 @@ func Run() {
 		}
 
 		for _, v := range wvs {
-			variables = append(variables, *NewVariablesItem(v, ws))
+			variables = append(variables, *NewVariable(v, ws))
 		}
 	}
 

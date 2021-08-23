@@ -18,9 +18,9 @@ type VariablesInputItem struct {
 	Sensitive   bool   `yaml:"sensitive,omitempty"`
 }
 
-type Variables []VariablesItem
+type Variables []Variable
 
-type VariablesItem struct {
+type Variable struct {
 	Key         string
 	Value       string
 	Description string
@@ -29,8 +29,9 @@ type VariablesItem struct {
 	Workspace   *Workspace
 }
 
-func NewVariablesItem(vi VariablesInputItem, w *Workspace) *VariablesItem {
-	return &VariablesItem{
+// NewVariable creates a new Variable struct
+func NewVariable(vi VariablesInputItem, w *Workspace) *Variable {
+	return &Variable{
 		Key:         vi.Key,
 		Value:       vi.Value,
 		Description: vi.Description,
@@ -40,14 +41,15 @@ func NewVariablesItem(vi VariablesInputItem, w *Workspace) *VariablesItem {
 	}
 }
 
-func (avi VariablesItem) ToResource() *tfeprovider.Variable {
+// ToResource converts a variable to a Terraform variable resource
+func (v Variable) ToResource() *tfeprovider.Variable {
 	resource := &tfeprovider.Variable{
-		Key:         avi.Key,
-		Value:       avi.Value,
-		Description: avi.Description,
-		Category:    avi.Category,
-		Sensitive:   avi.Sensitive,
-		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", avi.Workspace.Name),
+		Key:         v.Key,
+		Value:       v.Value,
+		Description: v.Description,
+		Category:    v.Category,
+		Sensitive:   v.Sensitive,
+		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.Workspace.Name),
 	}
 
 	if resource.Category == "" {
@@ -57,10 +59,11 @@ func (avi VariablesItem) ToResource() *tfeprovider.Variable {
 	return resource
 }
 
-func (av Variables) ToResource() []*tfeprovider.Variable {
-	vars := make([]*tfeprovider.Variable, len(av))
+// ToResource converts a list of variables to a list of Terraform variable resources
+func (vs Variables) ToResource() []*tfeprovider.Variable {
+	vars := make([]*tfeprovider.Variable, len(vs))
 
-	for i, avi := range av {
+	for i, avi := range vs {
 		vars[i] = avi.ToResource()
 	}
 
