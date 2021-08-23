@@ -133,29 +133,14 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 	return ws, nil
 }
 
-// AddVariable adds the passed variables to the calling workspace
-func AddVariables(module *tfconfig.Module, vars Variables) {
-	if len(vars) == 0 {
-		return
-	}
-
-	varResources := map[string]interface{}{}
-
-	for _, v := range vars {
-		varResources[fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key)] = v.ToResource()
-	}
-
-	module.Resources["tfe_variable"] = varResources
-}
-
 type TeamDataResource struct {
 	ForEach      map[string]TeamDataResource `json:"for_each,omitempty"`
 	Name         string                      `json:"name"`
 	Organization string                      `json:"organization"`
 }
 
-// AddTeamAccess adds the passed teams to the calling workspace
-func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
+// AppendTeamAccess adds the passed teams to the calling workspace
+func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
@@ -184,48 +169,31 @@ func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organiza
 	}
 
 	if len(dataForEach) > 0 {
-		module.Data["tfe_team"] = map[string]interface{}{
-			"teams": TeamDataResource{
-				ForEach:      dataForEach,
-				Name:         "${each.value.name}",
-				Organization: "${each.value.organization}",
-			},
-		}
+		module.AppendData("tfe_team", "teams", TeamDataResource{
+			ForEach:      dataForEach,
+			Name:         "${each.value.name}",
+			Organization: "${each.value.organization}",
+		})
 	}
 
-	module.Resources["tfe_team_access"] = map[string]interface{}{
-		"teams": tfeprovider.TeamAccess{
-			ForEach:     resourceForEach,
-			TeamID:      "${each.value.team_id}",
-			WorkspaceID: "${each.value.workspace_id}",
-			Access:      "${lookup(each.value, \"access\", null)}",
-			DynamicPermissions: &tfeprovider.DynamicPermissions{
-				Permission: []tfeprovider.DynamicPermissionEntry{{
-					ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
-					Content: &tfeprovider.TeamAccessPermissions{
-						Runs:             "${each.value.permissions.runs}",
-						Variables:        "${each.value.permissions.variables}",
-						StateVersions:    "${each.value.permissions.state_versions}",
-						SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
-						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
-					},
-				}},
-			},
+	module.AppendResource("tfe_team_access", "teams", tfeprovider.TeamAccess{
+		ForEach:     resourceForEach,
+		TeamID:      "${each.value.team_id}",
+		WorkspaceID: "${each.value.workspace_id}",
+		Access:      "${lookup(each.value, \"access\", null)}",
+		DynamicPermissions: &tfeprovider.DynamicPermissions{
+			Permission: []tfeprovider.DynamicPermissionEntry{{
+				ForEach: "${lookup(each.value ,\"permissions\", null) != null ? {once: true} : {}}",
+				Content: &tfeprovider.TeamAccessPermissions{
+					Runs:             "${each.value.permissions.runs}",
+					Variables:        "${each.value.permissions.variables}",
+					StateVersions:    "${each.value.permissions.state_versions}",
+					SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
+					WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+				},
+			}},
 		},
-	}
-}
-
-// AddRemoteStates adds the passed remote state to the calling workspace
-func AddRemoteStates(module *tfconfig.Module, remoteStates map[string]tfconfig.RemoteState) {
-	if len(remoteStates) == 0 {
-		return
-	}
-
-	module.Data["terraform_remote_state"] = map[string]interface{}{}
-
-	for name, block := range remoteStates {
-		module.Data["terraform_remote_state"][name] = block
-	}
+	})
 }
 
 type NewWorkspaceConfigOptions struct {
@@ -258,10 +226,16 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 	}
 
-	module.AppendData("terraform_remote_state", config.RemoteStates)
-	// AddRemoteStates(module, config.RemoteStates)
-	AddVariables(module, config.Variables)
-	AddTeamAccess(module, config.TeamAccess, wsResource.Organization)
+	for name, state := range config.RemoteStates {
+		module.AppendData("terraform_remote_state", name, state)
+	}
+
+	for _, v := range config.Variables {
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key), v.ToResource())
+	}
+
+	AppendTeamAccess(module, config.TeamAccess, wsResource.Organization)
+
 	AddProviders(module, config.Providers)
 
 	return module, nil

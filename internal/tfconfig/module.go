@@ -8,32 +8,18 @@ type Module struct {
 	Providers map[string]ProviderConfig         `json:"provider,omitempty"`
 }
 
-func (m *Module) AppendData(dataType string, sources map[string]interface{}) {
-	if len(sources) == 0 {
-		return
+// AppendData appends a data source of type "sourceType" with name "name" to the workspace's data configuration
+func (m *Module) AppendData(sourceType string, name string, source interface{}) {
+	if _, ok := m.Data[sourceType]; !ok {
+		m.Data[sourceType] = map[string]interface{}{}
 	}
-
-	if _, ok := m.Data[dataType]; !ok {
-		m.Data[dataType] = map[string]interface{}{}
-	}
-
-	for name, source := range sources {
-		m.Data[dataType][name] = source
-	}
+	m.Data[sourceType][name] = source
 }
 
-type Resources map[string]interface{}
-
-func (m *Module) AppendResource(resourceType string, resources Resources) {
-	if len(resources) == 0 {
-		return
+// AppendData appends a resource of type "sourceType" with name "name" to the workspace's resources configuration
+func (m *Module) AppendResource(sourceType string, name string, source interface{}) {
+	if _, ok := m.Resources[sourceType]; !ok {
+		m.Resources[sourceType] = map[string]interface{}{}
 	}
-
-	if _, ok := m.Resources[resourceType]; !ok {
-		m.Resources[resourceType] = map[string]interface{}{}
-	}
-
-	for name, source := range resources {
-		m.Resources[resourceType][name] = source
-	}
+	m.Resources[sourceType][name] = source
 }
