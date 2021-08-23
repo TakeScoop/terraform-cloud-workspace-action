@@ -226,8 +226,8 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 	}
 
-	for name, state := range config.RemoteStates {
-		module.AppendData("terraform_remote_state", name, state)
+	for name, rs := range config.RemoteStates {
+		module.AppendData("terraform_remote_state", name, rs)
 	}
 
 	for _, v := range config.Variables {
