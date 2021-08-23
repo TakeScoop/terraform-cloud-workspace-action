@@ -745,9 +745,19 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
-			Variables: []VariablesInputItem{
-				{Key: "foo", Value: "bar", Category: "env", WorkspaceName: name},
-				{Key: "baz", Value: "woz", Category: "env", WorkspaceName: name},
+			Variables: Variables{
+				VariablesItem{
+					Key:       "foo",
+					Value:     "bar",
+					Category:  "env",
+					Workspace: &Workspace{Name: name},
+				},
+				VariablesItem{
+					Key:       "baz",
+					Value:     "woz",
+					Category:  "env",
+					Workspace: &Workspace{Name: name},
+				},
 			},
 		})
 		if err != nil {

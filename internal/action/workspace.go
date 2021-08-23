@@ -134,7 +134,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *Works
 }
 
 // AddVariable adds the passed variables to the calling workspace
-func AddVariables(module *tfconfig.Module, vars []VariablesInputItem) {
+func AddVariables(module *tfconfig.Module, vars Variables) {
 	if len(vars) == 0 {
 		return
 	}
@@ -142,22 +142,10 @@ func AddVariables(module *tfconfig.Module, vars []VariablesInputItem) {
 	varResources := map[string]interface{}{}
 
 	for _, v := range vars {
-		varResources[fmt.Sprintf("%s-%s", v.WorkspaceName, v.Key)] = NewWorkspaceVariableResource(v)
+		varResources[fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key)] = v.ToResource()
 	}
 
 	module.Resources["tfe_variable"] = varResources
-}
-
-// NewWorkspaceVariableResource takes a Variable and uses it to fill a new WorkspaceVariableResource
-func NewWorkspaceVariableResource(v VariablesInputItem) *tfeprovider.Variable {
-	return &tfeprovider.Variable{
-		Key:         v.Key,
-		Value:       v.Value,
-		Description: v.Description,
-		Category:    v.Category,
-		Sensitive:   v.Sensitive,
-		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.WorkspaceName),
-	}
 }
 
 type TeamDataResource struct {
@@ -244,7 +232,7 @@ type NewWorkspaceConfigOptions struct {
 	Backend                  *tfconfig.Backend
 	WorkspaceVariables       map[string]tfconfig.Variable
 	RemoteStates             map[string]tfconfig.RemoteState
-	Variables                []VariablesInputItem
+	Variables                Variables
 	TeamAccess               TeamAccessInput
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
@@ -330,6 +318,7 @@ func MergeWorkspaceIDs(teamAccess TeamAccessInput, workspaces []*Workspace) Team
 	return ts
 }
 
+// findWorkspace returns a workspace that matches the passed Terraform workspace identifier (not the workspace name)
 func findWorkspace(workspaces []*Workspace, target string) *Workspace {
 	for _, v := range workspaces {
 		if v.Workspace == target {
@@ -338,46 +327,4 @@ func findWorkspace(workspaces []*Workspace, target string) *Workspace {
 	}
 
 	return nil
-}
-
-// ParseVariablesByWorkspace takes a list of workspace names, general variables and workspaced variables and flattens them into a single set
-// TODO: remove 'general' and clarify usage in description
-func ParseVariablesByWorkspace(workspaces []*Workspace, generalVars VariablesInput, workspaceVars WorkspaceVariablesInput) ([]VariablesInputItem, error) {
-	vars := []VariablesInputItem{}
-
-	for _, v := range generalVars {
-		for _, ws := range workspaces {
-			newVar := v
-
-			newVar.WorkspaceName = ws.Name
-
-			vars = append(vars, newVar)
-		}
-	}
-
-	workspacesNames := make([]string, len(workspaces))
-	for i, ws := range workspaces {
-		workspacesNames[i] = ws.Workspace
-	}
-
-	for wsName, vs := range workspaceVars {
-		w := findWorkspace(workspaces, wsName)
-		if w == nil {
-			return nil, fmt.Errorf("workspace %q was not found in planned workspaces %v", wsName, workspacesNames)
-		}
-
-		for _, v := range vs {
-			v.WorkspaceName = w.Name
-
-			vars = append(vars, v)
-		}
-	}
-
-	for i := range vars {
-		if vars[i].Category == "" {
-			vars[i].Category = "env"
-		}
-	}
-
-	return vars, nil
 }
