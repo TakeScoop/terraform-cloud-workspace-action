@@ -318,8 +318,8 @@ func MergeWorkspaceIDs(teamAccess TeamAccessInput, workspaces []*Workspace) Team
 	return ts
 }
 
-// findWorkspace returns a workspace that matches the passed Terraform workspace identifier (not the workspace name)
-func findWorkspace(workspaces []*Workspace, target string) *Workspace {
+// FindWorkspace returns a workspace that matches the passed Terraform workspace identifier (not the workspace name)
+func FindWorkspace(workspaces []*Workspace, target string) *Workspace {
 	for _, v := range workspaces {
 		if v.Workspace == target {
 			return v

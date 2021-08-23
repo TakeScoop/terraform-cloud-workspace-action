@@ -118,7 +118,7 @@ func Run() {
 	}
 
 	for wsName, wvs := range wsVars {
-		ws := findWorkspace(workspaces, wsName)
+		ws := FindWorkspace(workspaces, wsName)
 
 		if ws == nil {
 			log.Fatalf("Failed to match workspace variable with known workspaces. Workspace %s not found", wsName)
