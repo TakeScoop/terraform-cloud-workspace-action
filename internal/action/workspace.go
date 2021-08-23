@@ -270,7 +270,8 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 		},
 	}
 
-	AddRemoteStates(module, config.RemoteStates)
+	module.AppendData("terraform_remote_state", config.RemoteStates)
+	// AddRemoteStates(module, config.RemoteStates)
 	AddVariables(module, config.Variables)
 	AddTeamAccess(module, config.TeamAccess, wsResource.Organization)
 	AddProviders(module, config.Providers)
