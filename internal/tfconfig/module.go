@@ -13,13 +13,15 @@ func (m *Module) AppendData(sourceType string, name string, source interface{}) 
 	if _, ok := m.Data[sourceType]; !ok {
 		m.Data[sourceType] = map[string]interface{}{}
 	}
+
 	m.Data[sourceType][name] = source
 }
 
-// AppendResource appends a resource of type "sourceType" with name "name" to the workspace's resources configuration
+// AppendData appends a resource of type "sourceType" with name "name" to the workspace's resources configuration
 func (m *Module) AppendResource(sourceType string, name string, source interface{}) {
 	if _, ok := m.Resources[sourceType]; !ok {
 		m.Resources[sourceType] = map[string]interface{}{}
 	}
+
 	m.Resources[sourceType][name] = source
 }
