@@ -155,7 +155,7 @@ type TeamDataResource struct {
 }
 
 // AddTeamAccess adds the passed teams to the calling workspace
-func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
+func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
@@ -175,9 +175,9 @@ func AddTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organiza
 			teamIDRef = fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 		}
 
-		resourceForEach[fmt.Sprintf("%s-%s", access.WorkspaceName, teamIDRef)] = tfeprovider.TeamAccess{
+		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, teamIDRef)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
-			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.WorkspaceName),
+			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Name),
 			Access:      access.Access,
 			Permissions: access.ToResource().Permissions,
 		}
@@ -233,7 +233,7 @@ type NewWorkspaceConfigOptions struct {
 	WorkspaceVariables       map[string]tfconfig.Variable
 	RemoteStates             map[string]tfconfig.RemoteState
 	Variables                Variables
-	TeamAccess               TeamAccessInput
+	TeamAccess               TeamAccess
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
 }
@@ -299,23 +299,6 @@ func WillDestroy(plan *tfjson.Plan, targetType string) bool {
 	}
 
 	return false
-}
-
-// MergeWorkspaceIDs returns a new slice of TeamAccess structs
-func MergeWorkspaceIDs(teamAccess TeamAccessInput, workspaces []*Workspace) TeamAccessInput {
-	ts := make(TeamAccessInput, len(teamAccess)*len(workspaces))
-
-	i := 0
-
-	for _, team := range teamAccess {
-		for _, ws := range workspaces {
-			team.WorkspaceName = ws.Name
-			ts[i] = team
-			i = i + 1
-		}
-	}
-
-	return ts
 }
 
 // FindWorkspace returns a workspace that matches the passed Terraform workspace identifier (not the workspace name)

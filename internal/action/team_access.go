@@ -15,13 +15,43 @@ type TeamAccessInputItem struct {
 	Permissions *TeamAccessPermissionsInput `yaml:"permissions,omitempty"`
 	TeamName    string                      `yaml:"name"`
 	TeamID      string                      `yaml:"id"`
-
-	// TODO: remove this, objects should not store data on behalf of callers
-	WorkspaceName string
 }
 
-// ToResource converts the TeamAccess input to a Terraform resource
-func (ta TeamAccessInputItem) ToResource() *tfeprovider.TeamAccess {
+type TeamAccess []TeamAccessItem
+
+type TeamAccessItem struct {
+	Access      string
+	Permissions *TeamAccessPermissionsInput
+	TeamName    string
+	TeamID      string
+
+	Workspace *Workspace
+}
+
+// NewTeamAccess takes a team inputs and workspaces and returns a TeamAccessItem per input, per workspace
+func NewTeamAccess(inputs TeamAccessInput, workspaces []*Workspace) TeamAccess {
+	access := make(TeamAccess, len(inputs)*len(workspaces))
+
+	i := 0
+
+	for _, team := range inputs {
+		for _, ws := range workspaces {
+			access[i] = TeamAccessItem{
+				Access:      team.Access,
+				Permissions: team.Permissions,
+				TeamName:    team.TeamName,
+				TeamID:      team.TeamID,
+				Workspace:   ws,
+			}
+			i = i + 1
+		}
+	}
+
+	return access
+}
+
+// ToResource converts the TeamAccessItem to a Terraform resource
+func (ta TeamAccessItem) ToResource() *tfeprovider.TeamAccess {
 	resource := &tfeprovider.TeamAccess{
 		Access: ta.Access,
 		TeamID: ta.TeamID,
@@ -41,9 +71,9 @@ func (ta TeamAccessInputItem) ToResource() *tfeprovider.TeamAccess {
 }
 
 // Validate validates the content of the team access input
-func (ta TeamAccessInputItem) Validate() error {
-	if ta.TeamID != "" && ta.TeamName != "" {
-		return fmt.Errorf("team name and team ID cannot both be set: %s, %s", ta.TeamID, ta.TeamName)
+func (tai TeamAccessInputItem) Validate() error {
+	if tai.TeamID != "" && tai.TeamName != "" {
+		return fmt.Errorf("team name and team ID cannot both be set: %s, %s", tai.TeamID, tai.TeamName)
 	}
 
 	return nil

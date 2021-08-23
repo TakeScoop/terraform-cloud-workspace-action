@@ -330,9 +330,9 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccessInput{
-			{TeamName: "Readers", Access: "read", WorkspaceName: "workspace"},
-			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
+		AddTeamAccess(module, TeamAccess{
+			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace"}},
+			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"], TeamDataResource{
@@ -387,9 +387,9 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccessInput{
-			{TeamName: "Writers", Access: "write", WorkspaceName: "workspace"},
-			{TeamID: "team-12345", Access: "read", WorkspaceName: "workspace"},
+		AddTeamAccess(module, TeamAccess{
+			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
+			TeamAccessItem{TeamID: "team-12345", Access: "read", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
@@ -419,9 +419,9 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccessInput{
-			{TeamID: "team-12345", Access: "write", WorkspaceName: "workspace"},
-			{TeamID: "team-67890", Access: "read", WorkspaceName: "workspace"},
+		AddTeamAccess(module, TeamAccess{
+			TeamAccessItem{TeamID: "team-12345", Access: "write", Workspace: &Workspace{Name: "workspace"}},
+			TeamAccessItem{TeamID: "team-67890", Access: "read", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
@@ -446,8 +446,11 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccessInput{
-			{TeamID: "${data.terraform_remote_state.teams.output.teams[\"team\"].id}", Access: "write", WorkspaceName: "workspace"},
+		AddTeamAccess(module, TeamAccess{
+			TeamAccessItem{
+				TeamID:    "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
+				Access:    "write",
+				Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
@@ -467,8 +470,8 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccessInput{
-			{TeamName: "Readers", WorkspaceName: "workspace", Permissions: &TeamAccessPermissionsInput{
+		AddTeamAccess(module, TeamAccess{
+			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace"}, Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",
 				StateVersions:    "none",
@@ -708,16 +711,16 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					},
 				},
 			},
-			TeamAccess: TeamAccessInput{
-				{TeamName: "Readers", WorkspaceName: name, Access: "read"},
-				{TeamName: "Writers", WorkspaceName: name, Permissions: &TeamAccessPermissionsInput{
+			TeamAccess: TeamAccess{
+				TeamAccessItem{TeamName: "Readers", Workspace: &Workspace{Name: name}, Access: "read"},
+				TeamAccessItem{TeamName: "Writers", Workspace: &Workspace{Name: name}, Permissions: &TeamAccessPermissionsInput{
 					Runs:             "read",
 					Variables:        "read",
 					StateVersions:    "read",
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
 				}},
-				{TeamName: "${data.terraform_remote_state.teams.outputs.team}", WorkspaceName: name, Access: "read"},
+				TeamAccessItem{TeamName: "${data.terraform_remote_state.teams.outputs.team}", Workspace: &Workspace{Name: name}, Access: "read"},
 			},
 		})
 		if err != nil {
