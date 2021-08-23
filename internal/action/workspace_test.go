@@ -745,9 +745,19 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Type: "set(string)",
 				},
 			},
-			Variables: []VariablesInputItem{
-				{Key: "foo", Value: "bar", Category: "env", WorkspaceName: name},
-				{Key: "baz", Value: "woz", Category: "env", WorkspaceName: name},
+			Variables: Variables{
+				Variable{
+					Key:       "foo",
+					Value:     "bar",
+					Category:  "env",
+					Workspace: &Workspace{Name: name},
+				},
+				Variable{
+					Key:       "baz",
+					Value:     "woz",
+					Category:  "env",
+					Workspace: &Workspace{Name: name},
+				},
 			},
 		})
 		if err != nil {
@@ -925,5 +935,22 @@ resource "random_pet" "pet" {}
 		}
 
 		assert.Equal(t, WillDestroy(plan, "random_pet"), false)
+	})
+}
+
+func TestFindWorkspace(t *testing.T) {
+	t.Run("should find a workspace", func(t *testing.T) {
+		workspaces := []*Workspace{
+			{Name: "foo-staging", Workspace: "staging"},
+			{Name: "foo-production", Workspace: "production"},
+		}
+		assert.Equal(t, FindWorkspace(workspaces, "staging"), workspaces[0])
+	})
+
+	t.Run("should not find a workspace", func(t *testing.T) {
+		assert.Equal(t, FindWorkspace([]*Workspace{
+			{Name: "foo-staging", Workspace: "staging"},
+			{Name: "foo-production", Workspace: "production"},
+		}, "foo"), (*Workspace)(nil))
 	})
 }
