@@ -104,9 +104,29 @@ func Run() {
 		log.Fatalf("Failed to parse workspace variables %s", err)
 	}
 
-	vars, err := ParseVariablesByWorkspace(workspaces, genVars, wsVars)
-	if err != nil {
-		log.Fatalf("Failed to parse variables: %s", err)
+	wsNames := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		wsNames[i] = ws.Name
+	}
+
+	variables := Variables{}
+
+	for _, ws := range workspaces {
+		for _, v := range genVars {
+			variables = append(variables, *NewVariable(v, ws))
+		}
+	}
+
+	for wsName, wvs := range wsVars {
+		ws := FindWorkspace(workspaces, wsName)
+
+		if ws == nil {
+			log.Fatalf("Failed to match workspace variable with known workspaces. Workspace %s not found", wsName)
+		}
+
+		for _, v := range wvs {
+			variables = append(variables, *NewVariable(v, ws))
+		}
 	}
 
 	var teamInputs TeamAccessInput
@@ -153,7 +173,7 @@ func Run() {
 			},
 		},
 		RemoteStates: remoteStates,
-		Variables:    vars,
+		Variables:    variables,
 		TeamAccess:   teamAccess,
 		Providers: []Provider{
 			{
@@ -184,11 +204,6 @@ func Run() {
 		log.Fatalf("error running Init: %s", err)
 	}
 
-	wsNames := make([]string, len(workspaces))
-	for i, ws := range workspaces {
-		wsNames[i] = ws.Name
-	}
-
 	wsBytes, err := json.Marshal(wsNames)
 	if err != nil {
 		log.Fatalf("error marshalling workspaces input: %s", err)
@@ -213,8 +228,8 @@ func Run() {
 			}
 		}
 
-		for _, v := range vars {
-			err = ImportVariable(ctx, tf, client, v.Key, v.WorkspaceName, org, opts...)
+		for _, v := range variables {
+			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org, opts...)
 			if err != nil {
 				log.Fatalf("Error importing variables: %s\n", err)
 			}
