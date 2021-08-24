@@ -9,4 +9,5 @@ require (
 	github.com/sethvargo/go-githubactions v0.4.0
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v2 v2.4.0
+	sigs.k8s.io/yaml v1.2.0
 )

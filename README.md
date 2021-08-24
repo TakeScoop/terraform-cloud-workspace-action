@@ -60,7 +60,7 @@ jobs:
 
 ### Backend Config
 
-This project supports two backend types, `s3` and `local`
+This project supports arbitrary backend configuration. Any configuration passed via `backend_config` will be directly added to the workspcae configuration.
 
 ```yml
 with:
@@ -73,6 +73,14 @@ with:
       role_arn: arn:aws:iam::123456789:role/terraform
       access_key: xxx
       secret_key: xxx
+```
+
+```yml
+with:
+  ...
+  backend_config: |-
+    local:
+      path: path/to/my/terraform.tfstate
 ```
 
 ### Variables and Workspace Variables
