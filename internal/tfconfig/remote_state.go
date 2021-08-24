@@ -1,20 +1,5 @@
 package tfconfig
 
-// AddRemoteStates adds remote state data sources to the module
-// TODO: discard this entirely in favor of AppendResource
-// also: the logic here is incorrect, this func is setting, it is not adding/appending
-func (m *Module) AddRemoteStates(remoteStates map[string]RemoteState) {
-	if len(remoteStates) == 0 {
-		return
-	}
-
-	m.Data["terraform_remote_state"] = map[string]interface{}{}
-
-	for name, block := range remoteStates {
-		m.Data["terraform_remote_state"][name] = block
-	}
-}
-
 type RemoteStateBackendConfigWorkspaces struct {
 	Name string `json:"name"`
 }
