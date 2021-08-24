@@ -60,7 +60,7 @@ jobs:
 
 ### Backend Config
 
-This project supports arbitrary backend configuration. Any configuration passed via `backend_config` will be directly added to the workspcae configuration.
+This project supports any backend supported by the selected Terraform version. The backend is used to persist the state of the Terraform Cloud workspace itself and its related resources (e.g., variables, teams). You generally should not pass "remote" workspace configuration, since that creates a circular dependency. 
 
 ```yml
 with:
