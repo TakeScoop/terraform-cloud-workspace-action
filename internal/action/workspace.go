@@ -140,7 +140,7 @@ type TeamDataResource struct {
 }
 
 // AppendTeamAccess adds the passed teams to the calling workspace
-func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccessInput, organization string) {
+func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organization string) {
 	if len(teamAccess) == 0 {
 		return
 	}
