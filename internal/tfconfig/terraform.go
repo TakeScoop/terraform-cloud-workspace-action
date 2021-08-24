@@ -1,7 +1,7 @@
 package tfconfig
 
 type Terraform struct {
-	Backend           map[string]interface{}      `json:"backend"`
+	Backend           map[string]interface{}      `json:"backend,omitempty"`
 	RequiredVersion   string                      `json:"required_version,omitempty"`
 	RequiredProviders map[string]RequiredProvider `json:"required_providers,omitempty"`
 }

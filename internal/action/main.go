@@ -213,7 +213,7 @@ func Run() {
 		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
 	}
 
-	if inputs.GetBool("import") {
+	if inputs.GetBool("import") || backend == nil {
 		fmt.Println("Importing resources...")
 
 		opts := make([]tfexec.ImportOption, len(varOpts))

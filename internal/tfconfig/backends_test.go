@@ -58,4 +58,11 @@ foo:
 		assert.Contains(t, be["foo"], "bar")
 		assert.Equal(t, be["foo"].(map[string]interface{})["bar"], "baz")
 	})
+
+	t.Run("Parse empty backend", func(t *testing.T) {
+		be, err := ParseBackend("")
+
+		assert.NoError(t, err)
+		assert.Equal(t, be, (map[string]interface{})(nil))
+	})
 }

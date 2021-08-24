@@ -62,6 +62,9 @@ jobs:
 
 This project supports any backend supported by the selected Terraform version. The backend is used to persist the state of the Terraform Cloud workspace itself and its related resources (e.g., variables, teams). You generally should not pass "remote" workspace configuration, since that creates a circular dependency. 
 
+If no backend is passed, the default Terraform local backend will be used.
+**NOTE** When using the default local backend, `import` will always be true to ensure that resources can be managed across action runs. 
+
 ```yml
 with:
   ...
@@ -73,14 +76,6 @@ with:
       role_arn: arn:aws:iam::123456789:role/terraform
       access_key: xxx
       secret_key: xxx
-```
-
-```yml
-with:
-  ...
-  backend_config: |-
-    local:
-      path: path/to/my/terraform.tfstate
 ```
 
 ### Variables and Workspace Variables
