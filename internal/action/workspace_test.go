@@ -323,14 +323,14 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 }
 
-func TestAddTeamAccess(t *testing.T) {
+func TestAppendTeamAccess(t *testing.T) {
 	t.Run("Add basic team access", func(t *testing.T) {
 		module := &tfconfig.Module{
 			Data:      map[string]map[string]interface{}{},
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccess{
+		AppendTeamAccess(module, TeamAccess{
 			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace"}},
 			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
@@ -387,7 +387,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccess{
+		AppendTeamAccess(module, TeamAccess{
 			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
 			TeamAccessItem{TeamID: "team-12345", Access: "read", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
@@ -419,7 +419,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccess{
+		AppendTeamAccess(module, TeamAccess{
 			TeamAccessItem{TeamID: "team-12345", Access: "write", Workspace: &Workspace{Name: "workspace"}},
 			TeamAccessItem{TeamID: "team-67890", Access: "read", Workspace: &Workspace{Name: "workspace"}},
 		}, "org")
@@ -446,7 +446,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccess{
+		AppendTeamAccess(module, TeamAccess{
 			TeamAccessItem{
 				TeamID:    "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
 				Access:    "write",
@@ -470,7 +470,7 @@ func TestAddTeamAccess(t *testing.T) {
 			Resources: map[string]map[string]interface{}{},
 		}
 
-		AddTeamAccess(module, TeamAccess{
+		AppendTeamAccess(module, TeamAccess{
 			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace"}, Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",

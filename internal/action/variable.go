@@ -63,8 +63,8 @@ func (v Variable) ToResource() *tfeprovider.Variable {
 func (vs Variables) ToResource() []*tfeprovider.Variable {
 	vars := make([]*tfeprovider.Variable, len(vs))
 
-	for i, avi := range vs {
-		vars[i] = avi.ToResource()
+	for i, v := range vs {
+		vars[i] = v.ToResource()
 	}
 
 	return vars
