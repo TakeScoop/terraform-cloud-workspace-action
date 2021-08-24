@@ -60,7 +60,10 @@ jobs:
 
 ### Backend Config
 
-This project supports two backend types, `s3` and `local`
+This project supports any backend supported by the selected Terraform version. The backend is used to persist the state of the Terraform Cloud workspace itself and its related resources (e.g., variables, teams). You generally should not pass "remote" workspace configuration, since that creates a circular dependency. 
+
+If no backend is passed, the default Terraform local backend will be used.
+**NOTE** When using the default local backend, `import` will always be true to ensure that resources can be managed across action runs. 
 
 ```yml
 with:

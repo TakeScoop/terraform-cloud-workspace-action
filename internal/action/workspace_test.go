@@ -590,8 +590,33 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate basic workspace config", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &tfconfig.Backend{
-				Local: &tfconfig.LocalBackend{},
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
+			},
+			WorkspaceVariables: map[string]tfconfig.Variable{
+				"workspace_names": {
+					Type: "set(string)",
+				},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate using a passed backend", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+			Backend: map[string]interface{}{
+				"local": map[string]interface{}{
+					"path": "foo/terraform.tfstate",
+				},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
@@ -616,9 +641,6 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with passed providers", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &tfconfig.Backend{
-				Local: &tfconfig.LocalBackend{},
-			},
 			Providers: []Provider{
 				{
 					Name:    "tfe",
@@ -652,9 +674,6 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with remote states", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &tfconfig.Backend{
-				Local: &tfconfig.LocalBackend{},
-			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -688,9 +707,6 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with team access", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &tfconfig.Backend{
-				Local: &tfconfig.LocalBackend{},
-			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -737,9 +753,6 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	t.Run("validate workspace with variables", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
-			Backend: &tfconfig.Backend{
-				Local: &tfconfig.LocalBackend{},
-			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},

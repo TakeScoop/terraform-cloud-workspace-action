@@ -197,7 +197,7 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 }
 
 type NewWorkspaceConfigOptions struct {
-	Backend                  *tfconfig.Backend
+	Backend                  map[string]interface{}
 	WorkspaceVariables       map[string]tfconfig.Variable
 	RemoteStates             map[string]tfconfig.RemoteState
 	Variables                Variables
@@ -214,9 +214,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 	}
 
 	module := &tfconfig.Module{
-		Terraform: tfconfig.Terraform{
-			Backend: *config.Backend,
-		},
+		Terraform: tfconfig.Terraform{},
 		Variables: config.WorkspaceVariables,
 		Data:      map[string]map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{
@@ -224,6 +222,10 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWork
 				"workspace": wsResource,
 			},
 		},
+	}
+
+	if config.Backend != nil {
+		module.Terraform.Backend = config.Backend
 	}
 
 	for name, rs := range config.RemoteStates {
