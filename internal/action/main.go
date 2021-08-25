@@ -225,11 +225,11 @@ func Run() {
 
 	planPath := "plan.txt"
 
-	opts := []tfexec.PlanOption{
+	planOpts := []tfexec.PlanOption{
 		tfexec.Out(planPath),
 	}
 
-	diff, err := tf.Plan(ctx, opts...)
+	diff, err := tf.Plan(ctx, planOpts...)
 	if err != nil {
 		log.Fatalf("error running plan: %s", err)
 	}
