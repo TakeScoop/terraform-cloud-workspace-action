@@ -148,7 +148,7 @@ func Run() {
 		log.Fatalf("Failed to parse backend: %s", err)
 	}
 
-	wsConfig, err := NewWorkspaceConfig(ctx, client, &NewWorkspaceConfigOptions{
+	wsConfig, err := NewWorkspaceConfig(ctx, client, workspaces, &NewWorkspaceConfigOptions{
 		Backend: backend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
@@ -166,11 +166,6 @@ func Run() {
 			VCSRepo:                githubactions.GetInput("vcs_repo"),
 			VCSTokenID:             githubactions.GetInput("vcs_token_id"),
 			VCSType:                githubactions.GetInput("vcs_type"),
-		},
-		WorkspaceVariables: map[string]tfconfig.Variable{
-			"workspace_names": {
-				Type: "set(string)",
-			},
 		},
 		RemoteStates: remoteStates,
 		Variables:    variables,
@@ -204,39 +199,25 @@ func Run() {
 		log.Fatalf("error running Init: %s", err)
 	}
 
-	wsBytes, err := json.Marshal(wsNames)
-	if err != nil {
-		log.Fatalf("error marshalling workspaces input: %s", err)
-	}
-
-	varOpts := []*tfexec.VarOption{
-		tfexec.Var(fmt.Sprintf("workspace_names=%s", string(wsBytes))),
-	}
-
 	if inputs.GetBool("import") || backend == nil {
 		fmt.Println("Importing resources...")
 
-		opts := make([]tfexec.ImportOption, len(varOpts))
-		for i, v := range varOpts {
-			opts[i] = v
-		}
-
 		for _, ws := range workspaces {
-			err = ImportWorkspace(ctx, tf, client, ws.Name, org, opts...)
+			err = ImportWorkspace(ctx, tf, client, ws.Name, org)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		for _, v := range variables {
-			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org, opts...)
+			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org)
 			if err != nil {
 				log.Fatalf("Error importing variables: %s\n", err)
 			}
 		}
 
 		for _, access := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamID, opts...); err != nil {
+			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamID); err != nil {
 				log.Fatalf("Error importing team access: %s\n", err)
 			}
 		}
@@ -244,12 +225,9 @@ func Run() {
 
 	planPath := "plan.txt"
 
-	var opts []tfexec.PlanOption
-	for _, v := range varOpts {
-		opts = append(opts, v)
+	opts := []tfexec.PlanOption{
+		tfexec.Out(planPath),
 	}
-
-	opts = append(opts, tfexec.Out(planPath))
 
 	diff, err := tf.Plan(ctx, opts...)
 	if err != nil {

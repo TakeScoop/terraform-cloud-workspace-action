@@ -70,10 +70,18 @@ type WorkspaceResourceOptions struct {
 }
 
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
-func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*tfeprovider.Workspace, error) {
+func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []*Workspace, config *WorkspaceResourceOptions) (*tfeprovider.Workspace, error) {
+	wsForEach := map[string]*tfeprovider.Workspace{}
+
+	for _, ws := range workspaces {
+		wsForEach[ws.Name] = &tfeprovider.Workspace{
+			Name: ws.Name,
+		}
+	}
+
 	ws := &tfeprovider.Workspace{
-		ForEach:      "${var.workspace_names}",
-		Name:         "${each.value}",
+		ForEach:      wsForEach,
+		Name:         "${each.value.name}",
 		Organization: config.Organization,
 	}
 
@@ -207,8 +215,8 @@ type NewWorkspaceConfigOptions struct {
 }
 
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
-func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, config *NewWorkspaceConfigOptions) (*tfconfig.Module, error) {
-	wsResource, err := NewWorkspaceResource(ctx, client, config.WorkspaceResourceOptions)
+func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*Workspace, config *NewWorkspaceConfigOptions) (*tfconfig.Module, error) {
+	wsResource, err := NewWorkspaceResource(ctx, client, workspaces, config.WorkspaceResourceOptions)
 	if err != nil {
 		return nil, err
 	}

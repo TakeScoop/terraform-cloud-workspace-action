@@ -1,8 +1,7 @@
 package tfeprovider
 
 type Workspace struct {
-	// TODO: handle for_each via an embedded struct instead of duplicating
-	ForEach string `json:"for_each,omitempty"`
+	ForEach map[string]*Workspace `json:"for_each,omitempty"`
 
 	AgentPoolID            string   `json:"agent_pool_id,omitempty"`
 	AutoApply              *bool    `json:"auto_apply,omitempty"`
@@ -10,7 +9,7 @@ type Workspace struct {
 	FileTriggersEnabled    *bool    `json:"file_triggers_enabled,omitempty"`
 	GlobalRemoteState      *bool    `json:"global_remote_state,omitempty"`
 	Name                   string   `json:"name"`
-	Organization           string   `json:"organization"`
+	Organization           string   `json:"organization,omitempty"`
 	QueueAllRuns           *bool    `json:"queue_all_runs,omitempty"`
 	RemoteStateConsumerIDs []string `json:"remote_state_consumer_ids,omitempty"`
 	SpeculativeEnabled     *bool    `json:"speculative_enabled,omitempty"`
