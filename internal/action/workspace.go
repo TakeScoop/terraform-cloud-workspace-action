@@ -72,7 +72,9 @@ type WorkspaceResourceOptions struct {
 // NewWorkspaceResource adds defaults and conditional fields to a WorkspaceWorkspaceResource struct
 func NewWorkspaceResource(ctx context.Context, client *tfe.Client, config *WorkspaceResourceOptions) (*tfeprovider.Workspace, error) {
 	ws := &tfeprovider.Workspace{
-		ForEach:      "${var.workspace_names}",
+		ForEach: tfeprovider.ForEach{
+			ForEach: "${var.workspace_names}",
+		},
 		Name:         "${each.value}",
 		Organization: config.Organization,
 	}

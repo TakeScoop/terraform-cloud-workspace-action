@@ -1,8 +1,7 @@
 package tfeprovider
 
 type Workspace struct {
-	// TODO: handle for_each via an embedded struct instead of duplicating
-	ForEach string `json:"for_each,omitempty"`
+	ForEach
 
 	AgentPoolID            string   `json:"agent_pool_id,omitempty"`
 	AutoApply              *bool    `json:"auto_apply,omitempty"`

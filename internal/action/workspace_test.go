@@ -108,7 +108,9 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 func TestWorkspaceJSONRender(t *testing.T) {
 	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
 		b, err := json.MarshalIndent(tfeprovider.Workspace{
-			ForEach:          "${var.workspace_names}",
+			ForEach: tfeprovider.ForEach{
+				ForEach: "${var.workspace_names}",
+			},
 			Name:             "${each.value}",
 			Organization:     "${var.organization}",
 			AutoApply:        boolPtr(true),
