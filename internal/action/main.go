@@ -77,7 +77,6 @@ func Run() {
 		Token:   token,
 	})
 	if err != nil {
-		fmt.Println(token)
 		log.Fatalf("error configuring Terraform client: %s", err)
 	}
 
