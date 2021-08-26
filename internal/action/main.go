@@ -57,7 +57,7 @@ func Run() {
 
 	err = ioutil.WriteFile(path.Join(home, ".terraformrc"), b, 0644)
 	if err != nil {
-		githubactions.Fatalf("Failed to write Terraform Cloud credentials to home directory", err)
+		githubactions.Fatalf("Failed to write Terraform Cloud credentials to home directory: %s", err)
 	}
 
 	var remoteStates map[string]tfconfig.RemoteState
