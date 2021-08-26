@@ -7,6 +7,7 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	"github.com/sethvargo/go-githubactions"
 )
 
 var maxPageSize int = 100
@@ -39,7 +40,7 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clie
 	}
 
 	if !imp {
-		fmt.Printf("Workspace %q already exists in state, skipping import\n", name)
+		githubactions.Infof("Workspace %q already exists in state, skipping import\n", name)
 		return nil
 	}
 
@@ -49,18 +50,18 @@ func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clie
 	}
 
 	if ws == nil {
-		fmt.Printf("Workspace %q not found, skipping import\n", name)
+		githubactions.Infof("Workspace %q not found, skipping import\n", name)
 		return nil
 	}
 
-	fmt.Printf("Importing workspace: %s\n", ws.Name)
+	githubactions.Infof("Importing workspace: %s\n", ws.Name)
 
 	err = tf.Import(ctx, address, ws.ID, opts...)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Successful workspace import: %s\n", ws.Name)
+	githubactions.Infof("Successful workspace import: %s\n", ws.Name)
 
 	return nil
 }
@@ -111,11 +112,11 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 	}
 
 	if !imp {
-		fmt.Printf("Variable %q already exists in state, skipping import\n", address)
+		githubactions.Infof("Variable %q already exists in state, skipping import\n", address)
 		return nil
 	}
 
-	fmt.Printf("Importing variable: %q\n", address)
+	githubactions.Infof("Importing variable: %q\n", address)
 
 	ws, err := GetWorkspace(ctx, client, organization, workspace)
 	if err != nil {
@@ -123,7 +124,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 	}
 
 	if ws == nil {
-		fmt.Printf("Workspace %q not found, skipping import\n", workspace)
+		githubactions.Infof("Workspace %q not found, skipping import\n", workspace)
 		return nil
 	}
 
@@ -133,7 +134,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 	}
 
 	if v == nil {
-		fmt.Printf("Variable %q for workspace %q not found, skipping import\n", key, workspace)
+		githubactions.Infof("Variable %q for workspace %q not found, skipping import\n", key, workspace)
 		return nil
 	}
 
@@ -144,7 +145,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 		return err
 	}
 
-	fmt.Printf("Variable %q successfully imported\n", importID)
+	githubactions.Infof("Variable %q successfully imported\n", importID)
 
 	return nil
 }
@@ -152,7 +153,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 // ImportTeamAccess imports a team access resource by looking up an existing relation
 func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
 	if teamID == "" {
-		fmt.Println("Skipping team access import, required team ID was not passed")
+		githubactions.Infof("Skipping team access import, required team ID was not passed\n")
 		return nil
 	}
 
@@ -168,7 +169,7 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 	}
 
 	if !imp {
-		fmt.Printf("Team access %q already exists in state, skipping import\n", address)
+		githubactions.Infof("Team access %q already exists in state, skipping import\n", address)
 		return nil
 	}
 
@@ -178,11 +179,11 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 	}
 
 	if ws == nil {
-		fmt.Printf("Workspace %q not found, skipping import\n", workspace)
+		githubactions.Infof("Workspace %q not found, skipping import\n", workspace)
 		return nil
 	}
 
-	fmt.Printf("Importing team access: %q\n", address)
+	githubactions.Infof("Importing team access: %q\n", address)
 
 	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		WorkspaceID: &ws.ID,
@@ -200,7 +201,7 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 	}
 
 	if teamAccessID == "" {
-		fmt.Printf("Team access %q for workspace %q not found, skipping import\n", teamID, workspace)
+		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamID, workspace)
 		return nil
 	}
 
@@ -210,7 +211,7 @@ func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Cli
 		return err
 	}
 
-	fmt.Printf("Team access %q successfully imported\n", importID)
+	githubactions.Infof("Team access %q successfully imported\n", importID)
 
 	return nil
 }
