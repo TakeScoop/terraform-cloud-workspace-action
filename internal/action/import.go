@@ -30,9 +30,7 @@ func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bo
 	return true, nil
 }
 
-func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
-
+func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, name string, address string, organization string, opts ...tfexec.ImportOption) error {
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
 		return err

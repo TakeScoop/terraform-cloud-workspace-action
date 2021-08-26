@@ -10,7 +10,10 @@ cloud.google.com/go/datastore v1.0.0/go.mod h1:LXYbyblFSglQ5pkeyhO+Qmw7ukd3C+pD7
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
+github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
+github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
+github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/Masterminds/sprig v2.22.0+incompatible/go.mod h1:y6hNFY5UBTIWBxnzTeuNhlNS5hqE0NB0E6fgfo2Br3o=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16 h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=
@@ -27,6 +30,13 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/aws/aws-sdk-go v1.15.78 h1:LaXy6lWR0YK7LKyuU0QWy2ws/LWTPfYV/UgfiBu4tvY=
 github.com/aws/aws-sdk-go v1.15.78/go.mod h1:E3/ieXAlvM0XWO57iftYVDLLvQ824smPP3ATZkfNZeM=
+github.com/aws/constructs-go/constructs/v3 v3.3.75/go.mod h1:gh+X5UyxGPp/fWyp8iVMa75yMDQev4639pQ93HXXMoA=
+github.com/aws/constructs-go/constructs/v3 v3.3.133 h1:Hpkixs5nTtl/8ulZ9PQnDMbpnUGdRx6VG5t3P+lmaoU=
+github.com/aws/constructs-go/constructs/v3 v3.3.133/go.mod h1:EdHdie7l6syQGK8IAQGn3reRVI/HC+NxT6jtL7KOfqA=
+github.com/aws/jsii-runtime-go v1.28.0/go.mod h1:6tZnlstx8bAB3vnLFF9n8bbkI//LDblAek9zFyMXV3E=
+github.com/aws/jsii-runtime-go v1.29.0/go.mod h1:6tZnlstx8bAB3vnLFF9n8bbkI//LDblAek9zFyMXV3E=
+github.com/aws/jsii-runtime-go v1.34.0 h1:Qsb3uG1iWR/10b9t/2ECbPkJEP/Y+7p9Fq2tfRtSNoc=
+github.com/aws/jsii-runtime-go v1.34.0/go.mod h1:6tZnlstx8bAB3vnLFF9n8bbkI//LDblAek9zFyMXV3E=
 github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d h1:xDfNPAt8lFiC1UJrqV3uuy861HCTo708pDMbjHHdCas=
 github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d/go.mod h1:6QX/PXZ00z/TKoufEY6K/a0k6AhaJrQKdFe6OfVXsa4=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
@@ -106,6 +116,8 @@ github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ
 github.com/hashicorp/jsonapi v0.0.0-20210817203359-15d518142555 h1:uKQ7kOVDmshUT7uoFYn8MDWXUmTOBqqmQkRS0sdQaaA=
 github.com/hashicorp/jsonapi v0.0.0-20210817203359-15d518142555/go.mod h1:Yog5+CPEM3c99L1CL2CFCYoSzgWm5vTU58idbRUaLik=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=
+github.com/hashicorp/terraform-cdk-go/cdktf v0.5.0 h1:zTy/YB8Q69QmiTAeVtG79TKKaFyJZF8ez7dvneRQ/LQ=
+github.com/hashicorp/terraform-cdk-go/cdktf v0.5.0/go.mod h1:Lzi9rFr53rGiJGwD1OW6VjadHDApWJ94GXfdHDX3Mf4=
 github.com/hashicorp/terraform-exec v0.14.0 h1:UQoUcxKTZZXhyyK68Cwn4mApT4mnFPmEXPiqaHL9r+w=
 github.com/hashicorp/terraform-exec v0.14.0/go.mod h1:qrAASDq28KZiMPDnQ02sFS9udcqEkRly002EA2izXTA=
 github.com/hashicorp/terraform-json v0.12.0 h1:8czPgEEWWPROStjkWPUnTQDXmpmZPlkQAwYYLETaTvw=

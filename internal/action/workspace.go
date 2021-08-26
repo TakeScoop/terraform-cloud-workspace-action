@@ -11,10 +11,15 @@ import (
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
+type WorkspaceInput string
+type WorkspaceInputs []WorkspaceInput
+
 type Workspace struct {
 	Name      string
 	Workspace string
 }
+
+type Workspaces []*Workspace
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
 func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization string, vcsType string) (*tfe.OAuthClient, error) {
