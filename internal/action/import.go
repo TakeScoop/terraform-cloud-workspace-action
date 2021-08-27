@@ -7,12 +7,13 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/sethvargo/go-githubactions"
 )
 
 var maxPageSize int = 100
 
-func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bool, error) {
+func shouldImport(ctx context.Context, tf TFExecClient, address string) (bool, error) {
 	state, err := tf.Show(ctx)
 	if err != nil {
 		return false, err
@@ -31,7 +32,12 @@ func shouldImport(ctx context.Context, tf *tfexec.Terraform, address string) (bo
 	return true, nil
 }
 
-func ImportWorkspace(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
+type TFExecClient interface {
+	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
+	Import(context.Context, string, string, ...tfexec.ImportOption) error
+}
+
+func ImportWorkspace(ctx context.Context, tf TFExecClient, client *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
 	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
 
 	imp, err := shouldImport(ctx, tf, address)
@@ -103,7 +109,7 @@ func GetWorkspace(ctx context.Context, client *tfe.Client, organization string, 
 	return ws, nil
 }
 
-func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, key string, workspace string, organization string, opts ...tfexec.ImportOption) error {
+func ImportVariable(ctx context.Context, tf TFExecClient, client *tfe.Client, key string, workspace string, organization string, opts ...tfexec.ImportOption) error {
 	address := fmt.Sprintf("tfe_variable.%s-%s", workspace, key)
 
 	imp, err := shouldImport(ctx, tf, address)
@@ -151,7 +157,7 @@ func ImportVariable(ctx context.Context, tf *tfexec.Terraform, client *tfe.Clien
 }
 
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf *tfexec.Terraform, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
+func ImportTeamAccess(ctx context.Context, tf TFExecClient, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
 	if teamID == "" {
 		githubactions.Infof("Skipping team access import, required team ID was not passed\n")
 		return nil
