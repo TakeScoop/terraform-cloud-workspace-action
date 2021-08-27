@@ -49,7 +49,7 @@ func TestImportWorkspace(t *testing.T) {
 	mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 
-		_, err := fmt.Fprint(w, `{"data":{"id":"ws-abc123","type":"workspaces","attributes":{"allow-destroy-plan":false,"auto-apply":false,"auto-destroy-at":null,"created-at":"2021-08-26T04:43:54.557Z","environment":"default","locked":false,"name":"ws","queue-all-runs":true,"speculative-enabled":true,"structured-run-output-enabled":true,"terraform-version":"1.0.5","working-directory":"","global-remote-state":false,"updated-at":"2021-08-26T04:43:54.557Z","resource-count":0,"apply-duration-average":null,"plan-duration-average":null,"policy-check-failures":null,"run-failures":null,"workspace-kpis-runs-count":null,"latest-change-at":"2021-08-26T04:43:54.557Z","operations":true,"execution-mode":"remote","vcs-repo":null,"vcs-repo-identifier":null,"permissions":{"can-update":true,"can-destroy":true,"can-queue-destroy":true,"can-queue-run":true,"can-queue-apply":true,"can-read-state-versions":true,"can-create-state-versions":true,"can-read-variable":true,"can-update-variable":true,"can-lock":true,"can-unlock":true,"can-force-unlock":true,"can-read-settings":true,"can-manage-tags":true},"actions":{"is-destroyable":false},"description":"","file-triggers-enabled":true,"trigger-prefixes":[],"source":"tfe-api","source-name":null,"source-url":null,"tag-names":[]},"relationships":{"organization":{"data":{"id":"org","type":"organizations"}},"current-run":{"data":null},"latest-run":{"data":null},"outputs":{"data":[]},"remote-state-consumers":{"links":{"related":"/api/v2/workspaces/ws-abc123/relationships/remote-state-consumers"}},"current-state-version":{"data":null},"current-configuration-version":{"data":null},"agent-pool":{"data":null},"readme":{"data":null}},"links":{"self":"/api/v2/organizations/org/workspaces/ws"}}}`)
+		_, err := fmt.Fprint(w, wsAPIResponse)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -99,3 +99,100 @@ func TestImportWorkspace(t *testing.T) {
 		})
 	})
 }
+
+var wsAPIResponse = `{
+  "data": {
+    "id": "ws-abc123",
+    "type": "workspaces",
+    "attributes": {
+      "allow-destroy-plan": false,
+      "auto-apply": false,
+      "auto-destroy-at": null,
+      "created-at": "2021-08-26T04:43:54.557Z",
+      "environment": "default",
+      "locked": false,
+      "name": "ws",
+      "queue-all-runs": true,
+      "speculative-enabled": true,
+      "structured-run-output-enabled": true,
+      "terraform-version": "1.0.5",
+      "working-directory": "",
+      "global-remote-state": false,
+      "updated-at": "2021-08-26T04:43:54.557Z",
+      "resource-count": 0,
+      "apply-duration-average": null,
+      "plan-duration-average": null,
+      "policy-check-failures": null,
+      "run-failures": null,
+      "workspace-kpis-runs-count": null,
+      "latest-change-at": "2021-08-26T04:43:54.557Z",
+      "operations": true,
+      "execution-mode": "remote",
+      "vcs-repo": null,
+      "vcs-repo-identifier": null,
+      "permissions": {
+        "can-update": true,
+        "can-destroy": true,
+        "can-queue-destroy": true,
+        "can-queue-run": true,
+        "can-queue-apply": true,
+        "can-read-state-versions": true,
+        "can-create-state-versions": true,
+        "can-read-variable": true,
+        "can-update-variable": true,
+        "can-lock": true,
+        "can-unlock": true,
+        "can-force-unlock": true,
+        "can-read-settings": true,
+        "can-manage-tags": true
+      },
+      "actions": {
+        "is-destroyable": false
+      },
+      "description": "",
+      "file-triggers-enabled": true,
+      "trigger-prefixes": [],
+      "source": "tfe-api",
+      "source-name": null,
+      "source-url": null,
+      "tag-names": []
+    },
+    "relationships": {
+      "organization": {
+        "data": {
+          "id": "org",
+          "type": "organizations"
+        }
+      },
+      "current-run": {
+        "data": null
+      },
+      "latest-run": {
+        "data": null
+      },
+      "outputs": {
+        "data": []
+      },
+      "remote-state-consumers": {
+        "links": {
+          "related": "/api/v2/workspaces/ws-abc123/relationships/remote-state-consumers"
+        }
+      },
+      "current-state-version": {
+        "data": null
+      },
+      "current-configuration-version": {
+        "data": null
+      },
+      "agent-pool": {
+        "data": null
+      },
+      "readme": {
+        "data": null
+      }
+    },
+    "links": {
+      "self": "/api/v2/organizations/org/workspaces/ws"
+    }
+  }
+}`
