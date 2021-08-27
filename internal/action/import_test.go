@@ -15,7 +15,7 @@ import (
 
 type TestTFExec struct {
 	State      *tfjson.State
-	ImportArgs *ImportArgs
+	ImportArgs []*ImportArgs
 }
 
 type ImportArgs struct {
@@ -29,11 +29,11 @@ func (tf TestTFExec) Show(ctx context.Context, opts ...tfexec.ShowOption) (*tfjs
 }
 
 func (tf *TestTFExec) Import(ctx context.Context, address string, ID string, opts ...tfexec.ImportOption) error {
-	tf.ImportArgs = &ImportArgs{
+	tf.ImportArgs = append(tf.ImportArgs, &ImportArgs{
 		Address: address,
 		ID:      ID,
 		Opts:    opts,
-	}
+	})
 
 	return nil
 }
@@ -80,7 +80,7 @@ func TestImportWorkspace(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, tf.ImportArgs, (*ImportArgs)(nil))
+		assert.Equal(t, len(tf.ImportArgs), 0)
 	})
 
 	t.Run("import the workspace if it does not exist in state", func(t *testing.T) {
@@ -92,7 +92,8 @@ func TestImportWorkspace(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, tf.ImportArgs, &ImportArgs{
+		assert.Equal(t, len(tf.ImportArgs), 1)
+		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
 			Address: "tfe_workspace.workspace[\"ws\"]",
 			ID:      "ws-abc123",
 			Opts:    ([]tfexec.ImportOption)(nil),
