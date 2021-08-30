@@ -157,7 +157,6 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 	resourceForEach := map[string]tfeprovider.TeamAccess{}
 
 	for _, access := range teamAccess {
-
 		dataForEach[access.TeamName] = TeamDataResource{
 			Name:         access.TeamName,
 			Organization: organization,

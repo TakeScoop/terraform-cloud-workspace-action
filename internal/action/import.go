@@ -181,6 +181,27 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 
 	githubactions.Infof("Importing team access: %q\n", address)
 
+	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	var team *tfe.Team
+
+	for _, t := range teams.Items {
+		if t.Name == teamName {
+			team = t
+		}
+	}
+
+	if team == nil {
+		return fmt.Errorf("team %q not found", teamName)
+	}
+
 	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		WorkspaceID: &ws.ID,
 	})
@@ -191,7 +212,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	var teamAccessID string
 
 	for _, access := range teamAccess.Items {
-		if access.Team.Name == teamName {
+		if access.Team.ID == team.ID {
 			teamAccessID = access.ID
 		}
 	}
