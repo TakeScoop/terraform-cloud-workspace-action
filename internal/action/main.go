@@ -255,7 +255,7 @@ func Run() {
 		githubactions.SetOutput("plan_json", string(b))
 
 		if !inputs.GetBool("allow_workspace_deletion") && WillDestroy(plan, "tfe_workspace") {
-			githubactions.Fatalf("Error: Workspace planned for deletion. If this is intentional, set allow_workspace_deletion to true to proceed.")
+			githubactions.Fatalf("Error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions.")
 		}
 
 		if inputs.GetBool("apply") {
