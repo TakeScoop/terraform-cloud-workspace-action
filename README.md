@@ -101,9 +101,9 @@ with:
         value: production
 ```
 
-### Remote States
+#### Remote state variable reference
 
-Remote states can be configured and referenced from other input fields
+Remote states can be configured and referenced for the variable `value` field
 
 ```yml
 ...
@@ -145,19 +145,6 @@ with:
         state_versions: write
         sentinel_mocks: read
         workspace_locking: true
-```
-
-To import existing team access resources, a static value for team `id` must be supplied
-
-```yml
-with:
-  import: true
-  team_access: |-
-    - id: team-abc123 # this is correct
-      access: write
-    - id: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].id} # this will error
-      access: read
-      
 ```
 
 ### Importing existing resources
