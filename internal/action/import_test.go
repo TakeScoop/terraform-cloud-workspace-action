@@ -129,7 +129,7 @@ func TestImportVariable(t *testing.T) {
 		})
 	})
 
-	t.Run("skip importing a variable if the workspace does not exist", func(t *testing.T) {
+	t.Run("skip importing a variable if the workspace does not exist in Terraform Cloud", func(t *testing.T) {
 
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
