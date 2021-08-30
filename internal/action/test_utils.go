@@ -8,6 +8,7 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 )
 
+// testServerResHandler returns a basic mux server route handler function
 func testServerResHandler(t *testing.T, code int, resBody string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(code)
@@ -19,9 +20,10 @@ func testServerResHandler(t *testing.T, code int, resBody string) func(w http.Re
 	}
 }
 
-func newTestTFClient(t *testing.T, serverUrl string) *tfe.Client {
+// newTestTFClient returns a Terraform Cloud API client pointed at the provided address
+func newTestTFClient(t *testing.T, address string) *tfe.Client {
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: serverUrl,
+		Address: address,
 		Token:   "12345",
 	})
 	if err != nil {
