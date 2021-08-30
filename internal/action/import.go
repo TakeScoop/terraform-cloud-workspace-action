@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -156,18 +155,38 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 	return nil
 }
 
+// GetTeam returns a Team object if a team matching the passed name is found in the target Terraform account, nil is returned if the team is not found
+func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organization string) (*tfe.Team, error) {
+	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range teams.Items {
+		if t.Name == teamName {
+			return t, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
-	if teamID == "" {
-		githubactions.Infof("Skipping team access import, required team ID was not passed\n")
-		return nil
+func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamName string, opts ...tfexec.ImportOption) error {
+	team, err := GetTeam(ctx, client, teamName, organization)
+	if err != nil {
+		return err
 	}
 
-	if !strings.HasPrefix(teamID, "team-") {
-		return fmt.Errorf("team ID passed for team access import, but it was not of the static format team-xxx: %s", teamID)
+	if team == nil {
+		return fmt.Errorf("team %q not found", teamName)
 	}
 
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamID)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -201,13 +220,13 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	var teamAccessID string
 
 	for _, access := range teamAccess.Items {
-		if access.Team.ID == teamID {
+		if access.Team.ID == team.ID {
 			teamAccessID = access.ID
 		}
 	}
 
 	if teamAccessID == "" {
-		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamID, workspace)
+		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamName, workspace)
 		return nil
 	}
 

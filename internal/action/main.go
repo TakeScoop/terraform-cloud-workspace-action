@@ -134,12 +134,6 @@ func Run() {
 		githubactions.Fatalf("Failed to parse teams: %s", err)
 	}
 
-	for _, teamInput := range teamInputs {
-		if err := teamInput.Validate(); err != nil {
-			githubactions.Fatalf("Failed to validate team access input: %s", err)
-		}
-	}
-
 	teamAccess := NewTeamAccess(teamInputs, workspaces)
 
 	backend, err := tfconfig.ParseBackend(githubactions.GetInput("backend_config"))
@@ -216,7 +210,7 @@ func Run() {
 		}
 
 		for _, access := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamID); err != nil {
+			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamName); err != nil {
 				githubactions.Fatalf("Failed to import team access: %s", err)
 			}
 		}
