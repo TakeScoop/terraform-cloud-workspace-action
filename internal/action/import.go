@@ -155,6 +155,7 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 	return nil
 }
 
+// GetTeam returns a Team object if a team matching the passed name is found in the target Terraform account, nil is returned if the team is not found
 func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organization string) (*tfe.Team, error) {
 	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
 		ListOptions: tfe.ListOptions{
