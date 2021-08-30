@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -157,17 +156,8 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 }
 
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamID string, opts ...tfexec.ImportOption) error {
-	if teamID == "" {
-		githubactions.Infof("Skipping team access import, required team ID was not passed\n")
-		return nil
-	}
-
-	if !strings.HasPrefix(teamID, "team-") {
-		return fmt.Errorf("team ID passed for team access import, but it was not of the static format team-xxx: %s", teamID)
-	}
-
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamID)
+func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamName string, opts ...tfexec.ImportOption) error {
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamName)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -201,13 +191,13 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	var teamAccessID string
 
 	for _, access := range teamAccess.Items {
-		if access.Team.ID == teamID {
+		if access.Team.Name == teamName {
 			teamAccessID = access.ID
 		}
 	}
 
 	if teamAccessID == "" {
-		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamID, workspace)
+		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamName, workspace)
 		return nil
 	}
 

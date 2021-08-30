@@ -157,18 +157,15 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 	resourceForEach := map[string]tfeprovider.TeamAccess{}
 
 	for _, access := range teamAccess {
-		teamIDRef := access.TeamID
 
-		if teamIDRef == "" {
-			dataForEach[access.TeamName] = TeamDataResource{
-				Name:         access.TeamName,
-				Organization: organization,
-			}
-
-			teamIDRef = fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
+		dataForEach[access.TeamName] = TeamDataResource{
+			Name:         access.TeamName,
+			Organization: organization,
 		}
 
-		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, teamIDRef)] = tfeprovider.TeamAccess{
+		teamIDRef := fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
+
+		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, access.TeamName)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
 			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Name),
 			Access:      access.Access,

@@ -1,8 +1,6 @@
 package action
 
 import (
-	"fmt"
-
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
@@ -14,7 +12,6 @@ type TeamAccessInputItem struct {
 	Access      string                      `yaml:"access,omitempty"`
 	Permissions *TeamAccessPermissionsInput `yaml:"permissions,omitempty"`
 	TeamName    string                      `yaml:"name"`
-	TeamID      string                      `yaml:"id"`
 }
 
 type TeamAccess []TeamAccessItem
@@ -23,7 +20,6 @@ type TeamAccessItem struct {
 	Access      string
 	Permissions *TeamAccessPermissionsInput
 	TeamName    string
-	TeamID      string
 
 	Workspace *Workspace
 }
@@ -40,7 +36,6 @@ func NewTeamAccess(inputs TeamAccessInput, workspaces []*Workspace) TeamAccess {
 				Access:      team.Access,
 				Permissions: team.Permissions,
 				TeamName:    team.TeamName,
-				TeamID:      team.TeamID,
 				Workspace:   ws,
 			}
 			i = i + 1
@@ -54,7 +49,6 @@ func NewTeamAccess(inputs TeamAccessInput, workspaces []*Workspace) TeamAccess {
 func (ta TeamAccessItem) ToResource() *tfeprovider.TeamAccess {
 	resource := &tfeprovider.TeamAccess{
 		Access: ta.Access,
-		TeamID: ta.TeamID,
 	}
 
 	if ta.Permissions != nil {
@@ -68,15 +62,6 @@ func (ta TeamAccessItem) ToResource() *tfeprovider.TeamAccess {
 	}
 
 	return resource
-}
-
-// Validate validates the content of the team access input
-func (tai TeamAccessInputItem) Validate() error {
-	if tai.TeamID != "" && tai.TeamName != "" {
-		return fmt.Errorf("team name and team ID cannot both be set: %s, %s", tai.TeamID, tai.TeamName)
-	}
-
-	return nil
 }
 
 type TeamAccessPermissionsInput struct {

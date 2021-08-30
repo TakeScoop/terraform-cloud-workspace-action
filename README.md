@@ -138,22 +138,13 @@ with:
   team_access: |-
     - name: Readers
       access: read
-    - id: team-abc123
-      access: write
-    - name: ${data.terraform_remote_state.tfe.outputs.teams["Engineering"].name}
+    - name: Writers
       permissions:
-        runs: read
-        variables: read
-        state_versions: read
+        runs: apply
+        variables: write
+        state_versions: write
         sentinel_mocks: read
         workspace_locking: true
-  remote_states: |-
-    tfe:
-      backend: remote
-      config:
-        bucket: s3-bucket
-        key: terraform.tfstate
-        region: us-east-1
 ```
 
 To import existing team access resources, a static value for team `id` must be supplied

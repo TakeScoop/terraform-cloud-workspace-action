@@ -338,12 +338,12 @@ func TestAppendTeamAccess(t *testing.T) {
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"], tfeprovider.TeamAccess{
 			ForEach: map[string]tfeprovider.TeamAccess{
-				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
+				"workspace-Writers": {
 					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 					Access:      "write",
 				},
-				"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+				"workspace-Readers": {
 					TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 					Access:      "read",
@@ -363,89 +363,6 @@ func TestAppendTeamAccess(t *testing.T) {
 						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
 					},
 				}},
-			},
-		})
-	})
-
-	t.Run("Add team access with a team ID", func(t *testing.T) {
-		module := &tfconfig.Module{
-			Data:      map[string]map[string]interface{}{},
-			Resources: map[string]map[string]interface{}{},
-		}
-
-		AppendTeamAccess(module, TeamAccess{
-			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
-			TeamAccessItem{TeamID: "team-12345", Access: "read", Workspace: &Workspace{Name: "workspace"}},
-		}, "org")
-
-		assert.Equal(t, module.Data["tfe_team"]["teams"].(TeamDataResource).ForEach, map[string]TeamDataResource{
-			"Writers": {
-				Name:         "Writers",
-				Organization: "org",
-			},
-		})
-
-		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
-				TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-				Access:      "write",
-			},
-			"workspace-team-12345": {
-				TeamID:      "team-12345",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-				Access:      "read",
-			},
-		})
-	})
-
-	t.Run("Add only team access items containing team IDs", func(t *testing.T) {
-		module := &tfconfig.Module{
-			Data:      map[string]map[string]interface{}{},
-			Resources: map[string]map[string]interface{}{},
-		}
-
-		AppendTeamAccess(module, TeamAccess{
-			TeamAccessItem{TeamID: "team-12345", Access: "write", Workspace: &Workspace{Name: "workspace"}},
-			TeamAccessItem{TeamID: "team-67890", Access: "read", Workspace: &Workspace{Name: "workspace"}},
-		}, "org")
-
-		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
-
-		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-team-12345": {
-				TeamID:      "team-12345",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-				Access:      "write",
-			},
-			"workspace-team-67890": {
-				TeamID:      "team-67890",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-				Access:      "read",
-			},
-		})
-	})
-
-	t.Run("Add with team ID expression", func(t *testing.T) {
-		module := &tfconfig.Module{
-			Data:      map[string]map[string]interface{}{},
-			Resources: map[string]map[string]interface{}{},
-		}
-
-		AppendTeamAccess(module, TeamAccess{
-			TeamAccessItem{
-				TeamID:    "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
-				Access:    "write",
-				Workspace: &Workspace{Name: "workspace"}},
-		}, "org")
-
-		assert.Equal(t, module.Data["tfe_team"]["teams"], nil)
-
-		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-${data.terraform_remote_state.teams.output.teams[\"team\"].id}": {
-				TeamID:      "${data.terraform_remote_state.teams.output.teams[\"team\"].id}",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
-				Access:      "write",
 			},
 		})
 	})
@@ -474,7 +391,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		})
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+			"workspace-Readers": {
 				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 				Access:      "",

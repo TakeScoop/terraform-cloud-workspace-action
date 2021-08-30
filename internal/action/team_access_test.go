@@ -6,23 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTeamAccessValidate(t *testing.T) {
-	t.Run("valid with team name", func(t *testing.T) {
-		access := TeamAccessInputItem{TeamName: "foo"}
-		assert.NoError(t, access.Validate())
-	})
-
-	t.Run("valid with team ID", func(t *testing.T) {
-		access := TeamAccessInputItem{TeamID: "team-abc123"}
-		assert.NoError(t, access.Validate())
-	})
-
-	t.Run("not valid with team ID and team name", func(t *testing.T) {
-		access := TeamAccessInputItem{TeamName: "foo", TeamID: "team-abc123"}
-		assert.Error(t, access.Validate())
-	})
-}
-
 type NewTeamAccessTestCase struct {
 	Description string
 	Workspaces  []*Workspace
