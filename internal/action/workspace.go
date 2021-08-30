@@ -164,7 +164,7 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 
 		teamIDRef := fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 
-		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, access.TeamName)] = tfeprovider.TeamAccess{
+		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, teamIDRef)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
 			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Name),
 			Access:      access.Access,

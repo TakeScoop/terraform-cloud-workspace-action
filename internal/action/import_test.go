@@ -198,8 +198,8 @@ func TestImportTeamAccess(t *testing.T) {
 			server.Close()
 		})
 
-		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, teamAccessAPIResponse))
 
 		client := newTestTFClient(t, server.URL)
@@ -222,7 +222,7 @@ func TestImportTeamAccess(t *testing.T) {
 
 		assert.Equal(t, len(tf.ImportArgs), 1)
 		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
-			Address: "tfe_team_access.teams[\"ws-Readers\"]",
+			Address: "tfe_team_access.teams[\"ws-team-abc123\"]",
 			ID:      "org/ws/tws-abc213",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
@@ -236,6 +236,7 @@ func TestImportTeamAccess(t *testing.T) {
 			server.Close()
 		})
 
+		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
 		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
 
 		client := newTestTFClient(t, server.URL)
@@ -259,7 +260,8 @@ func TestImportTeamAccess(t *testing.T) {
 			server.Close()
 		})
 
-		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
+		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 
 		client := newTestTFClient(t, server.URL)
 
@@ -269,7 +271,7 @@ func TestImportTeamAccess(t *testing.T) {
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
 							{Address: "tfe_workspace.workspace[\"ws\"]"},
-							{Address: "tfe_team_access.teams[\"ws-Readers\"]"},
+							{Address: "tfe_team_access.teams[\"ws-team-abc123\"]"},
 						},
 					},
 				},
@@ -291,8 +293,8 @@ func TestImportTeamAccess(t *testing.T) {
 			server.Close()
 		})
 
-		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, `{"data": []}`))
 
 		client := newTestTFClient(t, server.URL)

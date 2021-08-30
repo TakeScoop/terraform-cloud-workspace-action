@@ -155,9 +155,37 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 	return nil
 }
 
+func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organization string) (*tfe.Team, error) {
+	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range teams.Items {
+		if t.Name == teamName {
+			return t, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // ImportTeamAccess imports a team access resource by looking up an existing relation
 func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamName string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, teamName)
+	team, err := GetTeam(ctx, client, teamName, organization)
+	if err != nil {
+		return err
+	}
+
+	if team == nil {
+		return fmt.Errorf("team %q not found", teamName)
+	}
+
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -180,27 +208,6 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	}
 
 	githubactions.Infof("Importing team access: %q\n", address)
-
-	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
-		ListOptions: tfe.ListOptions{
-			PageSize: 100,
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	var team *tfe.Team
-
-	for _, t := range teams.Items {
-		if t.Name == teamName {
-			team = t
-		}
-	}
-
-	if team == nil {
-		return fmt.Errorf("team %q not found", teamName)
-	}
 
 	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		WorkspaceID: &ws.ID,

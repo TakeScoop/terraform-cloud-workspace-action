@@ -338,12 +338,12 @@ func TestAppendTeamAccess(t *testing.T) {
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"], tfeprovider.TeamAccess{
 			ForEach: map[string]tfeprovider.TeamAccess{
-				"workspace-Writers": {
+				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 					Access:      "write",
 				},
-				"workspace-Readers": {
+				"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 					Access:      "read",
@@ -391,7 +391,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		})
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-Readers": {
+			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
 				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
 				Access:      "",
