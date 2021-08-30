@@ -1,0 +1,16 @@
+_extends: .github
+
+repository:
+  name: terraform-cloud-workspace-action
+  description: GitHub action for managing Terraform cloud workspaces
+  topics: github-actions, terraform, terraform-cloud
+  private: false
+  allow_auto_merge: true
+
+branches:
+  - name: master
+    protection:
+      required_status_checks:
+        contexts:
+          - lint
+          - test
