@@ -172,13 +172,11 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 		}
 	}
 
-	if len(dataForEach) > 0 {
-		module.AppendData("tfe_team", "teams", TeamDataResource{
-			ForEach:      dataForEach,
-			Name:         "${each.value.name}",
-			Organization: "${each.value.organization}",
-		})
-	}
+	module.AppendData("tfe_team", "teams", TeamDataResource{
+		ForEach:      dataForEach,
+		Name:         "${each.value.name}",
+		Organization: "${each.value.organization}",
+	})
 
 	module.AppendResource("tfe_team_access", "teams", tfeprovider.TeamAccess{
 		ForEach:     resourceForEach,
