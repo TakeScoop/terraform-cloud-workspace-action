@@ -291,7 +291,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 
 		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
-		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, `{"data": []}`))
+		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, `{"data": []}`))
 
 		client := newTestTFClient(t, server.URL)
 
