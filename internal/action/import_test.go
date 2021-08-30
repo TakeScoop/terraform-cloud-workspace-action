@@ -477,7 +477,7 @@ var teamAccessAPIResponse = `{
             "type": "workspaces"
           },
           "links": {
-            "related": "/api/v2/organizations/takescoop/workspaces/ws"
+            "related": "/api/v2/organizations/org/workspaces/ws"
           }
         }
       },
@@ -546,7 +546,7 @@ var teamAPIResponse = `{
         }
       },
       "links": {
-        "self": "/api/v2/teams/team-SPVoAKkSVAq1XdvQ"
+        "self": "/api/v2/teams/team-abc123"
       }
     }
   ],
