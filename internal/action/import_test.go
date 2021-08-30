@@ -2,12 +2,10 @@ package action
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
@@ -44,24 +42,13 @@ func TestImportWorkspace(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 
-	defer server.Close()
-
-	mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-
-		_, err := fmt.Fprint(w, wsAPIResponse)
-		if err != nil {
-			t.Fatal(err)
-		}
+	t.Cleanup(func() {
+		server.Close()
 	})
 
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: server.URL,
-		Token:   "12345",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
+
+	client := newTestTFClient(t, server.URL)
 
 	t.Run("skip importing if it already exists in state", func(t *testing.T) {
 		tf := TestTFExec{
@@ -98,6 +85,105 @@ func TestImportWorkspace(t *testing.T) {
 			ID:      "ws-abc123",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
+	})
+}
+
+func TestImportVariable(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("import a variable", func(t *testing.T) {
+
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, varsAPIResponse))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Resources: []*tfjson.StateResource{
+							{Address: "tfe_workspace.workspace[\"ws\"]"},
+						},
+					},
+				},
+			},
+		}
+
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 1)
+		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
+			Address: "tfe_variable.ws-foo",
+			ID:      "org/ws/var-abc123",
+			Opts:    ([]tfexec.ImportOption)(nil),
+		})
+	})
+
+	t.Run("skip importing a variable if the workspace does not exist in Terraform Cloud", func(t *testing.T) {
+
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{},
+		}
+
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 0)
+	})
+
+	t.Run("skip importing a variable if it does not exist in Terraform Cloud", func(t *testing.T) {
+
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, `{"data": []}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Resources: []*tfjson.StateResource{
+							{Address: "tfe_workspace.workspace[\"ws\"]"},
+						},
+					},
+				},
+			},
+		}
+
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 0)
 	})
 }
 
@@ -196,4 +282,36 @@ var wsAPIResponse = `{
       "self": "/api/v2/organizations/org/workspaces/ws"
     }
   }
+}`
+
+var varsAPIResponse = `{
+  "data": [
+    {
+      "id": "var-abc123",
+      "type": "vars",
+      "attributes": {
+        "key": "foo",
+        "value": "bar",
+        "sensitive": false,
+        "category": "env",
+        "hcl": false,
+        "created-at": "2021-08-30T16:01:07.885Z",
+        "description": null
+      },
+      "relationships": {
+        "configurable": {
+          "data": {
+            "id": "ws-abc123",
+            "type": "workspaces"
+          },
+          "links": {
+            "related": "/api/v2/organizations/org/workspaces/ws"
+          }
+        }
+      },
+      "links": {
+        "self": "/api/v2/workspaces/ws-abc123/vars/var-abc123"
+      }
+    }
+  ]
 }`

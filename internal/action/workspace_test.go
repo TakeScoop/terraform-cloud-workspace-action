@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +10,6 @@ import (
 	"path"
 	"testing"
 
-	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -78,22 +76,9 @@ func TestGetVCSTokenIDByClientType(t *testing.T) {
 
 	defer server.Close()
 
-	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", testServerResHandler(t, 200, basicOauthClientResponse))
 
-		_, err := fmt.Fprint(w, basicOauthClientResponse)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: server.URL,
-		Token:   "12345",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestTFClient(t, server.URL)
 
 	t.Run("get client token ID by type", func(t *testing.T) {
 		tokenID, err := GetVCSTokenIDByClientType(ctx, client, "org", "github")
@@ -145,22 +130,9 @@ func TestNewWorkspaceResource(t *testing.T) {
 
 	defer server.Close()
 
-	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", testServerResHandler(t, 200, basicOauthClientResponse))
 
-		_, err := fmt.Fprint(w, basicOauthClientResponse)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: server.URL,
-		Token:   "12345",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestTFClient(t, server.URL)
 
 	type BoolTest struct {
 		AutoApply *bool `json:"auto_apply,omitempty"`
@@ -568,22 +540,9 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	defer server.Close()
 
-	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", testServerResHandler(t, 200, basicOauthClientResponse))
 
-		_, err := fmt.Fprint(w, basicOauthClientResponse)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: server.URL,
-		Token:   "12345",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	client := newTestTFClient(t, server.URL)
 
 	tmpDir, err := ioutil.TempDir("", "tfinstall")
 	if err != nil {
