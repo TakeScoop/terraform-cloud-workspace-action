@@ -187,6 +187,134 @@ func TestImportVariable(t *testing.T) {
 	})
 }
 
+func TestImportTeamAccess(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("import a team access resource", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
+		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, teamAccessAPIResponse))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Resources: []*tfjson.StateResource{
+							{Address: "tfe_workspace.workspace[\"ws\"]"},
+						},
+					},
+				},
+			},
+		}
+
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "team-abc123"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 1)
+		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
+			Address: "tfe_team_access.teams[\"ws-team-abc123\"]",
+			ID:      "org/ws/tws-abc213",
+			Opts:    ([]tfexec.ImportOption)(nil),
+		})
+	})
+
+	t.Run("skip import if the workspace is not found in Terraform Cloud", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{},
+		}
+
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "team-abc123"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 0)
+	})
+
+	t.Run("skip import if the team access already exists in state", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Resources: []*tfjson.StateResource{
+							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_team_access.teams[\"ws-team-abc123\"]"},
+						},
+					},
+				},
+			},
+		}
+
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "team-abc123"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 0)
+	})
+
+	t.Run("skip import if the team access does not exist in Terraform Cloud", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, `{"data": []}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Resources: []*tfjson.StateResource{
+							{Address: "tfe_workspace.workspace[\"ws\"]"},
+						},
+					},
+				},
+			},
+		}
+
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "team-abc123"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 0)
+	})
+}
+
 var wsAPIResponse = `{
   "data": {
     "id": "ws-abc123",
@@ -314,4 +442,61 @@ var varsAPIResponse = `{
       }
     }
   ]
+}`
+
+var teamAccessAPIResponse = `{
+  "data": [
+    {
+      "id": "tws-abc213",
+      "type": "team-workspaces",
+      "attributes": {
+        "access": "write",
+        "runs": "apply",
+        "variables": "write",
+        "state-versions": "write",
+        "sentinel-mocks": "read",
+        "workspace-locking": true
+      },
+      "relationships": {
+        "team": {
+          "data": {
+            "id": "team-abc123",
+            "type": "teams"
+          },
+          "links": {
+            "related": "/api/v2/teams/team-abc123"
+          }
+        },
+        "workspace": {
+          "data": {
+            "id": "ws-abc123",
+            "type": "workspaces"
+          },
+          "links": {
+            "related": "/api/v2/organizations/takescoop/workspaces/ws"
+          }
+        }
+      },
+      "links": {
+        "self": "/api/v2/team-workspaces/tws-abc123"
+      }
+    }
+  ],
+  "links": {
+    "self": "https://app.terraform.io/api/v2/team-workspaces?filter%5Bworkspace%5D%5Bid%5D=ws-abc123\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=100",
+    "first": "https://app.terraform.io/api/v2/team-workspaces?filter%5Bworkspace%5D%5Bid%5D=ws-abc123\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=100",
+    "prev": null,
+    "next": null,
+    "last": "https://app.terraform.io/api/v2/team-workspaces?filter%5Bworkspace%5D%5Bid%5D=ws-abc123\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=100"
+  },
+  "meta": {
+    "pagination": {
+      "current-page": 1,
+      "page-size": 100,
+      "prev-page": null,
+      "next-page": null,
+      "total-pages": 1,
+      "total-count": 1
+    }
+  }
 }`
