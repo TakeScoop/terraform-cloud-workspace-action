@@ -31,19 +31,19 @@ func Run() {
 		Token:   token,
 	})
 	if err != nil {
-		githubactions.Fatalf("Failed to create Terraform client: %s", err)
+		fatal("Failed to create Terraform client: %s", err)
 	}
 
 	workDir, err := ioutil.TempDir("", name)
 	if err != nil {
-		githubactions.Fatalf("Failed to create working directory: %s", err)
+		fatal("Failed to create working directory: %s", err)
 	}
 
 	defer os.RemoveAll(workDir)
 
 	tf, err := NewTerraformExec(ctx, workDir, githubactions.GetInput("runner_terraform_version"))
 	if err != nil {
-		githubactions.Fatalf("Failed to create tfexec instance: %s", err)
+		fatal("Failed to create tfexec instance: %s", err)
 	}
 
 	b := []byte(fmt.Sprintf(`credentials "%s" {
@@ -52,19 +52,19 @@ func Run() {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		githubactions.Fatalf("Failed to retrieve homedir: %s", err)
+		fatal("Failed to retrieve homedir: %s", err)
 	}
 
 	err = ioutil.WriteFile(path.Join(home, ".terraformrc"), b, 0644)
 	if err != nil {
-		githubactions.Fatalf("Failed to write Terraform Cloud credentials to home directory: %s", err)
+		fatal("Failed to write Terraform Cloud credentials to home directory: %s", err)
 	}
 
 	var remoteStates map[string]tfconfig.RemoteState
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("remote_states")), &remoteStates)
 	if err != nil {
-		githubactions.Fatalf("Failed to parse remote state blocks: %s", err)
+		fatal("Failed to parse remote state blocks: %s", err)
 	}
 
 	var workspaces []*Workspace
@@ -78,7 +78,7 @@ func Run() {
 		var wsNames []string
 
 		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), wsNames); err != nil {
-			githubactions.Fatalf("Failed to parse workspaces: %s", err)
+			fatal("Failed to parse workspaces: %s", err)
 		}
 
 		for _, wsn := range wsNames {
@@ -93,14 +93,14 @@ func Run() {
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("variables")), &genVars)
 	if err != nil {
-		githubactions.Fatalf("Failed to parse variables %s", err)
+		fatal("Failed to parse variables %s", err)
 	}
 
 	wsVars := WorkspaceVariablesInput{}
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspace_variables")), &wsVars)
 	if err != nil {
-		githubactions.Fatalf("Failed to parse workspace variables %s", err)
+		fatal("Failed to parse workspace variables %s", err)
 	}
 
 	wsNames := make([]string, len(workspaces))
@@ -120,7 +120,7 @@ func Run() {
 		ws := FindWorkspace(workspaces, wsName)
 
 		if ws == nil {
-			githubactions.Fatalf("Failed to match workspace variable with known workspaces. Workspace %s not found", wsName)
+			fatal("Failed to match workspace variable with known workspaces. Workspace %s not found", wsName)
 		}
 
 		for _, v := range wvs {
@@ -131,14 +131,14 @@ func Run() {
 	var teamInputs TeamAccessInput
 
 	if err = yaml.Unmarshal([]byte(githubactions.GetInput("team_access")), &teamInputs); err != nil {
-		githubactions.Fatalf("Failed to parse teams: %s", err)
+		fatal("Failed to parse teams: %s", err)
 	}
 
 	teamAccess := NewTeamAccess(teamInputs, workspaces)
 
 	backend, err := tfconfig.ParseBackend(githubactions.GetInput("backend_config"))
 	if err != nil {
-		githubactions.Fatalf("Failed to parse backend configuration: %s", err)
+		fatal("Failed to parse backend configuration: %s", err)
 	}
 
 	wsConfig, err := NewWorkspaceConfig(ctx, client, workspaces, &NewWorkspaceConfigOptions{
@@ -177,20 +177,20 @@ func Run() {
 		},
 	})
 	if err != nil {
-		githubactions.Fatalf("Failed to create new workspace configuration: %s", err)
+		fatal("Failed to create new workspace configuration: %s", err)
 	}
 
 	b, err = json.MarshalIndent(wsConfig, "", "\t")
 	if err != nil {
-		githubactions.Fatalf("Failed to marshal workspace configuration: %s", err)
+		fatal("Failed to marshal workspace configuration: %s", err)
 	}
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
-		githubactions.Fatalf("Failed to write configuration to working directory: %s", err)
+		fatal("Failed to write configuration to working directory: %s", err)
 	}
 
 	if err = tf.Init(ctx); err != nil {
-		githubactions.Fatalf("Failed to run Init: %s", err)
+		fatal("Failed to run Init: %s", err)
 	}
 
 	if inputs.GetBool("import") || backend == nil {
@@ -199,20 +199,20 @@ func Run() {
 		for _, ws := range workspaces {
 			err = ImportWorkspace(ctx, tf, client, ws.Name, org)
 			if err != nil {
-				githubactions.Fatalf("Failed to import workspace: %s", err)
+				fatal("Failed to import workspace: %s", err)
 			}
 		}
 
 		for _, v := range variables {
 			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org)
 			if err != nil {
-				githubactions.Fatalf("Failed to import variable: %s", err)
+				fatal("Failed to import variable: %s", err)
 			}
 		}
 
 		for _, access := range teamAccess {
 			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamName); err != nil {
-				githubactions.Fatalf("Failed to import team access: %s", err)
+				fatal("Failed to import team access: %s", err)
 			}
 		}
 	}
@@ -224,17 +224,15 @@ func Run() {
 	}
 
 	diff, err := tf.Plan(ctx, planOpts...)
-
-	outputExitCode(diff, err)
-
 	if err != nil {
-		githubactions.Fatalf("Failed to plan: %s", err)
+		fatal("Failed to plan: %s", err)
 	}
 
 	if diff {
+		outputExitCode(2)
 		planStr, err := tf.ShowPlanFileRaw(ctx, planPath)
 		if err != nil {
-			githubactions.Fatalf("Failed to show plan: %s", err)
+			fatal("Failed to show plan: %s", err)
 		}
 
 		githubactions.Infof(planStr)
@@ -242,41 +240,40 @@ func Run() {
 
 		plan, err := tf.ShowPlanFile(ctx, planPath)
 		if err != nil {
-			githubactions.Fatalf("Failed to create plan struct: %s", err)
+			fatal("Failed to create plan struct: %s", err)
 		}
 
 		b, err := json.Marshal(plan)
 		if err != nil {
-			githubactions.Fatalf("Failed to convert plan to JSON: %s", err)
+			fatal("Failed to convert plan to JSON: %s", err)
 		}
 
 		githubactions.SetOutput("plan_json", string(b))
 
 		if !inputs.GetBool("allow_workspace_deletion") && WillDestroy(plan, "tfe_workspace") {
-			githubactions.Fatalf("Error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions.")
+			fatal("Error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions.")
 		}
 
 		if inputs.GetBool("apply") {
 			githubactions.Infof("Applying...\n")
 
 			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
-				githubactions.Fatalf("Failed to apply: %s", err)
+				fatal("Failed to apply: %s", err)
 			}
 		}
 	} else {
+		outputExitCode(0)
 		githubactions.Infof("No changes")
 	}
 }
 
-// outputExitCode ensures the TF CLI detailed exit code is set as output https://www.terraform.io/docs/cli/commands/plan.html#detailed-exitcode
-func outputExitCode(diff bool, err error) {
-	exitCode := 0
+// outputExitCode sets the exit_code output
+func outputExitCode(code int) {
+	githubactions.SetOutput("exit_code", fmt.Sprintf("%d", code))
+}
 
-	if err != nil {
-		exitCode = 1
-	} else if diff {
-		exitCode = 2
-	}
-
-	githubactions.SetOutput("exit_code", fmt.Sprintf("%d", exitCode))
+// fatal ensures an error exit code is set and then calls the Fatalf to print and exit
+func fatal(msg string, args ...interface{}) {
+	outputExitCode(1)
+	githubactions.Fatalf(msg, args...)
 }
