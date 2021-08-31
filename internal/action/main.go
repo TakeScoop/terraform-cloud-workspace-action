@@ -224,6 +224,9 @@ func Run() {
 	}
 
 	diff, err := tf.Plan(ctx, planOpts...)
+
+	outputExitCode(diff, err)
+
 	if err != nil {
 		githubactions.Fatalf("Failed to plan: %s", err)
 	}
@@ -263,4 +266,17 @@ func Run() {
 	} else {
 		githubactions.Infof("No changes")
 	}
+}
+
+// outputExitCode ensures the TF CLI detailed exit code is set as output https://www.terraform.io/docs/cli/commands/plan.html#detailed-exitcode
+func outputExitCode(diff bool, err error) {
+	exitCode := 0
+
+	if err != nil {
+		exitCode = 1
+	} else if diff {
+		exitCode = 2
+	}
+
+	githubactions.SetOutput("exit_code", fmt.Sprintf("%d", exitCode))
 }
