@@ -230,6 +230,7 @@ func Run() {
 
 	if diff {
 		outputExitCode(2)
+
 		planStr, err := tf.ShowPlanFileRaw(ctx, planPath)
 		if err != nil {
 			fatal("Failed to show plan: %s", err)
