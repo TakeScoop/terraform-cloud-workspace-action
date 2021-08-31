@@ -163,6 +163,7 @@ with:
 | --- | --- |
 | `plan` | A human friendly output of the Terraform plan |
 | `plan_json` | A JSON representation of the Terraform plan |
+| `exit_code` | `"0"` succeeded with empty diff (no changes), `"1"` error, `"2"` succeeded with non-empty diff (changes present) |
 
 ## Development
 
