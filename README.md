@@ -27,7 +27,7 @@ jobs:
 
 | Name | Description | Default |
 | --- | --- | --- |
-| `allow_workspace_deletion` | Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted. | `false` |
+| `allow_workspace_deletion` | Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted | `false` |
 | `apply` | (required) Whether to apply the proposed Terraform changes | |
 | `terraform_organization` | (required) Terraform Cloud organization | |
 | `terraform_token`  | (required) Terraform Cloud token | |
@@ -40,18 +40,18 @@ jobs:
 | `import` | Whether to attempt to import existing matching resources using the resource name | `false` |
 | `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
 | `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
-| `remote_state_consumer_ids` | Comma separated list | |
+| `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
 | `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
 | `ssh_key_id` | SSH key ID to assign the workspace | |
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
-| `terraform_version` | Terraform version | `1.0.3` |
+| `terraform_version` | Workspace Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
 | `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
 | `variables` | YAML encoded variables to apply to all workspaces | |
 | `vcs_ingress_submodules` | Whether to allow submodule ingress | `false` |
-| `vcs_repo` | Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed | `"${{ github.repository }}"` |
+| `vcs_repo` | Repository identifier for a VCS integration | `"${{ github.repository }}"` |
 | `vcs_token_id` | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added. | |
 | `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |

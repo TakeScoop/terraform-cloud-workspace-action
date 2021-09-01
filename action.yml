@@ -2,42 +2,42 @@ name: Terraform Cloud Workspace
 description: Manages Terraform Cloud workspaces
 inputs:
   terraform_version:
-    description: Terraform version
+    description: Workspace Terraform version.
     default: "1.0.3"
   terraform_token:
-    description: Terraform Cloud token
+    description: Terraform Cloud token.
     required: true
   terraform_host:
-    description: Terraform Cloud host
+    description: Terraform Cloud host.
     default: app.terraform.io
   terraform_organization:
-    description: Terraform Cloud organization
+    description: Terraform Cloud organization.
     required: true
   tfe_provider_version:
-    description: Terraform Cloud provider version
+    description: Terraform Cloud provider version.
     default: "0.25.3"
   name:
-    description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`)
+    description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
   runner_terraform_version:
-    description: Terraform version used to create the workspace
+    description: Terraform version used to create the workspace.
     default: "1.0.3"
   workspaces:
-    description: Comma separated list of workspaces
+    description: YAML encoded list of workspace names.
     default: ""
   backend_config:
-    description: YAML encoded backend configurations
+    description: YAML encoded backend configurations.
   apply:
-    description: Whether to apply the proposed Terraform changes
+    description: Whether to apply the proposed Terraform changes.
     required: true
   import:
-    description: Whether to attempt to import existing matching resources using the resource name
+    description: Whether to attempt to import existing matching resources using the resource name.
     default: false
   variables:
-    description: YAML encoded variables to apply to all workspaces
+    description: YAML encoded variables to apply to all workspaces.
     default: ""
   workspace_variables:
-    description: YAML encoded variables to apply to specific workspaces, with variables nested under workspace names
+    description: YAML encoded variables to apply to specific workspaces, with variables nested under workspace names.
     default: ""
   vcs_type:
     description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
@@ -45,47 +45,47 @@ inputs:
   vcs_token_id: 
     description: Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added.
   vcs_repo:
-    description: Repository identifier for a VCS integration. Required if `vcs_name` or `vcs_token_id` are passed
+    description: Repository identifier for a VCS integration.
     default: "${{ github.repository }}"
   vcs_ingress_submodules:
-    description: Whether to allow submodule ingress
+    description: Whether to allow submodule ingress.
     default: false
   working_directory:
     description: A relative path that Terraform will execute within. Defaults to the root of your repository.
   agent_pool_id: 
     description: ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent".
   execution_mode:
-    description: Execution mode to use for the workspace
+    description: Execution mode to use for the workspace.
   global_remote_state: 
-    description: Whether all workspaces in the organization can access the workspace via remote state
+    description: Whether all workspaces in the organization can access the workspace via remote state.
     default: false
   remote_state_consumer_ids:
-    description: Comma separated list
+    description: Comma separated list of workspace IDs to allow read access to the workspace outputs.
     default: ""
   auto_apply:
-    description: Whether to set auto_apply on the workspace or workspaces
+    description: Whether to set auto_apply on the workspace or workspaces.
     default: true
   queue_all_runs:
-    description: Whether the workspace should start automatically performing runs immediately after creation
+    description: Whether the workspace should start automatically performing runs immediately after creation.
   speculative_enabled:
-    description: Whether the workspace allows speculative plans
+    description: Whether the workspace allows speculative plans.
   ssh_key_id:
-    description: SSH key ID to assign the workspace
+    description: SSH key ID to assign the workspace.
   file_triggers_enabled:
-    description: Whether to filter runs based on the changed files in a VCS push
+    description: Whether to filter runs based on the changed files in a VCS push.
   remote_states:
-    description: YAML encoded remote state blocks to configure in the workspace
+    description: YAML encoded remote state blocks to configure in the workspace.
   team_access:
-    description: YAML encoded teams and their associated permissions to be granted to the created workspaces
+    description: YAML encoded teams and their associated permissions to be granted to the created workspaces.
     required: false
   allow_workspace_deletion:
-    description: Whether to allow deletion for the workspace resources
+    description: Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted.
     default: false
 outputs:
   plan:
-    description: Human readable Terraform plan
+    description: A human friendly output of the Terraform plan.
   plan_json:
-    description: JSON plan
+    description: A JSON representation of the Terraform plan.
 runs:
   using: docker
   image: Dockerfile
