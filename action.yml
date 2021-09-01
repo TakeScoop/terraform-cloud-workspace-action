@@ -87,5 +87,8 @@ outputs:
   plan_json:
     description: A JSON representation of the Terraform plan.
 runs:
-  using: docker
-  image: Dockerfile
+  using: composite
+  steps:
+    - uses: hashicorp/setup-terraform@v1
+    - using: docker
+      image: Dockerfile
