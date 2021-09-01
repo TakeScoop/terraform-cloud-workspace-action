@@ -90,5 +90,6 @@ runs:
   using: composite
   steps:
     - uses: hashicorp/setup-terraform@v1
-    - using: docker
+    - uses: ./
+      using: docker
       image: Dockerfile
