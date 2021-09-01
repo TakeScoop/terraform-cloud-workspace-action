@@ -91,5 +91,3 @@ runs:
   steps:
     - uses: hashicorp/setup-terraform@v1
     - uses: ./
-      using: docker
-      image: Dockerfile
