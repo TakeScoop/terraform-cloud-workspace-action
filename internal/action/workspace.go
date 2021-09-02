@@ -291,7 +291,7 @@ func FindWorkspace(workspaces []*Workspace, target string) *Workspace {
 	return nil
 }
 
-// ParseWorkspaces takes list of YAML encoded workspaces and the generic workspace name, and returns a list of Workspace objects
+// ParseWorkspaces a list of workspace names and the generic workspace name and returns a list of Workspace objects. "default" is used if no workspace names are passed.
 func ParseWorkspaces(workspaceNames []string, name string) ([]*Workspace, error) {
 	var workspaces []*Workspace
 
