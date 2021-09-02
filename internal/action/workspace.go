@@ -9,6 +9,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type Workspace struct {
@@ -289,4 +290,31 @@ func FindWorkspace(workspaces []*Workspace, target string) *Workspace {
 	}
 
 	return nil
+}
+
+// ParseWorkspaceYAML takes list of YAML encoded workspaces and the generic workspace name, and returns a list of Workspace objects
+func ParseWorkspaceYAML(input string, name string) ([]*Workspace, error) {
+	var workspaces []*Workspace
+
+	if input == "" {
+		workspaces = append(workspaces, &Workspace{
+			Name:      name,
+			Workspace: "default",
+		})
+	} else {
+		var wsNames []string
+
+		if err := yaml.Unmarshal([]byte(input), &wsNames); err != nil {
+			return nil, err
+		}
+
+		for _, wsn := range wsNames {
+			workspaces = append(workspaces, &Workspace{
+				Name:      fmt.Sprintf("%s-%s", name, wsn),
+				Workspace: wsn,
+			})
+		}
+	}
+
+	return workspaces, nil
 }

@@ -858,3 +858,38 @@ func TestFindWorkspace(t *testing.T) {
 		}, "foo"), (*Workspace)(nil))
 	})
 }
+
+func TestParseWorkspaceYAML(t *testing.T) {
+	t.Run("single workspace", func(t *testing.T) {
+		workspaces, err := ParseWorkspaceYAML("", "foo")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(workspaces), 1)
+		assert.Equal(t, workspaces[0], &Workspace{
+			Name:      "foo",
+			Workspace: "default",
+		})
+	})
+
+	t.Run("Multiple workspaces", func(t *testing.T) {
+		workspaces, err := ParseWorkspaceYAML(`---
+- staging		
+- production
+`, "foo")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(workspaces), 2)
+		assert.Equal(t, workspaces[0], &Workspace{
+			Name:      "foo-staging",
+			Workspace: "staging",
+		})
+		assert.Equal(t, workspaces[1], &Workspace{
+			Name:      "foo-production",
+			Workspace: "production",
+		})
+	})
+}
