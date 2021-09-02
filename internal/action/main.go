@@ -68,6 +68,7 @@ func Run() {
 	}
 
 	var wsInputs []string
+
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), &wsInputs)
 	if err != nil {
 		githubactions.Fatalf("Failed to decode workspaces: %s", err)
