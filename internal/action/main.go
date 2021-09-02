@@ -67,9 +67,15 @@ func Run() {
 		githubactions.Fatalf("Failed to parse remote state blocks: %s", err)
 	}
 
-	workspaces, err := ParseWorkspaceYAML(githubactions.GetInput("workspaces"), name)
+	var wsInputs []string
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), &wsInputs)
 	if err != nil {
-		githubactions.Fatalf("Failed to parse workspacess: %s", err)
+		githubactions.Fatalf("Failed to decode workspaces: %s", err)
+	}
+
+	workspaces, err := ParseWorkspaces(wsInputs, name)
+	if err != nil {
+		githubactions.Fatalf("Failed to parse workspaces: %s", err)
 	}
 
 	genVars := VariablesInput{}

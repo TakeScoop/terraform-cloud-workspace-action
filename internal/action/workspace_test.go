@@ -859,9 +859,9 @@ func TestFindWorkspace(t *testing.T) {
 	})
 }
 
-func TestParseWorkspaceYAML(t *testing.T) {
+func TestParseWorkspaces(t *testing.T) {
 	t.Run("single workspace", func(t *testing.T) {
-		workspaces, err := ParseWorkspaceYAML("", "foo")
+		workspaces, err := ParseWorkspaces([]string{}, "foo")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -874,10 +874,7 @@ func TestParseWorkspaceYAML(t *testing.T) {
 	})
 
 	t.Run("Multiple workspaces", func(t *testing.T) {
-		workspaces, err := ParseWorkspaceYAML(`---
-- staging		
-- production
-`, "foo")
+		workspaces, err := ParseWorkspaces([]string{"staging", "production"}, "foo")
 		if err != nil {
 			t.Fatal(err)
 		}
