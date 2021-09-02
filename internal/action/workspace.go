@@ -290,3 +290,24 @@ func FindWorkspace(workspaces []*Workspace, target string) *Workspace {
 
 	return nil
 }
+
+// ParseWorkspaces a list of workspace names and the generic workspace name and returns a list of Workspace objects. "default" is used if no workspace names are passed.
+func ParseWorkspaces(workspaceNames []string, name string) ([]*Workspace, error) {
+	var workspaces []*Workspace
+
+	if len(workspaceNames) == 0 {
+		workspaces = append(workspaces, &Workspace{
+			Name:      name,
+			Workspace: "default",
+		})
+	} else {
+		for _, wsn := range workspaceNames {
+			workspaces = append(workspaces, &Workspace{
+				Name:      fmt.Sprintf("%s-%s", name, wsn),
+				Workspace: wsn,
+			})
+		}
+	}
+
+	return workspaces, nil
+}

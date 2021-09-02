@@ -67,26 +67,16 @@ func Run() {
 		githubactions.Fatalf("Failed to parse remote state blocks: %s", err)
 	}
 
-	var workspaces []*Workspace
+	var wsInputs []string
 
-	if githubactions.GetInput("workspaces") == "" {
-		workspaces = append(workspaces, &Workspace{
-			Name:      name,
-			Workspace: "default",
-		})
-	} else {
-		var wsNames []string
+	err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), &wsInputs)
+	if err != nil {
+		githubactions.Fatalf("Failed to decode workspaces: %s", err)
+	}
 
-		if err = yaml.Unmarshal([]byte(githubactions.GetInput("workspaces")), wsNames); err != nil {
-			githubactions.Fatalf("Failed to parse workspaces: %s", err)
-		}
-
-		for _, wsn := range wsNames {
-			workspaces = append(workspaces, &Workspace{
-				Name:      fmt.Sprintf("%s-%s", name, wsn),
-				Workspace: wsn,
-			})
-		}
+	workspaces, err := ParseWorkspaces(wsInputs, name)
+	if err != nil {
+		githubactions.Fatalf("Failed to parse workspaces: %s", err)
 	}
 
 	genVars := VariablesInput{}
