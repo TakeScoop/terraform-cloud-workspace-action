@@ -43,7 +43,7 @@ func NewVariable(vi VariablesInputItem, w *Workspace) *Variable {
 
 // ToResource converts a variable to a Terraform variable resource
 func (v Variable) ToResource() *tfeprovider.Variable {
-	resource := &tfeprovider.Variable{
+	return &tfeprovider.Variable{
 		Key:         v.Key,
 		Value:       v.Value,
 		Description: v.Description,
@@ -51,12 +51,6 @@ func (v Variable) ToResource() *tfeprovider.Variable {
 		Sensitive:   v.Sensitive,
 		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.Workspace.Name),
 	}
-
-	if resource.Category == "" {
-		resource.Category = "env"
-	}
-
-	return resource
 }
 
 // ToResource converts a list of variables to a list of Terraform variable resources

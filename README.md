@@ -80,7 +80,7 @@ with:
 
 ### Variables and Workspace Variables
 
-`variables` are applied to all created workspaces, where `workspace_variables` are applied to the noted workspace
+`variables` are applied to all created workspaces, where `workspace_variables` are applied to the noted workspace. Per the [workspace docs](https://www.terraform.io/docs/cloud/workspaces/variables.html), `category` field must be set to either `env` or `terraform`.
 
 ```yml
 ...
@@ -91,14 +91,17 @@ with:
   variables: |-
     - key: general-secret
       value: "${{ secrets.SECRET }}"
+      category: env
       sensitive: true
   workspace_variables: |-
     staging:
       - key: environment
         value: staging
+        category: terraform
     production:
       - key: environment
         value: production
+        category: terraform
 ```
 
 #### Remote state variable reference
@@ -111,8 +114,10 @@ with:
   variables: |-
     - key: s3_secret
       value: ${data.terraform_remote_state.workspace_s3.outputs.secret}
+      category: env
     - key: tf_cloud_secret
       value: ${data.terraform_remote_state.workspace_tf_cloud.outputs.secret}
+      category: env
   remote_states: |-
     workspace_s3:
       backend: remote
