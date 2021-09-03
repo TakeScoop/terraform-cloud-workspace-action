@@ -246,19 +246,19 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		return err
 	}
 
-	if err := ImportWorkspace(ctx, tf, client, workspace.Name, organization); err != nil {
+	if err := ImportWorkspace(ctx, tf, client, workspace, organization); err != nil {
 		return err
 	}
 
 	for _, v := range variables {
-		err := ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, organization)
+		err := ImportVariable(ctx, tf, client, v.Key, v.Workspace, organization)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, access := range teamAccess {
-		if err := ImportTeamAccess(ctx, tf, client, organization, access.Workspace.Name, access.TeamName); err != nil {
+		if err := ImportTeamAccess(ctx, tf, client, organization, access.Workspace, access.TeamName); err != nil {
 			return err
 		}
 	}
