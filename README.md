@@ -37,7 +37,7 @@ jobs:
 | `execution_mode` | Execution mode to use for the workspace | |
 | `file_triggers_enabled` | Whether to filter runs based on the changed files in a VCS push | |
 | `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |
-| `import` | Whether to import existing matching resources from the Terraform Cloud organization | `true` |
+| `import` | Whether to import existing matching resources from the Terraform Cloud organization. Ran as a dry run if `apply` is false. | `true` |
 | `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
 | `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
 | `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
