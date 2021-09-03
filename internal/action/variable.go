@@ -68,16 +68,11 @@ func (vs Variables) ToResource() []*tfeprovider.Variable {
 
 // FindRelatedVariables returns a list of variables related to the pass workspace
 func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (Variables, error) {
-	ws, err := GetWorkspace(ctx, client, organization, workspace.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if ws == nil {
+	if workspace.ID == nil {
 		return Variables{}, nil
 	}
 
-	tfVars, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{
+	tfVars, err := client.Variables.List(ctx, *workspace.ID, tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
 			PageSize: 100,
 		},
