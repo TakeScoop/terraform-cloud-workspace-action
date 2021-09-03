@@ -181,12 +181,14 @@ func Run() {
 		githubactions.Fatalf("Failed to initialize the Terraform configuration: %s", err)
 	}
 
-	if err = SetNewBackend(ctx, tf, module, nil, filePath); err != nil {
+	if err = CopyStateToBackend(ctx, tf, module, nil, filePath); err != nil {
 		githubactions.Fatalf("Failed to copy state to a local backend: %s", err)
 	}
 
-	if err = ImportResources(ctx, client, tf, module, filePath, workspaces, org); err != nil {
-		githubactions.Fatalf("Failed to import resources: %s", err)
+	if inputs.GetBool("import") {
+		if err = ImportResources(ctx, client, tf, module, filePath, workspaces, org); err != nil {
+			githubactions.Fatalf("Failed to import resources: %s", err)
+		}
 	}
 
 	planPath := "plan.txt"
@@ -231,8 +233,8 @@ func Run() {
 	if apply {
 		githubactions.Infof("Applying...\n")
 
-		if err = SetNewBackend(ctx, tf, module, backend, filePath); err != nil {
-			githubactions.Fatalf("Failed to copy local state to remote backend: %s", err)
+		if err = CopyStateToBackend(ctx, tf, module, backend, filePath); err != nil {
+			githubactions.Fatalf("Failed to copy local state to configured backend: %s", err)
 		}
 
 		if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {

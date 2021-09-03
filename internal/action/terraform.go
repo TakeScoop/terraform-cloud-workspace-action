@@ -20,8 +20,8 @@ func NewTerraformExec(ctx context.Context, workDir string, version string) (*tfe
 	return tfexec.NewTerraform(workDir, execPath)
 }
 
-// SetNewBackend copies state from the current backend to the passed backend by running Terraform Init
-func SetNewBackend(ctx context.Context, tf *tfexec.Terraform, module *tfconfig.Module, backend map[string]interface{}, filePath string) error {
+// CopyStateToBackend copies state from the current backend to the passed backend by running Terraform Init
+func CopyStateToBackend(ctx context.Context, tf *tfexec.Terraform, module *tfconfig.Module, backend map[string]interface{}, filePath string) error {
 	module.Terraform.Backend = backend
 
 	if err := TerraformInit(ctx, tf, module, filePath); err != nil {

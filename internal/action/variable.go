@@ -96,14 +96,3 @@ func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Wo
 
 	return vars, nil
 }
-
-// HasVariable scans a slice of variables and returns a match, nil if not found
-func HasVariable(vars Variables, wsName string, key string) *Variable {
-	for _, v := range vars {
-		if v.Workspace.Name == wsName && v.Key == key {
-			return &v
-		}
-	}
-
-	return nil
-}

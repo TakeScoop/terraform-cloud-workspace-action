@@ -115,14 +115,3 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 
 	return access, nil
 }
-
-// HasTeamAccess scans a slice of team access items and returns a matching resource, nil if not found
-func HasTeamAccess(teamAccess TeamAccess, wsName string, teamName string) *TeamAccessItem {
-	for _, ta := range teamAccess {
-		if ta.Workspace.Name == wsName && ta.TeamName == teamName {
-			return &ta
-		}
-	}
-
-	return nil
-}
