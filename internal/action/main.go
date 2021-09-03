@@ -25,6 +25,7 @@ func Run() {
 	host := githubactions.GetInput("terraform_host")
 	name := strings.TrimSpace(githubactions.GetInput("name"))
 	org := githubactions.GetInput("terraform_organization")
+	apply := inputs.GetBool("apply")
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", host),
@@ -131,7 +132,7 @@ func Run() {
 		githubactions.Fatalf("Failed to parse backend configuration: %s", err)
 	}
 
-	wsConfig, err := NewWorkspaceConfig(ctx, client, workspaces, &NewWorkspaceConfigOptions{
+	module, err := NewWorkspaceConfig(ctx, client, workspaces, &NewWorkspaceConfigOptions{
 		Backend: backend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            githubactions.GetInput("agent_pool_id"),
@@ -170,20 +171,29 @@ func Run() {
 		githubactions.Fatalf("Failed to create new workspace configuration: %s", err)
 	}
 
-	b, err = json.MarshalIndent(wsConfig, "", "\t")
-	if err != nil {
-		githubactions.Fatalf("Failed to marshal workspace configuration: %s", err)
-	}
+	filePath := path.Join(workDir, "main.tf.json")
 
-	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
-		githubactions.Fatalf("Failed to write configuration to working directory: %s", err)
+	if err = WriteModuleFile(module, filePath); err != nil {
+		githubactions.Fatalf("Failed to write the Terraform workspace configuration: %s", err)
 	}
 
 	if err = tf.Init(ctx); err != nil {
-		githubactions.Fatalf("Failed to run Init: %s", err)
+		githubactions.Fatalf("Failed to initialize the Terraform workspace: %s", err)
 	}
 
-	if inputs.GetBool("import") || backend == nil {
+	if !apply {
+		module.Terraform.Backend = nil
+
+		if err = WriteModuleFile(module, filePath); err != nil {
+			githubactions.Fatalf("Failed to write the Terraform workspace with local backend configuration: %s", err)
+		}
+
+		if err = tf.Init(ctx); err != nil {
+			githubactions.Fatalf("Failed to initialize the Terraform workspace with local backend configuration: %s", err)
+		}
+	}
+
+	if inputs.GetBool("import") {
 		githubactions.Infof("Importing resources...\n")
 
 		for _, ws := range workspaces {
@@ -243,12 +253,14 @@ func Run() {
 			githubactions.Fatalf("Error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions.")
 		}
 
-		if inputs.GetBool("apply") {
+		if apply {
 			githubactions.Infof("Applying...\n")
 
 			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
 				githubactions.Fatalf("Failed to apply: %s", err)
 			}
+
+			githubactions.Infof("Success\n")
 		}
 	} else {
 		githubactions.Infof("No changes")

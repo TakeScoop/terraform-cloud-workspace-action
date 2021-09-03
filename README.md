@@ -37,7 +37,7 @@ jobs:
 | `execution_mode` | Execution mode to use for the workspace | |
 | `file_triggers_enabled` | Whether to filter runs based on the changed files in a VCS push | |
 | `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |
-| `import` | Whether to attempt to import existing matching resources using the resource name | `false` |
+| `import` | Whether to import existing matching resources from the Terraform Cloud organization. Ran as a dry run if `apply` is false. | `true` |
 | `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
 | `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
 | `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
@@ -63,7 +63,7 @@ jobs:
 This project supports any backend supported by the selected Terraform version. The backend is used to persist the state of the Terraform Cloud workspace itself and its related resources (e.g., variables, teams). You generally should not pass "remote" workspace configuration, since that creates a circular dependency. 
 
 If no backend is passed, the default Terraform local backend will be used.
-**NOTE** When using the default local backend, `import` will always be true to ensure that resources can be managed across action runs. 
+**NOTE** When using the default local backend, `import` should always be `true` to ensure that resources can be managed across action runs. 
 
 ```yml
 with:
@@ -154,12 +154,16 @@ with:
 
 ### Importing existing resources
 
-Set `import` to `true` for the action to attempt to import existing resources of matching values within the Terraform Cloud organization
+By default, the action will import any existing resources it can find based on a unique attribute. It makes multiple passes to discover all existing resources, first finding matching workspaces and then related resources (variables, team access).
+
+When `apply` is set to `false`, the configured backend state will be copied to a local backend and `import` will be set to `true`. This grants some visibility into the import changes before they are actually applied to the configured backend.
+
+To disable the import feature, set `import` to `false`
 
 ```yml
 ...
 with:
-  import: true
+  import: false
 ```
 
 ## Outputs
