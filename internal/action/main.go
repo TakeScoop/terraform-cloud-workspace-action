@@ -259,6 +259,7 @@ func Run() {
 			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
 				githubactions.Fatalf("Failed to apply: %s", err)
 			}
+
 			githubactions.Infof("Success\n")
 		}
 	} else {
