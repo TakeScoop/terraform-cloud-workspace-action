@@ -37,8 +37,14 @@ type TerraformCLI interface {
 	Import(context.Context, string, string, ...tfexec.ImportOption) error
 }
 
-func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, name string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_workspace.workspace[%q]", name)
+// ImportWorkspace imports the passed workspace into Terraform state
+func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
+		return nil
+	}
+
+	address := fmt.Sprintf("tfe_workspace.workspace[%q]", workspace.Name)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -46,28 +52,18 @@ func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, n
 	}
 
 	if !imp {
-		githubactions.Infof("Workspace %q already exists in state, skipping import\n", name)
+		githubactions.Infof("Workspace %q already exists in state, skipping import\n", workspace.Name)
 		return nil
 	}
 
-	ws, err := GetWorkspace(ctx, client, organization, name)
+	githubactions.Infof("Importing workspace: %s\n", workspace.Name)
+
+	err = tf.Import(ctx, address, *workspace.ID, opts...)
 	if err != nil {
 		return err
 	}
 
-	if ws == nil {
-		githubactions.Infof("Workspace %q not found, skipping import\n", name)
-		return nil
-	}
-
-	githubactions.Infof("Importing workspace: %s\n", ws.Name)
-
-	err = tf.Import(ctx, address, ws.ID, opts...)
-	if err != nil {
-		return err
-	}
-
-	githubactions.Infof("Successful workspace import: %s\n", ws.Name)
+	githubactions.Infof("Successful workspace import: %s\n", workspace.Name)
 
 	return nil
 }
@@ -95,22 +91,14 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 	return nil, nil
 }
 
-// GetWorkspace returns the requested workspace, nil if the workspace does not exist, an error for any other issues fetching the workspace
-func GetWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace string) (*tfe.Workspace, error) {
-	ws, err := client.Workspaces.Read(ctx, organization, workspace)
-	if err != nil {
-		if err.Error() == "resource not found" {
-			return nil, nil
-		}
-
-		return nil, err
+// ImportVariable imports the passed variable into Terraform state
+func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, key string, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
+		return nil
 	}
 
-	return ws, nil
-}
-
-func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, key string, workspace string, organization string, opts ...tfexec.ImportOption) error {
-	address := fmt.Sprintf("tfe_variable.%s-%s", workspace, key)
+	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Name, key)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -124,27 +112,17 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 
 	githubactions.Infof("Importing variable: %q\n", address)
 
-	ws, err := GetWorkspace(ctx, client, organization, workspace)
-	if err != nil {
-		return err
-	}
-
-	if ws == nil {
-		githubactions.Infof("Workspace %q not found, skipping import\n", workspace)
-		return nil
-	}
-
-	v, err := fetchVariableByKey(ctx, client, key, ws.ID, 1)
+	v, err := fetchVariableByKey(ctx, client, key, *workspace.ID, 1)
 	if err != nil {
 		return err
 	}
 
 	if v == nil {
-		githubactions.Infof("Variable %q for workspace %q not found, skipping import\n", key, workspace)
+		githubactions.Infof("Variable %q for workspace %q not found, skipping import\n", key, workspace.Name)
 		return nil
 	}
 
-	importID := fmt.Sprintf("%s/%s/%s", organization, workspace, v.ID)
+	importID := fmt.Sprintf("%s/%s/%s", organization, workspace.Name, v.ID)
 
 	err = tf.Import(ctx, address, importID, opts...)
 	if err != nil {
@@ -177,7 +155,12 @@ func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organizat
 }
 
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace string, teamName string, opts ...tfexec.ImportOption) error {
+func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace *Workspace, teamName string, opts ...tfexec.ImportOption) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
+		return nil
+	}
+
 	team, err := GetTeam(ctx, client, teamName, organization)
 	if err != nil {
 		return err
@@ -187,7 +170,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 		return fmt.Errorf("team %q not found", teamName)
 	}
 
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace, team.ID)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Name, team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -199,20 +182,10 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 		return nil
 	}
 
-	ws, err := GetWorkspace(ctx, client, organization, workspace)
-	if err != nil {
-		return err
-	}
-
-	if ws == nil {
-		githubactions.Infof("Workspace %q not found, skipping import\n", workspace)
-		return nil
-	}
-
 	githubactions.Infof("Importing team access: %q\n", address)
 
 	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
-		WorkspaceID: &ws.ID,
+		WorkspaceID: workspace.ID,
 	})
 	if err != nil {
 		return err
@@ -227,11 +200,11 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	}
 
 	if teamAccessID == "" {
-		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamName, workspace)
+		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamName, workspace.Name)
 		return nil
 	}
 
-	importID := fmt.Sprintf("%s/%s/%s", organization, workspace, teamAccessID)
+	importID := fmt.Sprintf("%s/%s/%s", organization, workspace.Name, teamAccessID)
 
 	if err = tf.Import(ctx, address, importID, opts...); err != nil {
 		return err
