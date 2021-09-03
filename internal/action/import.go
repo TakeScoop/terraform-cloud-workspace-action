@@ -36,6 +36,7 @@ type TerraformCLI interface {
 	Import(context.Context, string, string, ...tfexec.ImportOption) error
 }
 
+// ImportWorkspace imports the passed workspace into Terraform state
 func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
 	if workspace.ID == nil {
 		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
@@ -89,6 +90,7 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 	return nil, nil
 }
 
+// ImportVariable imports the passed variable into Terraform state
 func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, key string, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
 	if workspace.ID == nil {
 		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
