@@ -127,8 +127,6 @@ func Run() {
 
 	teamAccess := NewTeamAccess(teamInputs, workspaces)
 
-	filePath := path.Join(workDir, "main.tf.json")
-
 	backend, err := tfconfig.ParseBackend(githubactions.GetInput("backend_config"))
 	if err != nil {
 		githubactions.Fatalf("Failed to parse backend configuration: %s", err)
@@ -172,6 +170,8 @@ func Run() {
 	if err != nil {
 		githubactions.Fatalf("Failed to create new workspace configuration: %s", err)
 	}
+
+	filePath := path.Join(workDir, "main.tf.json")
 
 	if err = TerraformInit(ctx, tf, module, filePath); err != nil {
 		githubactions.Fatalf("Failed to initialize the Terraform configuration: %s", err)
