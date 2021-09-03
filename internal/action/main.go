@@ -80,6 +80,10 @@ func Run() {
 		githubactions.Fatalf("Failed to parse workspaces: %s", err)
 	}
 
+	if err := SetWorkspaceIDs(ctx, client, workspaces, org); err != nil {
+		githubactions.Fatalf("Failed to set workspace IDs: %s", err)
+	}
+
 	genVars := VariablesInput{}
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("variables")), &genVars)
@@ -197,21 +201,21 @@ func Run() {
 		githubactions.Infof("Importing resources...\n")
 
 		for _, ws := range workspaces {
-			err = ImportWorkspace(ctx, tf, client, ws.Name, org)
+			err = ImportWorkspace(ctx, tf, client, ws, org)
 			if err != nil {
 				githubactions.Fatalf("Failed to import workspace: %s", err)
 			}
 		}
 
 		for _, v := range variables {
-			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org)
+			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace, org)
 			if err != nil {
 				githubactions.Fatalf("Failed to import variable: %s", err)
 			}
 		}
 
 		for _, access := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamName); err != nil {
+			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace, access.TeamName); err != nil {
 				githubactions.Fatalf("Failed to import team access: %s", err)
 			}
 		}
