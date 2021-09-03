@@ -127,6 +127,8 @@ func Run() {
 
 	teamAccess := NewTeamAccess(teamInputs, workspaces)
 
+	filePath := path.Join(workDir, "main.tf.json")
+
 	backend, err := tfconfig.ParseBackend(githubactions.GetInput("backend_config"))
 	if err != nil {
 		githubactions.Fatalf("Failed to parse backend configuration: %s", err)
@@ -171,50 +173,16 @@ func Run() {
 		githubactions.Fatalf("Failed to create new workspace configuration: %s", err)
 	}
 
-	filePath := path.Join(workDir, "main.tf.json")
-
-	if err = WriteModuleFile(module, filePath); err != nil {
-		githubactions.Fatalf("Failed to write the Terraform workspace configuration: %s", err)
+	if err = TerraformInit(ctx, tf, module, filePath); err != nil {
+		githubactions.Fatalf("Failed to initialize the Terraform configuration: %s", err)
 	}
 
-	if err = tf.Init(ctx); err != nil {
-		githubactions.Fatalf("Failed to initialize the Terraform workspace: %s", err)
+	if err = SetNewBackend(ctx, tf, module, nil, filePath); err != nil {
+		githubactions.Fatalf("Failed to copy state to a local backend: %s", err)
 	}
 
-	if !apply {
-		module.Terraform.Backend = nil
-
-		if err = WriteModuleFile(module, filePath); err != nil {
-			githubactions.Fatalf("Failed to write the Terraform workspace with local backend configuration: %s", err)
-		}
-
-		if err = tf.Init(ctx); err != nil {
-			githubactions.Fatalf("Failed to initialize the Terraform workspace with local backend configuration: %s", err)
-		}
-	}
-
-	if inputs.GetBool("import") {
-		githubactions.Infof("Importing resources...\n")
-
-		for _, ws := range workspaces {
-			err = ImportWorkspace(ctx, tf, client, ws.Name, org)
-			if err != nil {
-				githubactions.Fatalf("Failed to import workspace: %s", err)
-			}
-		}
-
-		for _, v := range variables {
-			err = ImportVariable(ctx, tf, client, v.Key, v.Workspace.Name, org)
-			if err != nil {
-				githubactions.Fatalf("Failed to import variable: %s", err)
-			}
-		}
-
-		for _, access := range teamAccess {
-			if err = ImportTeamAccess(ctx, tf, client, org, access.Workspace.Name, access.TeamName); err != nil {
-				githubactions.Fatalf("Failed to import team access: %s", err)
-			}
-		}
+	if err = ImportResources(ctx, client, tf, module, filePath, workspaces, org); err != nil {
+		githubactions.Fatalf("Failed to import resources: %s", err)
 	}
 
 	planPath := "plan.txt"
@@ -252,17 +220,21 @@ func Run() {
 		if !inputs.GetBool("allow_workspace_deletion") && WillDestroy(plan, "tfe_workspace") {
 			githubactions.Fatalf("Error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions.")
 		}
-
-		if apply {
-			githubactions.Infof("Applying...\n")
-
-			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
-				githubactions.Fatalf("Failed to apply: %s", err)
-			}
-
-			githubactions.Infof("Success\n")
-		}
 	} else {
-		githubactions.Infof("No changes")
+		githubactions.Infof("No changes\n")
+	}
+
+	if apply {
+		githubactions.Infof("Applying...\n")
+
+		if err = SetNewBackend(ctx, tf, module, backend, filePath); err != nil {
+			githubactions.Fatalf("Failed to copy local state to remote backend: %s", err)
+		}
+
+		if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
+			githubactions.Fatalf("Failed to apply: %s", err)
+		}
+
+		githubactions.Infof("Success\n")
 	}
 }

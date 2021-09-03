@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
@@ -255,6 +256,19 @@ func WriteModuleFile(module *tfconfig.Module, filePath string) error {
 	}
 
 	if err = ioutil.WriteFile(filePath, b, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TerraformInit updates the current configuration usign the passed module and runs Terraform Init
+func TerraformInit(ctx context.Context, tf *tfexec.Terraform, module *tfconfig.Module, filePath string) error {
+	if err := WriteModuleFile(module, filePath); err != nil {
+		return err
+	}
+
+	if err := tf.Init(ctx); err != nil {
 		return err
 	}
 

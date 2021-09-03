@@ -10,6 +10,10 @@ type Module struct {
 
 // AppendData appends a data source of type "sourceType" with name "name" to the workspace's data configuration
 func (m *Module) AppendData(sourceType string, name string, source interface{}) {
+	if m.Data == nil {
+		m.Data = map[string]map[string]interface{}{}
+	}
+
 	if _, ok := m.Data[sourceType]; !ok {
 		m.Data[sourceType] = map[string]interface{}{}
 	}
@@ -19,6 +23,10 @@ func (m *Module) AppendData(sourceType string, name string, source interface{}) 
 
 // AppendData appends a resource of type "sourceType" with name "name" to the workspace's resources configuration
 func (m *Module) AppendResource(sourceType string, name string, source interface{}) {
+	if m.Resources == nil {
+		m.Resources = map[string]map[string]interface{}{}
+	}
+
 	if _, ok := m.Resources[sourceType]; !ok {
 		m.Resources[sourceType] = map[string]interface{}{}
 	}
