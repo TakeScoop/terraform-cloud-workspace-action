@@ -249,7 +249,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 
 // WriteModuleFile is a simple utility to marshal the passed module and write it to the passed file path
 func WriteModuleFile(module *tfconfig.Module, filePath string) error {
-	b, err := json.MarshalIndent(module, "", "\t")
+	b, err := json.MarshalIndent(module, "", "  ")
 	if err != nil {
 		return err
 	}
