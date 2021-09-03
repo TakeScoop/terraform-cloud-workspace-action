@@ -16,6 +16,7 @@ import (
 type Workspace struct {
 	Name      string
 	Workspace string
+	ID        *string
 }
 
 // getVCSClientByName looks for a VCS client of the passed type against the VCS clients in the Terraform Cloud organization
@@ -326,4 +327,20 @@ func ParseWorkspaces(workspaceNames []string, name string) ([]*Workspace, error)
 	}
 
 	return workspaces, nil
+}
+
+// SetWorkspaceIDs takes a list of workspace objects and sets the ID if the resources is found in the Terraform Cloud organization
+func SetWorkspaceIDs(ctx context.Context, client *tfe.Client, workspaces []*Workspace, organization string) error {
+	for _, workspace := range workspaces {
+		ws, err := client.Workspaces.Read(ctx, organization, workspace.Name)
+		if err != nil {
+			if err.Error() != "resource not found" {
+				return err
+			}
+		} else {
+			workspace.ID = &ws.ID
+		}
+	}
+
+	return nil
 }
