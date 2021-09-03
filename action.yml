@@ -31,8 +31,8 @@ inputs:
     description: Whether to apply the proposed Terraform changes.
     required: true
   import:
-    description: Whether to attempt to import existing matching resources using the resource name.
-    default: false
+    description: Whether to import existing matching resources from the Terraform Cloud organization.
+    default: true
   variables:
     description: YAML encoded variables to apply to all workspaces.
     default: ""

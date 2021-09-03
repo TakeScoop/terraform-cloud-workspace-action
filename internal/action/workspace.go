@@ -2,7 +2,9 @@ package action
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -243,6 +245,20 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 	AddProviders(module, config.Providers)
 
 	return module, nil
+}
+
+// WriteModuleFile is a simple utility to marshal the passed module and write it to the passed file path
+func WriteModuleFile(module *tfconfig.Module, filePath string) error {
+	b, err := json.MarshalIndent(module, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(filePath, b, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func AddProviders(module *tfconfig.Module, providers []Provider) {
