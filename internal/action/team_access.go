@@ -77,7 +77,12 @@ type TeamAccessPermissionsInput struct {
 
 // FindRelatedTeamAccess returns a list of workspace related team access resources
 func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
-	if workspace.ID == nil {
+	ws, err := GetWorkspace(ctx, client, organization, workspace.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if ws == nil {
 		return TeamAccess{}, nil
 	}
 
@@ -85,7 +90,7 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 		ListOptions: tfe.ListOptions{
 			PageSize: 100,
 		},
-		WorkspaceID: workspace.ID,
+		WorkspaceID: &ws.ID,
 	})
 	if err != nil {
 		return nil, err

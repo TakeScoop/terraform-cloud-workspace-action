@@ -80,10 +80,6 @@ func Run() {
 		githubactions.Fatalf("Failed to parse workspaces: %s", err)
 	}
 
-	if err := SetWorkspaceIDs(ctx, client, workspaces, org); err != nil {
-		githubactions.Fatalf("Failed to set workspace IDs: %s", err)
-	}
-
 	genVars := VariablesInput{}
 
 	err = yaml.Unmarshal([]byte(githubactions.GetInput("variables")), &genVars)

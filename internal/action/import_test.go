@@ -36,10 +36,6 @@ func (tf *TestTFExec) Import(ctx context.Context, address string, ID string, opt
 	return nil
 }
 
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestImportWorkspace(t *testing.T) {
 	ctx := context.Background()
 
@@ -49,6 +45,8 @@ func TestImportWorkspace(t *testing.T) {
 	t.Cleanup(func() {
 		server.Close()
 	})
+
+	mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 
 	client := newTestTFClient(t, server.URL)
 
@@ -65,7 +63,7 @@ func TestImportWorkspace(t *testing.T) {
 			},
 		}
 
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportWorkspace(ctx, &tf, client, "ws", "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -77,7 +75,7 @@ func TestImportWorkspace(t *testing.T) {
 			State: &tfjson.State{},
 		}
 
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportWorkspace(ctx, &tf, client, "ws", "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -87,18 +85,6 @@ func TestImportWorkspace(t *testing.T) {
 			ID:      "ws-abc123",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
-	})
-
-	t.Run("skip importing the workspace if the workspace was not set with an ID", func(t *testing.T) {
-		tf := TestTFExec{
-			State: &tfjson.State{},
-		}
-
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: nil}, "org"); err != nil {
-			t.Fatal(err)
-		}
-
-		assert.Equal(t, len(tf.ImportArgs), 0)
 	})
 }
 
@@ -114,6 +100,7 @@ func TestImportVariable(t *testing.T) {
 			server.Close()
 		})
 
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, varsAPIResponse))
 
 		client := newTestTFClient(t, server.URL)
@@ -130,7 +117,7 @@ func TestImportVariable(t *testing.T) {
 			},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -142,7 +129,7 @@ func TestImportVariable(t *testing.T) {
 		})
 	})
 
-	t.Run("skip importing a variable if the workspace was not set with an ID", func(t *testing.T) {
+	t.Run("skip importing a variable if the workspace does not exist in Terraform Cloud", func(t *testing.T) {
 
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
@@ -151,13 +138,15 @@ func TestImportVariable(t *testing.T) {
 			server.Close()
 		})
 
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
+
 		client := newTestTFClient(t, server.URL)
 
 		tf := TestTFExec{
 			State: &tfjson.State{},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: nil}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -173,6 +162,7 @@ func TestImportVariable(t *testing.T) {
 			server.Close()
 		})
 
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, `{"data": []}`))
 
 		client := newTestTFClient(t, server.URL)
@@ -189,7 +179,7 @@ func TestImportVariable(t *testing.T) {
 			},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, client, "foo", "ws", "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -209,6 +199,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, teamAccessAPIResponse))
 
 		client := newTestTFClient(t, server.URL)
@@ -225,7 +216,7 @@ func TestImportTeamAccess(t *testing.T) {
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -237,7 +228,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 	})
 
-	t.Run("skip import if the workspace is not set with an ID", func(t *testing.T) {
+	t.Run("skip import if the workspace is not found in Terraform Cloud", func(t *testing.T) {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 
@@ -246,6 +237,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
 
 		client := newTestTFClient(t, server.URL)
 
@@ -253,7 +245,7 @@ func TestImportTeamAccess(t *testing.T) {
 			State: &tfjson.State{},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: nil}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -269,6 +261,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 
 		client := newTestTFClient(t, server.URL)
 
@@ -285,7 +278,7 @@ func TestImportTeamAccess(t *testing.T) {
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -301,6 +294,7 @@ func TestImportTeamAccess(t *testing.T) {
 		})
 
 		mux.HandleFunc("/api/v2/organizations/org/teams", testServerResHandler(t, 200, teamAPIResponse))
+		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 200, wsAPIResponse))
 		mux.HandleFunc("/api/v2/team-workspaces", testServerResHandler(t, 200, `{"data": []}`))
 
 		client := newTestTFClient(t, server.URL)
@@ -317,13 +311,110 @@ func TestImportTeamAccess(t *testing.T) {
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: stringPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", "ws", "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, len(tf.ImportArgs), 0)
 	})
 }
+
+var wsAPIResponse = `{
+  "data": {
+    "id": "ws-abc123",
+    "type": "workspaces",
+    "attributes": {
+      "allow-destroy-plan": false,
+      "auto-apply": false,
+      "auto-destroy-at": null,
+      "created-at": "2021-08-26T04:43:54.557Z",
+      "environment": "default",
+      "locked": false,
+      "name": "ws",
+      "queue-all-runs": true,
+      "speculative-enabled": true,
+      "structured-run-output-enabled": true,
+      "terraform-version": "1.0.5",
+      "working-directory": "",
+      "global-remote-state": false,
+      "updated-at": "2021-08-26T04:43:54.557Z",
+      "resource-count": 0,
+      "apply-duration-average": null,
+      "plan-duration-average": null,
+      "policy-check-failures": null,
+      "run-failures": null,
+      "workspace-kpis-runs-count": null,
+      "latest-change-at": "2021-08-26T04:43:54.557Z",
+      "operations": true,
+      "execution-mode": "remote",
+      "vcs-repo": null,
+      "vcs-repo-identifier": null,
+      "permissions": {
+        "can-update": true,
+        "can-destroy": true,
+        "can-queue-destroy": true,
+        "can-queue-run": true,
+        "can-queue-apply": true,
+        "can-read-state-versions": true,
+        "can-create-state-versions": true,
+        "can-read-variable": true,
+        "can-update-variable": true,
+        "can-lock": true,
+        "can-unlock": true,
+        "can-force-unlock": true,
+        "can-read-settings": true,
+        "can-manage-tags": true
+      },
+      "actions": {
+        "is-destroyable": false
+      },
+      "description": "",
+      "file-triggers-enabled": true,
+      "trigger-prefixes": [],
+      "source": "tfe-api",
+      "source-name": null,
+      "source-url": null,
+      "tag-names": []
+    },
+    "relationships": {
+      "organization": {
+        "data": {
+          "id": "org",
+          "type": "organizations"
+        }
+      },
+      "current-run": {
+        "data": null
+      },
+      "latest-run": {
+        "data": null
+      },
+      "outputs": {
+        "data": []
+      },
+      "remote-state-consumers": {
+        "links": {
+          "related": "/api/v2/workspaces/ws-abc123/relationships/remote-state-consumers"
+        }
+      },
+      "current-state-version": {
+        "data": null
+      },
+      "current-configuration-version": {
+        "data": null
+      },
+      "agent-pool": {
+        "data": null
+      },
+      "readme": {
+        "data": null
+      }
+    },
+    "links": {
+      "self": "/api/v2/organizations/org/workspaces/ws"
+    }
+  }
+}`
 
 var varsAPIResponse = `{
   "data": [
