@@ -178,7 +178,7 @@ func Run() {
 	}
 
 	if err = tf.Init(ctx); err != nil {
-		githubactions.Fatalf("Failed initialize the Terraform workspace: %s", err)
+		githubactions.Fatalf("Failed to initialize the Terraform workspace: %s", err)
 	}
 
 	if !apply {
