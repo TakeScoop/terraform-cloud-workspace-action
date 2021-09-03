@@ -154,7 +154,9 @@ with:
 
 ### Importing existing resources
 
-By default, the action will import existing resources of matching values within the Terraform Cloud organization. When `apply` is set to `false`, the configured backend state will be copied to a local backend and `import` will be set to `true`. This grants some visibility into the import changes before they are actually applied to the configured backend.
+By default, the action will import any existing resources it can find based on a unique attribute. It makes multiple passes to discover all existing resources, first finding matching workspaces and then related resources (variables, team access).
+
+When `apply` is set to `false`, the configured backend state will be copied to a local backend and `import` will be set to `true`. This grants some visibility into the import changes before they are actually applied to the configured backend.
 
 To disable the import feature, set `import` to `false`
 
