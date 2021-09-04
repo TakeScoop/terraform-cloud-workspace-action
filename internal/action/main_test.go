@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,17 +33,17 @@ func RemoveTestWorkspaces(ctx context.Context, client *tfe.Client, organization 
 	return nil
 }
 
-func SetTestEnvs(envs map[string]string) {
-	for key, value := range envs {
-		os.Setenv(fmt.Sprintf("INPUT_%s", strings.ToUpper(key)), value)
-	}
-}
+// func SetTestEnvs(envs map[string]string) {
+// 	for key, value := range envs {
+// 		os.Setenv(fmt.Sprintf("INPUT_%s", strings.ToUpper(key)), value)
+// 	}
+// }
 
-func UnsetTestEnvs(envs map[string]string) {
-	for key := range envs {
-		os.Unsetenv(fmt.Sprintf("INPUT_%s", strings.ToUpper(key)))
-	}
-}
+// func UnsetTestEnvs(envs map[string]string) {
+// 	for key := range envs {
+// 		os.Unsetenv(fmt.Sprintf("INPUT_%s", strings.ToUpper(key)))
+// 	}
+// }
 
 func TestCreateWorkspace(t *testing.T) {
 	if testing.Short() {
@@ -53,33 +52,43 @@ func TestCreateWorkspace(t *testing.T) {
 
 	ctx := context.Background()
 
-	envs := map[string]string{
-		"terraform_token":          os.Getenv("tf_token"),
-		"terraform_organization":   "ryanwholey",
-		"terraform_host":           "app.terraform.io",
-		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		"import":                   "true",
-		"apply":                    "true",
-		"tfe_provider_version":     "0.25.3",
-		"runner_terraform_version": "1.0.5",
-		"terraform_version":        "1.0.5",
+	// envs := map[string]string{
+	// 	"terraform_token":          os.Getenv("tf_token"),
+	// 	"terraform_organization":   "ryanwholey",
+	// 	"terraform_host":           "app.terraform.io",
+	// 	"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+	// 	"import":                   "true",
+	// 	"apply":                    "true",
+	// 	"tfe_provider_version":     "0.25.3",
+	// 	"runner_terraform_version": "1.0.5",
+	// 	"terraform_version":        "1.0.5",
+	// }
+
+	config := &RunConfig{
+		Token:                  os.Getenv("tf_token"),
+		Organization:           "ryanwholey",
+		Host:                   "app.terraform.io",
+		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+		Import:                 true,
+		Apply:                  true,
+		TFEProviderVersion:     "0.25.3",
+		RunnerTerraformVersion: "1.0.5",
+		TerraformVersion:       "1.0.5",
 	}
 
-	SetTestEnvs(envs)
-
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
-		Token:   envs["terraform_token"],
+		Address: fmt.Sprintf("https://%s", config.Host),
+		Token:   config.Token,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+	if err := RemoveTestWorkspaces(ctx, client, config.Organization, workspacePrefix); err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
+	_, err = client.Workspaces.Read(ctx, config.Organization, config.Name)
 	if err == nil {
 		t.Fatal("workspace should not exist, and an error should be returned")
 	}
@@ -88,256 +97,254 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Fatalf("Error is not workspace not found: %s", err)
 	}
 
-	Run()
+	Run(config)
 
-	ws, err := client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
+	ws, err := client.Workspaces.Read(ctx, config.Organization, config.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, ws.Name, envs["name"])
+	assert.Equal(t, ws.Name, config.Name)
 
 	t.Cleanup(func() {
-		UnsetTestEnvs(envs)
-
-		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+		if err := RemoveTestWorkspaces(ctx, client, config.Organization, workspacePrefix); err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func TestImportExistingResources(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+// func TestImportExistingResources(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip("skipping integration test")
+// 	}
 
-	ctx := context.Background()
+// 	ctx := context.Background()
 
-	envs := map[string]string{
-		"terraform_token":          os.Getenv("tf_token"),
-		"terraform_organization":   "ryanwholey",
-		"terraform_host":           "app.terraform.io",
-		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		"import":                   "true",
-		"apply":                    "true",
-		"tfe_provider_version":     "0.25.3",
-		"runner_terraform_version": "1.0.5",
-		"terraform_version":        "1.0.5",
-		"variables": `---
-- key: foo
-  value: baz
-  category: terraform`,
-	}
+// 	envs := map[string]string{
+// 		"terraform_token":          os.Getenv("tf_token"),
+// 		"terraform_organization":   "ryanwholey",
+// 		"terraform_host":           "app.terraform.io",
+// 		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+// 		"import":                   "true",
+// 		"apply":                    "true",
+// 		"tfe_provider_version":     "0.25.3",
+// 		"runner_terraform_version": "1.0.5",
+// 		"terraform_version":        "1.0.5",
+// 		"variables": `---
+// - key: foo
+//   value: baz
+//   category: terraform`,
+// 	}
 
-	SetTestEnvs(envs)
+// 	SetTestEnvs(envs)
 
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
-		Token:   envs["terraform_token"],
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	client, err := tfe.NewClient(&tfe.Config{
+// 		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
+// 		Token:   envs["terraform_token"],
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-		t.Fatal(err)
-	}
+// 	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	ws, err := client.Workspaces.Create(ctx, envs["terraform_organization"], tfe.WorkspaceCreateOptions{
-		Name:             strPtr(envs["name"]),
-		TerraformVersion: strPtr("1.0.4"),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	ws, err := client.Workspaces.Create(ctx, envs["terraform_organization"], tfe.WorkspaceCreateOptions{
+// 		Name:             strPtr(envs["name"]),
+// 		TerraformVersion: strPtr("1.0.4"),
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, ws.TerraformVersion, "1.0.4")
+// 	assert.Equal(t, ws.TerraformVersion, "1.0.4")
 
-	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
-		Key:      strPtr("foo"),
-		Value:    strPtr("bar"),
-		Category: tfe.Category(tfe.CategoryTerraform),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
+// 		Key:      strPtr("foo"),
+// 		Value:    strPtr("bar"),
+// 		Category: tfe.Category(tfe.CategoryTerraform),
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, v.Value, "bar")
+// 	assert.Equal(t, v.Value, "bar")
 
-	Run()
+// 	Run()
 
-	ws, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	ws, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, ws.TerraformVersion, "1.0.5")
+// 	assert.Equal(t, ws.TerraformVersion, "1.0.5")
 
-	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, v.Value, "baz")
+// 	assert.Equal(t, v.Value, "baz")
 
-	t.Cleanup(func() {
-		UnsetTestEnvs(envs)
+// 	t.Cleanup(func() {
+// 		UnsetTestEnvs(envs)
 
-		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-			t.Fatal(err)
-		}
-	})
-}
+// 		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 			t.Fatal(err)
+// 		}
+// 	})
+// }
 
-func TestDriftCorrection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+// func TestDriftCorrection(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip("skipping integration test")
+// 	}
 
-	ctx := context.Background()
+// 	ctx := context.Background()
 
-	envs := map[string]string{
-		"terraform_token":          os.Getenv("tf_token"),
-		"terraform_organization":   "ryanwholey",
-		"terraform_host":           "app.terraform.io",
-		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		"import":                   "true",
-		"apply":                    "true",
-		"tfe_provider_version":     "0.25.3",
-		"runner_terraform_version": "1.0.5",
-		"terraform_version":        "1.0.5",
-	}
+// 	envs := map[string]string{
+// 		"terraform_token":          os.Getenv("tf_token"),
+// 		"terraform_organization":   "ryanwholey",
+// 		"terraform_host":           "app.terraform.io",
+// 		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+// 		"import":                   "true",
+// 		"apply":                    "true",
+// 		"tfe_provider_version":     "0.25.3",
+// 		"runner_terraform_version": "1.0.5",
+// 		"terraform_version":        "1.0.5",
+// 	}
 
-	SetTestEnvs(envs)
+// 	SetTestEnvs(envs)
 
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
-		Token:   envs["terraform_token"],
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	client, err := tfe.NewClient(&tfe.Config{
+// 		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
+// 		Token:   envs["terraform_token"],
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-		t.Fatal(err)
-	}
+// 	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	ws, err := client.Workspaces.Create(ctx, envs["terraform_organization"], tfe.WorkspaceCreateOptions{
-		Name:             strPtr(envs["name"]),
-		TerraformVersion: strPtr("1.0.5"),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	ws, err := client.Workspaces.Create(ctx, envs["terraform_organization"], tfe.WorkspaceCreateOptions{
+// 		Name:             strPtr(envs["name"]),
+// 		TerraformVersion: strPtr("1.0.5"),
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
-		Key:      strPtr("foo"),
-		Value:    strPtr("bar"),
-		Category: tfe.Category(tfe.CategoryTerraform),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
+// 		Key:      strPtr("foo"),
+// 		Value:    strPtr("bar"),
+// 		Category: tfe.Category(tfe.CategoryTerraform),
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	Run()
+// 	Run()
 
-	_, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err == nil {
-		t.Fatal("Expected variable not to exist")
-	}
+// 	_, err = client.Variables.Read(ctx, ws.ID, v.ID)
+// 	if err == nil {
+// 		t.Fatal("Expected variable not to exist")
+// 	}
 
-	if err.Error() != "resource not found" {
-		t.Fatalf("Expected error to be resource not found: %s", err)
-	}
+// 	if err.Error() != "resource not found" {
+// 		t.Fatalf("Expected error to be resource not found: %s", err)
+// 	}
 
-	t.Cleanup(func() {
-		UnsetTestEnvs(envs)
+// 	t.Cleanup(func() {
+// 		UnsetTestEnvs(envs)
 
-		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-			t.Fatal(err)
-		}
-	})
-}
+// 		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 			t.Fatal(err)
+// 		}
+// 	})
+// }
 
-func TestMultipleWorkspaces(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+// func TestMultipleWorkspaces(t *testing.T) {
+// 	if testing.Short() {
+// 		t.Skip("skipping integration test")
+// 	}
 
-	ctx := context.Background()
+// 	ctx := context.Background()
 
-	envs := map[string]string{
-		"terraform_token":        os.Getenv("tf_token"),
-		"terraform_organization": "ryanwholey",
-		"terraform_host":         "app.terraform.io",
-		"name":                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		"workspaces": `---
-- staging
-- production`,
-		"workspace_variables": `---
-staging:
-  - key: environment
-    value: staging
-    category: env
-production:
-  - key: environment
-    value: production	
-    category: env`,
-		"import":                   "true",
-		"apply":                    "true",
-		"tfe_provider_version":     "0.25.3",
-		"runner_terraform_version": "1.0.5",
-		"terraform_version":        "1.0.5",
-	}
+// 	envs := map[string]string{
+// 		"terraform_token":        os.Getenv("tf_token"),
+// 		"terraform_organization": "ryanwholey",
+// 		"terraform_host":         "app.terraform.io",
+// 		"name":                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+// 		"workspaces": `---
+// - staging
+// - production`,
+// 		"workspace_variables": `---
+// staging:
+//   - key: environment
+//     value: staging
+//     category: env
+// production:
+//   - key: environment
+//     value: production
+//     category: env`,
+// 		"import":                   "true",
+// 		"apply":                    "true",
+// 		"tfe_provider_version":     "0.25.3",
+// 		"runner_terraform_version": "1.0.5",
+// 		"terraform_version":        "1.0.5",
+// 	}
 
-	SetTestEnvs(envs)
+// 	SetTestEnvs(envs)
 
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
-		Token:   envs["terraform_token"],
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	client, err := tfe.NewClient(&tfe.Config{
+// 		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
+// 		Token:   envs["terraform_token"],
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-		t.Fatal(err)
-	}
+// 	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	ws, err := client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
-		Search: &workspacePrefix,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	ws, err := client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
+// 		Search: &workspacePrefix,
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, len(ws.Items), 0)
+// 	assert.Equal(t, len(ws.Items), 0)
 
-	Run()
+// 	Run()
 
-	ws, err = client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
-		Search: &workspacePrefix,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	ws, err = client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
+// 		Search: &workspacePrefix,
+// 	})
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	assert.Equal(t, len(ws.Items), 2)
+// 	assert.Equal(t, len(ws.Items), 2)
 
-	for _, ws := range ws.Items {
-		v, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+// 	for _, ws := range ws.Items {
+// 		v, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{})
+// 		if err != nil {
+// 			t.Fatal(err)
+// 		}
 
-		assert.Equal(t, len(v.Items), 1)
-	}
+// 		assert.Equal(t, len(v.Items), 1)
+// 	}
 
-	t.Cleanup(func() {
-		UnsetTestEnvs(envs)
+// 	t.Cleanup(func() {
+// 		UnsetTestEnvs(envs)
 
-		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
-			t.Fatal(err)
-		}
-	})
-}
+// 		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+// 			t.Fatal(err)
+// 		}
+// 	})
+// }
