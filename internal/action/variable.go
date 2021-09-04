@@ -1,8 +1,10 @@
 package action
 
 import (
+	"context"
 	"fmt"
 
+	tfe "github.com/hashicorp/go-tfe"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
@@ -62,4 +64,35 @@ func (vs Variables) ToResource() []*tfeprovider.Variable {
 	}
 
 	return vars
+}
+
+// FindRelatedVariables returns a list of variables related to the pass workspace
+func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (Variables, error) {
+	if workspace.ID == nil {
+		return Variables{}, nil
+	}
+
+	tfVars, err := client.Variables.List(ctx, *workspace.ID, tfe.VariableListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var vars Variables
+
+	for _, v := range tfVars.Items {
+		vars = append(vars, Variable{
+			Key:         v.Key,
+			Value:       v.Value,
+			Description: v.Description,
+			Category:    string(v.Category),
+			Sensitive:   v.Sensitive,
+			Workspace:   workspace,
+		})
+	}
+
+	return vars, nil
 }

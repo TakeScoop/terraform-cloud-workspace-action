@@ -311,10 +311,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 
 func TestAppendTeamAccess(t *testing.T) {
 	t.Run("Add basic team access", func(t *testing.T) {
-		module := &tfconfig.Module{
-			Data:      map[string]map[string]interface{}{},
-			Resources: map[string]map[string]interface{}{},
-		}
+		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
 			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace"}},
@@ -368,10 +365,7 @@ func TestAppendTeamAccess(t *testing.T) {
 	})
 
 	t.Run("Add with permissions block", func(t *testing.T) {
-		module := &tfconfig.Module{
-			Data:      map[string]map[string]interface{}{},
-			Resources: map[string]map[string]interface{}{},
-		}
+		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
 			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace"}, Permissions: &TeamAccessPermissionsInput{
@@ -408,10 +402,7 @@ func TestAppendTeamAccess(t *testing.T) {
 }
 
 func TestAddProviders(t *testing.T) {
-	module := &tfconfig.Module{
-		Data:      map[string]map[string]interface{}{},
-		Resources: map[string]map[string]interface{}{},
-	}
+	module := NewModule()
 
 	AddProviders(module, []Provider{
 		{Name: "tfe", Version: "0.25.0", Source: "hashicorp/tfe", Config: tfeprovider.Config{Hostname: "app.terraform.io"}},

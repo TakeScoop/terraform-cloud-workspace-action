@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/sethvargo/go-githubactions"
+	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 )
 
 var maxPageSize int = 100
@@ -210,6 +211,72 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	}
 
 	githubactions.Infof("Team access %q successfully imported\n", importID)
+
+	return nil
+}
+
+// ImportWorkspaceResources discovers and imports resources related to the passed workspace
+func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string) error {
+	module := NewModule()
+
+	wsConfig, err := NewWorkspaceResource(ctx, client, []*Workspace{workspace}, &WorkspaceResourceOptions{})
+	if err != nil {
+		return err
+	}
+
+	module.AppendResource("tfe_workspace", "workspace", wsConfig)
+
+	variables, err := FindRelatedVariables(ctx, client, workspace, organization)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range variables {
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key), v.ToResource())
+	}
+
+	teamAccess, err := FindRelatedTeamAccess(ctx, client, workspace, organization)
+	if err != nil {
+		return err
+	}
+
+	AppendTeamAccess(module, teamAccess, organization)
+
+	if err := WriteModuleFile(module, filePath); err != nil {
+		return err
+	}
+
+	if err := ImportWorkspace(ctx, tf, client, workspace, organization); err != nil {
+		return err
+	}
+
+	for _, v := range variables {
+		err := ImportVariable(ctx, tf, client, v.Key, v.Workspace, organization)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, access := range teamAccess {
+		if err := ImportTeamAccess(ctx, tf, client, organization, access.Workspace, access.TeamName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ImportResources discovers and imports resources related to the passed workspaces
+func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, module *tfconfig.Module, filePath string, workspaces []*Workspace, organization string) error {
+	for _, ws := range workspaces {
+		if err := ImportWorkspaceResources(ctx, client, tf, filePath, ws, organization); err != nil {
+			return err
+		}
+	}
+
+	if err := WriteModuleFile(module, filePath); err != nil {
+		return err
+	}
 
 	return nil
 }

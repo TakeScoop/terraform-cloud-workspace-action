@@ -1,6 +1,9 @@
 package action
 
 import (
+	"context"
+
+	tfe "github.com/hashicorp/go-tfe"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
@@ -70,4 +73,45 @@ type TeamAccessPermissionsInput struct {
 	StateVersions    string `yaml:"state_versions"`
 	SentinelMocks    string `yaml:"sentinel_mocks"`
 	WorkspaceLocking bool   `yaml:"workspace_locking"`
+}
+
+// FindRelatedTeamAccess returns a list of workspace related team access resources
+func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
+	if workspace.ID == nil {
+		return TeamAccess{}, nil
+	}
+
+	tas, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+		WorkspaceID: workspace.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var access TeamAccess
+
+	for _, ta := range tas.Items {
+		item := TeamAccessItem{
+			Workspace: workspace,
+			Access:    string(ta.Access),
+			TeamName:  ta.Team.Name,
+		}
+
+		if ta.Team.Permissions != nil {
+			item.Permissions = &TeamAccessPermissionsInput{
+				Runs:             string(ta.Runs),
+				Variables:        string(ta.Variables),
+				StateVersions:    string(ta.StateVersions),
+				SentinelMocks:    string(ta.SentinelMocks),
+				WorkspaceLocking: ta.WorkspaceLocking,
+			}
+		}
+
+		access = append(access, item)
+	}
+
+	return access, nil
 }
