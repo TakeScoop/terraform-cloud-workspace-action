@@ -35,7 +35,7 @@ func TestCreateWorkspace(t *testing.T) {
 	}
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: envs["terraform_host"],
+		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
 		Token:   envs["terraform_token"],
 	})
 	if err != nil {
