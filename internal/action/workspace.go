@@ -212,6 +212,14 @@ type NewWorkspaceConfigOptions struct {
 	Providers                []Provider
 }
 
+func NewModule() *tfconfig.Module {
+	return &tfconfig.Module{
+		Terraform: tfconfig.Terraform{},
+		Data:      map[string]map[string]interface{}{},
+		Resources: map[string]map[string]interface{}{},
+	}
+}
+
 // NewWorkspaceConfig takes in all required values for the Terraform workspace and outputs a struct that can be marshalled then planned or applied
 func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*Workspace, config *NewWorkspaceConfigOptions) (*tfconfig.Module, error) {
 	wsResource, err := NewWorkspaceResource(ctx, client, workspaces, config.WorkspaceResourceOptions)
@@ -219,16 +227,11 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 		return nil, err
 	}
 
-	module := &tfconfig.Module{
-		Terraform: tfconfig.Terraform{},
-		Variables: config.WorkspaceVariables,
-		Data:      map[string]map[string]interface{}{},
-		Resources: map[string]map[string]interface{}{
-			"tfe_workspace": {
-				"workspace": wsResource,
-			},
-		},
-	}
+	module := NewModule()
+
+	module.Variables = config.WorkspaceVariables
+
+	module.AppendResource("tfe_workspace", "workspace", wsResource)
 
 	if config.Backend != nil {
 		module.Terraform.Backend = config.Backend
