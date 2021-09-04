@@ -214,7 +214,6 @@ type NewWorkspaceConfigOptions struct {
 
 func NewModule() *tfconfig.Module {
 	return &tfconfig.Module{
-		Terraform: tfconfig.Terraform{},
 		Data:      map[string]map[string]interface{}{},
 		Resources: map[string]map[string]interface{}{},
 	}
