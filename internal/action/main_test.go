@@ -43,6 +43,10 @@ func TestCreateWorkspace(t *testing.T) {
 	}
 
 	_, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
+	if err != nil {
+		fmt.Println(envs["name"])
+		fmt.Println(err.Error())
+	}
 	if err.Error() != "resource not found" {
 		t.Fatal("test workspace already exists")
 	}
