@@ -258,3 +258,77 @@ func TestDriftCorrection(t *testing.T) {
 		}
 	})
 }
+
+func TestMultipleWorkspaces(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	envs := map[string]string{
+		"terraform_token":        os.Getenv("tf_token"),
+		"terraform_organization": "ryanwholey",
+		"terraform_host":         "app.terraform.io",
+		"name":                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+		"workspaces": `---
+- staging
+- production`,
+		"workspace_variables": `---
+staging:
+  - key: environment
+    value: staging
+    category: env
+production:
+  - key: environment
+    value: production	
+    category: env`,
+		"import":                   "true",
+		"apply":                    "true",
+		"tfe_provider_version":     "0.25.3",
+		"runner_terraform_version": "1.0.5",
+		"terraform_version":        "1.0.5",
+	}
+
+	SetTestEnvs(envs)
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", envs["terraform_host"]),
+		Token:   envs["terraform_token"],
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+		t.Fatal(err)
+	}
+
+	ws, err := client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
+		Search: &workspacePrefix,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, len(ws.Items), 0)
+
+	Run()
+
+	ws, err = client.Workspaces.List(ctx, envs["terraform_organization"], tfe.WorkspaceListOptions{
+		Search: &workspacePrefix,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, len(ws.Items), 2)
+
+	t.Cleanup(func() {
+		UnsetTestEnvs(envs)
+
+		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
