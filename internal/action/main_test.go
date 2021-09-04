@@ -123,6 +123,10 @@ func TestImportExistingResources(t *testing.T) {
 		"tfe_provider_version":     "0.25.3",
 		"runner_terraform_version": "1.0.5",
 		"terraform_version":        "1.0.5",
+		"variables": `---
+- key: foo
+	value: baz
+	category: terraform`,
 	}
 
 	SetTestEnvs(envs)
@@ -152,11 +156,35 @@ func TestImportExistingResources(t *testing.T) {
 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
 		Key:      strPtr("foo"),
 		Value:    strPtr("bar"),
-		Category: tfe.Category(tfe.CategoryEnv),
+		Category: tfe.Category(tfe.CategoryTerraform),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, v.Category, tfe.Category(tfe.CategoryEnv))
+	assert.Equal(t, v.Category, *tfe.Category(tfe.CategoryEnv))
+
+	Run()
+
+	ws, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, ws.TerraformVersion, "1.0.5")
+
+	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, v.Value, "baz")
+
+	t.Cleanup(func() {
+		UnsetTestEnvs(envs)
+
+		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
