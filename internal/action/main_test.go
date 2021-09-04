@@ -125,8 +125,8 @@ func TestImportExistingResources(t *testing.T) {
 		"terraform_version":        "1.0.5",
 		"variables": `---
 - key: foo
-	value: baz
-	category: terraform`,
+  value: baz
+  category: terraform`,
 	}
 
 	SetTestEnvs(envs)
