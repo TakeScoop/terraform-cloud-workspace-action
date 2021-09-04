@@ -242,9 +242,10 @@ func TestDriftCorrection(t *testing.T) {
 	Run()
 
 	_, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err != nil {
+	if err == nil {
 		t.Fatal("Expected variable not to exist")
 	}
+
 	if err.Error() != "resource not found" {
 		t.Fatalf("Expected error to be resource not found: %s", err)
 	}
