@@ -33,4 +33,4 @@ jobs:
     - name: Test
       env:
         tf_token: ${{ secrets.OS_ORG_TF_TOKEN }}
-      run: go test -v -run ^TestDriftCorrection$ github.com/takescoop/terraform-cloud-workspace-action/internal/action
+      run: go test -v ./...
