@@ -31,4 +31,6 @@ jobs:
         go-version: 1.16
 
     - name: Test
+      env:
+        tf_token: ${{ secrets.OS_ORG_TF_TOKEN }}
       run: go test -v ./...
