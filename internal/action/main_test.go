@@ -16,7 +16,7 @@ var workspacePrefix string = "action-test"
 func NewTestRunConfig() *RunConfig {
 	return &RunConfig{
 		Token:                  os.Getenv("tf_token"),
-		Organization:           "ryanwholey",
+		Organization:           os.Getenv("tf_organization"),
 		Host:                   "app.terraform.io",
 		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
 		Import:                 true,

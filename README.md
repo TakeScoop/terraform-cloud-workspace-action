@@ -179,7 +179,7 @@ with:
 
 To test the project
 
-`go test`
+`go test -v -short ./...`
 
 ### Lint
 
