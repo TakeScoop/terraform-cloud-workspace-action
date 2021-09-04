@@ -13,6 +13,20 @@ import (
 
 var workspacePrefix string = "action-test"
 
+func NewTestRunConfig() *RunConfig {
+	return &RunConfig{
+		Token:                  os.Getenv("tf_token"),
+		Organization:           "ryanwholey",
+		Host:                   "app.terraform.io",
+		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
+		Import:                 true,
+		Apply:                  true,
+		TFEProviderVersion:     "0.25.3",
+		RunnerTerraformVersion: "1.0.5",
+		TerraformVersion:       "1.0.5",
+	}
+}
+
 func RemoveTestWorkspaces(ctx context.Context, client *tfe.Client, organization string, prefix string) error {
 	workspaces, err := client.Workspaces.List(ctx, organization, tfe.WorkspaceListOptions{
 		Search: &prefix,
@@ -40,17 +54,7 @@ func TestCreateWorkspace(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := &RunConfig{
-		Token:                  os.Getenv("tf_token"),
-		Organization:           "ryanwholey",
-		Host:                   "app.terraform.io",
-		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		Import:                 true,
-		Apply:                  true,
-		TFEProviderVersion:     "0.25.3",
-		RunnerTerraformVersion: "1.0.5",
-		TerraformVersion:       "1.0.5",
-	}
+	config := NewTestRunConfig()
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", config.Host),
@@ -96,21 +100,12 @@ func TestImportExistingResources(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := &RunConfig{
-		Token:                  os.Getenv("tf_token"),
-		Organization:           "ryanwholey",
-		Host:                   "app.terraform.io",
-		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		Import:                 true,
-		Apply:                  true,
-		TFEProviderVersion:     "0.25.3",
-		RunnerTerraformVersion: "1.0.5",
-		TerraformVersion:       "1.0.5",
-		Variables: `---
+	config := NewTestRunConfig()
+
+	config.Variables = `---
 - key: foo
   value: baz
-  category: terraform`,
-	}
+  category: terraform`
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", config.Host),
@@ -175,17 +170,7 @@ func TestDriftCorrection(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := &RunConfig{
-		Token:                  os.Getenv("tf_token"),
-		Organization:           "ryanwholey",
-		Host:                   "app.terraform.io",
-		Name:                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		Import:                 true,
-		Apply:                  true,
-		TFEProviderVersion:     "0.25.3",
-		RunnerTerraformVersion: "1.0.5",
-		TerraformVersion:       "1.0.5",
-	}
+	config := NewTestRunConfig()
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", config.Host),
@@ -241,39 +226,13 @@ func TestMultipleWorkspaces(t *testing.T) {
 
 	ctx := context.Background()
 
-	envs := map[string]string{
-		"terraform_token":        os.Getenv("tf_token"),
-		"terraform_organization": "ryanwholey",
-		"terraform_host":         "app.terraform.io",
-		"name":                   fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		"workspaces": `---
-- staging
-- production`,
-		"workspace_variables": `---
-staging:
-  - key: environment
-    value: staging
-    category: env
-production:
-  - key: environment
-    value: production
-    category: env`,
-		"import":                   "true",
-		"apply":                    "true",
-		"tfe_provider_version":     "0.25.3",
-		"runner_terraform_version": "1.0.5",
-		"terraform_version":        "1.0.5",
-	}
+	config := NewTestRunConfig()
 
-	config := &RunConfig{
-		Token:        os.Getenv("tf_token"),
-		Organization: "ryanwholey",
-		Host:         "app.terraform.io",
-		Name:         fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
-		Workspaces: `---
+	config.Workspaces = `---
 - staging
-- production`,
-		WorkspaceVariables: `---
+- production`
+
+	config.WorkspaceVariables = `---
 staging:
   - key: environment
     value: staging
@@ -281,13 +240,7 @@ staging:
 production:
   - key: environment
     value: production
-    category: env`,
-		Import:                 true,
-		Apply:                  true,
-		TFEProviderVersion:     "0.25.3",
-		RunnerTerraformVersion: "1.0.5",
-		TerraformVersion:       "1.0.5",
-	}
+    category: env`
 
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", config.Host),
@@ -331,7 +284,7 @@ production:
 	}
 
 	t.Cleanup(func() {
-		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
+		if err := RemoveTestWorkspaces(ctx, client, config.Organization, workspacePrefix); err != nil {
 			t.Fatal(err)
 		}
 	})
