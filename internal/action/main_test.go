@@ -162,7 +162,7 @@ func TestImportExistingResources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, v.Category, *tfe.Category(tfe.CategoryEnv))
+	assert.Equal(t, v.Value, "bar")
 
 	Run()
 
