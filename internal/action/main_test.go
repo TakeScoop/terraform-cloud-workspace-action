@@ -324,6 +324,15 @@ production:
 
 	assert.Equal(t, len(ws.Items), 2)
 
+	for _, ws := range ws.Items {
+		v, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(v.Items), 1)
+	}
+
 	t.Cleanup(func() {
 		UnsetTestEnvs(envs)
 
