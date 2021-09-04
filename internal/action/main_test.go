@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var workspacePrefix string = "action-test"
+
 func RemoveTestWorkspaces(ctx context.Context, client *tfe.Client, organization string, prefix string) error {
 	workspaces, err := client.Workspaces.List(ctx, organization, tfe.WorkspaceListOptions{
 		Search: &prefix,
@@ -55,7 +57,7 @@ func TestCreateWorkspace(t *testing.T) {
 		"terraform_token":          os.Getenv("tf_token"),
 		"terraform_organization":   "ryanwholey",
 		"terraform_host":           "app.terraform.io",
-		"name":                     fmt.Sprintf("action-test-%d", time.Now().Unix()),
+		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
 		"import":                   "true",
 		"apply":                    "true",
 		"tfe_provider_version":     "0.25.3",
@@ -73,7 +75,7 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], "action-test"); err != nil {
+	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,6 +83,7 @@ func TestCreateWorkspace(t *testing.T) {
 	if err == nil {
 		t.Fatal("workspace should not exist, and an error should be returned")
 	}
+
 	if err.Error() != "resource not found" {
 		t.Fatalf("Error is not workspace not found: %s", err)
 	}
@@ -97,8 +100,7 @@ func TestCreateWorkspace(t *testing.T) {
 	t.Cleanup(func() {
 		UnsetTestEnvs(envs)
 
-		err = client.Workspaces.Delete(ctx, envs["terraform_organization"], envs["name"])
-		if err != nil {
+		if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -115,7 +117,7 @@ func TestImportExistingResources(t *testing.T) {
 		"terraform_token":          os.Getenv("tf_token"),
 		"terraform_organization":   "ryanwholey",
 		"terraform_host":           "app.terraform.io",
-		"name":                     fmt.Sprintf("action-test-%d", time.Now().Unix()),
+		"name":                     fmt.Sprintf("%s-%d", workspacePrefix, time.Now().Unix()),
 		"import":                   "true",
 		"apply":                    "true",
 		"tfe_provider_version":     "0.25.3",
@@ -133,7 +135,7 @@ func TestImportExistingResources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], "action-test"); err != nil {
+	if err := RemoveTestWorkspaces(ctx, client, envs["terraform_organization"], workspacePrefix); err != nil {
 		t.Fatal(err)
 	}
 
@@ -147,4 +149,14 @@ func TestImportExistingResources(t *testing.T) {
 
 	assert.Equal(t, ws.TerraformVersion, "1.0.4")
 
+	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
+		Key:      strPtr("foo"),
+		Value:    strPtr("bar"),
+		Category: tfe.Category(tfe.CategoryEnv),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, v.Category, tfe.Category(tfe.CategoryEnv))
 }
