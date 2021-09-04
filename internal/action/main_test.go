@@ -20,7 +20,7 @@ func TestCreateWorkspace(t *testing.T) {
 
 	envs := map[string]string{
 		"terraform_token":          os.Getenv("tf_token"),
-		"terrafrm_organization":    "ryanwholey",
+		"terraform_organization":   "ryanwholey",
 		"terraform_host":           "app.terraform.io",
 		"name":                     "action-test",
 		"import":                   "true",
@@ -43,12 +43,11 @@ func TestCreateWorkspace(t *testing.T) {
 	}
 
 	_, err = client.Workspaces.Read(ctx, envs["terraform_organization"], envs["name"])
-	if err != nil {
-		fmt.Println(envs["name"])
-		fmt.Println(err.Error())
+	if err == nil {
+		t.Fatal("workspace should not exist, and an error should be returned")
 	}
 	if err.Error() != "resource not found" {
-		t.Fatal("test workspace already exists")
+		t.Fatalf("Error is not workspace not found: %s", err)
 	}
 
 	Run()
