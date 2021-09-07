@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -100,6 +101,13 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 	var access TeamAccess
 
 	for _, ta := range tas.Items {
+		b, err := json.MarshalIndent(ta, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(string(b))
+
 		item := TeamAccessItem{
 			Workspace: workspace,
 			Access:    string(ta.Access),
