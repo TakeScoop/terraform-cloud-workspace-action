@@ -84,7 +84,6 @@ func TestNewTeamAccess(t *testing.T) {
 }
 
 func TestFindRelatedTeamAccess(t *testing.T) {
-
 	t.Run("team access found", func(t *testing.T) {
 		ctx := context.Background()
 
