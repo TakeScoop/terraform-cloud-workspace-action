@@ -216,7 +216,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 }
 
 // ImportWorkspaceResources discovers and imports resources related to the passed workspace
-func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string) error {
+func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string, providers []Provider) error {
 	module := NewModule()
 
 	wsConfig, err := NewWorkspaceResource(ctx, client, []*Workspace{workspace}, &WorkspaceResourceOptions{})
@@ -241,6 +241,8 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 	}
 
 	AppendTeamAccess(module, teamAccess, organization)
+
+	AddProviders(module, providers)
 
 	if err := WriteModuleFile(module, filePath); err != nil {
 		return err
@@ -267,9 +269,9 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 }
 
 // ImportResources discovers and imports resources related to the passed workspaces
-func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, module *tfconfig.Module, filePath string, workspaces []*Workspace, organization string) error {
+func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, module *tfconfig.Module, filePath string, workspaces []*Workspace, organization string, providers []Provider) error {
 	for _, ws := range workspaces {
-		if err := ImportWorkspaceResources(ctx, client, tf, filePath, ws, organization); err != nil {
+		if err := ImportWorkspaceResources(ctx, client, tf, filePath, ws, organization, providers); err != nil {
 			return err
 		}
 	}
