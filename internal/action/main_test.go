@@ -40,8 +40,8 @@ func newTestInputs(t *testing.T) *Inputs {
 	}
 
 	return &Inputs{
-		Token:                  os.Getenv("tf_token"),
-		Organization:           os.Getenv("tf_organization"),
+		Token:                  token,
+		Organization:           organization,
 		Host:                   action.Inputs["terraform_host"].Default,
 		Name:                   fmt.Sprintf("%s-%d", testWorkspacePrefix, time.Now().Unix()),
 		Import:                 imp,
