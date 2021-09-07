@@ -164,7 +164,7 @@ func Run(config *Inputs) error {
 	providers := []Provider{
 		{
 			Name:    "tfe",
-			Version: githubactions.GetInput("tfe_provider_version"),
+			Version: config.TFEProviderVersion,
 			Source:  "hashicorp/tfe",
 			Config: tfeprovider.Config{
 				Hostname: config.Host,

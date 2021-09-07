@@ -132,7 +132,7 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Fatal("workspace should not exist, and an error should be returned")
 	}
 
-	if errors.Is(err, tfe.ErrResourceNotFound) {
+	if !errors.Is(err, tfe.ErrResourceNotFound) {
 		t.Fatalf("Error is not workspace not found: %s", err)
 	}
 
