@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
@@ -75,6 +76,17 @@ type TeamAccessPermissionsInput struct {
 	WorkspaceLocking bool   `yaml:"workspace_locking"`
 }
 
+// findTeamByID takes a list of teams and returns a matching team to the passed ID
+func findTeamByID(teams *tfe.TeamList, teamID string) *tfe.Team {
+	for _, t := range teams.Items {
+		if t.ID == teamID {
+			return t
+		}
+	}
+
+	return nil
+}
+
 // FindRelatedTeamAccess returns a list of workspace related team access resources
 func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
 	if workspace.ID == nil {
@@ -91,13 +103,27 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 		return nil, err
 	}
 
+	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var access TeamAccess
 
 	for _, ta := range tas.Items {
+		team := findTeamByID(teams, ta.Team.ID)
+		if team == nil {
+			return nil, fmt.Errorf("team %s not found", ta.Team.ID)
+		}
+
 		item := TeamAccessItem{
 			Workspace: workspace,
 			Access:    string(ta.Access),
-			TeamName:  ta.Team.Name,
+			TeamName:  team.Name,
 		}
 
 		if ta.Team.Permissions != nil {
