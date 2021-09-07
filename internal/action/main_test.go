@@ -67,7 +67,7 @@ func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client)
 			PageSize: maxPageSize,
 		},
 	})
-	if err != nil {
+	if !errors.Is(err, tfe.ErrResourceNotFound) {
 		t.Fatal(err)
 	}
 
