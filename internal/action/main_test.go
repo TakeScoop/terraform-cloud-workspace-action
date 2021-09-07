@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -113,11 +112,11 @@ func TestCreateWorkspace(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := newTestInputs(t)
+	inputs := newTestInputs(t)
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", config.Host),
-		Token:   config.Token,
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -127,25 +126,23 @@ func TestCreateWorkspace(t *testing.T) {
 
 	removeTestWorkspaces(t, ctx, client)
 
-	_, err = client.Workspaces.Read(ctx, config.Organization, config.Name)
+	_, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
 	if err == nil {
 		t.Fatal("workspace should not exist, and an error should be returned")
 	}
 
-	if !errors.Is(err, tfe.ErrResourceNotFound) {
-		t.Fatalf("Error is not workspace not found: %s", err)
-	}
+	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 
-	if err = Run(config); err != nil {
+	if err = Run(inputs); err != nil {
 		t.Fatal(err)
 	}
 
-	ws, err := client.Workspaces.Read(ctx, config.Organization, config.Name)
+	ws, err := client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, ws.Name, config.Name)
+	assert.Equal(t, ws.Name, inputs.Name)
 }
 
 func TestImportExistingResources(t *testing.T) {
@@ -155,16 +152,16 @@ func TestImportExistingResources(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := newTestInputs(t)
+	inputs := newTestInputs(t)
 
-	config.Variables = `---
+	inputs.Variables = `---
 - key: foo
   value: baz
   category: terraform`
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", config.Host),
-		Token:   config.Token,
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -174,15 +171,15 @@ func TestImportExistingResources(t *testing.T) {
 
 	removeTestWorkspaces(t, ctx, client)
 
-	ws, err := client.Workspaces.Create(ctx, config.Organization, tfe.WorkspaceCreateOptions{
-		Name:             &config.Name,
-		TerraformVersion: tfe.String("1.0.4"),
+	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             &inputs.Name,
+		TerraformVersion: tfe.String("1.0.0"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, ws.TerraformVersion, "1.0.4")
+	assert.Equal(t, ws.TerraformVersion, "1.0.0")
 
 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
 		Key:      tfe.String("foo"),
@@ -195,16 +192,16 @@ func TestImportExistingResources(t *testing.T) {
 
 	assert.Equal(t, v.Value, "bar")
 
-	if err = Run(config); err != nil {
+	if err = Run(inputs); err != nil {
 		t.Fatal(err)
 	}
 
-	ws, err = client.Workspaces.Read(ctx, config.Organization, config.Name)
+	ws, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, ws.TerraformVersion, "1.0.5")
+	assert.Equal(t, ws.TerraformVersion, inputs.TerraformVersion)
 
 	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
 	if err != nil {
@@ -221,11 +218,11 @@ func TestDriftCorrection(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := newTestInputs(t)
+	inputs := newTestInputs(t)
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", config.Host),
-		Token:   config.Token,
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -235,9 +232,9 @@ func TestDriftCorrection(t *testing.T) {
 
 	removeTestWorkspaces(t, ctx, client)
 
-	ws, err := client.Workspaces.Create(ctx, config.Organization, tfe.WorkspaceCreateOptions{
-		Name:             &config.Name,
-		TerraformVersion: &config.TerraformVersion,
+	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             &inputs.Name,
+		TerraformVersion: &inputs.TerraformVersion,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -252,7 +249,7 @@ func TestDriftCorrection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = Run(config); err != nil {
+	if err = Run(inputs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -261,9 +258,7 @@ func TestDriftCorrection(t *testing.T) {
 		t.Fatal("Expected variable not to exist")
 	}
 
-	if errors.Is(err, tfe.ErrResourceNotFound) {
-		t.Fatalf("Expected error to be resource not found: %s", err)
-	}
+	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 }
 
 func TestMultipleWorkspaces(t *testing.T) {
@@ -273,13 +268,13 @@ func TestMultipleWorkspaces(t *testing.T) {
 
 	ctx := context.Background()
 
-	config := newTestInputs(t)
+	inputs := newTestInputs(t)
 
-	config.Workspaces = `---
+	inputs.Workspaces = `---
 - staging
 - production`
 
-	config.WorkspaceVariables = `---
+	inputs.WorkspaceVariables = `---
 staging:
   - key: environment
     value: staging
@@ -290,8 +285,8 @@ production:
     category: env`
 
 	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", config.Host),
-		Token:   config.Token,
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -301,7 +296,7 @@ production:
 
 	removeTestWorkspaces(t, ctx, client)
 
-	ws, err := client.Workspaces.List(ctx, config.Organization, tfe.WorkspaceListOptions{
+	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
 	if err != nil {
@@ -310,11 +305,11 @@ production:
 
 	assert.Len(t, ws.Items, 0)
 
-	if err = Run(config); err != nil {
+	if err = Run(inputs); err != nil {
 		t.Fatal(err)
 	}
 
-	ws, err = client.Workspaces.List(ctx, config.Organization, tfe.WorkspaceListOptions{
+	ws, err = client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
 	if err != nil {
