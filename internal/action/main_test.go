@@ -29,12 +29,12 @@ func newTestInputs(t *testing.T) *Inputs {
 		t.Fatal(err)
 	}
 
-	token := os.Getenv("tf_token")
+	token := os.Getenv("TF_TOKEN")
 	if token == "" {
 		t.Fatal(`Error: "TF_TOKEN" must be set in the environment`)
 	}
 
-	organization := os.Getenv("tf_organization")
+	organization := os.Getenv("TF_ORGANIZATION")
 	if organization == "" {
 		t.Fatal(`Error: "TF_ORGANIZATION" must be set in the environment`)
 	}
