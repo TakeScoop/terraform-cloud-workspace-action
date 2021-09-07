@@ -136,6 +136,18 @@ func Run() {
 		githubactions.Fatalf("Failed to parse backend configuration: %s", err)
 	}
 
+	providers := []Provider{
+		{
+			Name:    "tfe",
+			Version: githubactions.GetInput("tfe_provider_version"),
+			Source:  "hashicorp/tfe",
+			Config: tfeprovider.Config{
+				Hostname: host,
+				Token:    token,
+			},
+		},
+	}
+
 	module, err := NewWorkspaceConfig(ctx, client, workspaces, &NewWorkspaceConfigOptions{
 		Backend: backend,
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
@@ -159,17 +171,7 @@ func Run() {
 		RemoteStates: remoteStates,
 		Variables:    variables,
 		TeamAccess:   teamAccess,
-		Providers: []Provider{
-			{
-				Name:    "tfe",
-				Version: githubactions.GetInput("tfe_provider_version"),
-				Source:  "hashicorp/tfe",
-				Config: tfeprovider.Config{
-					Hostname: host,
-					Token:    token,
-				},
-			},
-		},
+		Providers:    providers,
 	})
 	if err != nil {
 		githubactions.Fatalf("Failed to create new workspace configuration: %s", err)
@@ -186,7 +188,7 @@ func Run() {
 	}
 
 	if inputs.GetBool("import") {
-		if err = ImportResources(ctx, client, tf, module, filePath, workspaces, org); err != nil {
+		if err = ImportResources(ctx, client, tf, module, filePath, workspaces, org, providers); err != nil {
 			githubactions.Fatalf("Failed to import resources: %s", err)
 		}
 	}
