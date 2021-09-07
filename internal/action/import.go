@@ -138,7 +138,7 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organization string) (*tfe.Team, error) {
 	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
 		ListOptions: tfe.ListOptions{
-			PageSize: 100,
+			PageSize: maxPageSize,
 		},
 	})
 	if err != nil {

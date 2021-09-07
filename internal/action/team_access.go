@@ -95,7 +95,7 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 
 	tas, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		ListOptions: tfe.ListOptions{
-			PageSize: 100,
+			PageSize: maxPageSize,
 		},
 		WorkspaceID: workspace.ID,
 	})

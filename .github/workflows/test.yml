@@ -32,6 +32,6 @@ jobs:
 
     - name: Test
       env:
-        tf_token: ${{ secrets.OS_TF_TOKEN }}
-        tf_organization: ryanwholey
+        TF_TOKEN: ${{ secrets.OSS_TF_TOKEN }}
+        TF_ORGANIZATION: ryanwholey
       run: go test -v ./...

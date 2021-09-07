@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	action.Run(&action.RunConfig{
+	if err := action.Run(&action.Inputs{
 		Token:                  githubactions.GetInput("terraform_token"),
 		Host:                   githubactions.GetInput("terraform_host"),
 		Name:                   strings.TrimSpace(githubactions.GetInput("name")),
@@ -40,5 +40,7 @@ func main() {
 		TFEProviderVersion:     githubactions.GetInput("tfe_provider_version"),
 		Import:                 inputs.GetBool("import"),
 		AllowWorkspaceDeletion: inputs.GetBool("allow_workspace_deletion"),
-	})
+	}); err != nil {
+		githubactions.Fatalf("Error: %s", err)
+	}
 }
