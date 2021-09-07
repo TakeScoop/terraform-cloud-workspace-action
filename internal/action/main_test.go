@@ -61,13 +61,13 @@ func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Cli
 
 // removeTestWorkspaces deletes all test workspaces created by these tests
 func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client) {
-	workspaces, err := client.Workspaces.List(ctx, "org", tfe.WorkspaceListOptions{
+	workspaces, err := client.Workspaces.List(ctx, os.Getenv("TF_ORGANIZATION"), tfe.WorkspaceListOptions{
 		Search: tfe.String(testWorkspacePrefix),
 		ListOptions: tfe.ListOptions{
 			PageSize: maxPageSize,
 		},
 	})
-	if !errors.Is(err, tfe.ErrResourceNotFound) {
+	if err != nil {
 		t.Fatal(err)
 	}
 
