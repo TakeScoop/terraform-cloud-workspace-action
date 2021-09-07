@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
@@ -78,8 +79,11 @@ type TeamAccessPermissionsInput struct {
 // FindRelatedTeamAccess returns a list of workspace related team access resources
 func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
 	if workspace.ID == nil {
+		fmt.Println("no WS ID found")
 		return TeamAccess{}, nil
 	}
+
+	fmt.Printf("ws ID: %s\n", *workspace.ID)
 
 	tas, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		ListOptions: tfe.ListOptions{
@@ -90,6 +94,8 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("related team access", tas)
 
 	var access TeamAccess
 
