@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -77,14 +76,22 @@ type TeamAccessPermissionsInput struct {
 	WorkspaceLocking bool   `yaml:"workspace_locking"`
 }
 
+// findTeamByID takes a list of teams and returns a matching team to the passed ID
+func findTeamByID(teams *tfe.TeamList, teamID string) *tfe.Team {
+	for _, t := range teams.Items {
+		if t.ID == teamID {
+			return t
+		}
+	}
+
+	return nil
+}
+
 // FindRelatedTeamAccess returns a list of workspace related team access resources
 func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
 	if workspace.ID == nil {
-		fmt.Println("no WS ID found")
 		return TeamAccess{}, nil
 	}
-
-	fmt.Printf("ws ID: %s\n", *workspace.ID)
 
 	tas, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
 		ListOptions: tfe.ListOptions{
@@ -96,22 +103,27 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 		return nil, err
 	}
 
-	fmt.Println("related team access", tas)
+	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	var access TeamAccess
 
 	for _, ta := range tas.Items {
-		b, err := json.MarshalIndent(ta, "", "  ")
-		if err != nil {
-			return nil, err
+		team := findTeamByID(teams, ta.Team.ID)
+		if team == nil {
+			return nil, fmt.Errorf("team %s not found", ta.Team.ID)
 		}
-
-		fmt.Println(string(b))
 
 		item := TeamAccessItem{
 			Workspace: workspace,
 			Access:    string(ta.Access),
-			TeamName:  ta.Team.Name,
+			TeamName:  team.Name,
 		}
 
 		if ta.Team.Permissions != nil {
