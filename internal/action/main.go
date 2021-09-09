@@ -173,7 +173,7 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to decode workspace tag names: %w", err)
 	}
 
-	tags, err := FormatTagsByWorkspace(tagInputs, wsTagInputs, workspaces)
+	tags, err := MergeWorkspaceTags(tagInputs, wsTagInputs, workspaces)
 	if err != nil {
 		return fmt.Errorf("failed to format workspace tags: %w", err)
 	}

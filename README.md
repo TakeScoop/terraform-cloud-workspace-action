@@ -45,6 +45,7 @@ jobs:
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
 | `ssh_key_id` | SSH key ID to assign the workspace | |
+| `tags` | YAML encoded list of tag names applied to all workspaces | |
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
 | `terraform_version` | Workspace Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |

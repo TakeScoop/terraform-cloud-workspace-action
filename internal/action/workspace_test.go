@@ -938,20 +938,22 @@ func TestParseWorkspaces(t *testing.T) {
 	})
 }
 
-func TestFormatTagsByWorkspace(t *testing.T) {
+func TestMergeWorkspaceTags(t *testing.T) {
 	t.Run("return an empty map if no tags are passed", func(t *testing.T) {
-		tags, err := FormatTagsByWorkspace(Tags{}, map[string]Tags{}, []*Workspace{{Name: "foo"}})
+		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{}, []*Workspace{{Name: "foo"}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, tags, map[string]Tags{})
+
+		assert.Equal(t, tags, map[string]Tags{"foo": {}})
 	})
 
 	t.Run("return tags for all workspaces when tags are passed", func(t *testing.T) {
-		tags, err := FormatTagsByWorkspace(Tags{"all"}, map[string]Tags{}, []*Workspace{{Name: "foo-staging"}, {Name: "foo-production"}})
+		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{}, []*Workspace{{Name: "foo-staging"}, {Name: "foo-production"}})
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		assert.Equal(t, tags, map[string]Tags{
 			"foo-staging":    {"all"},
 			"foo-production": {"all"},
@@ -959,7 +961,7 @@ func TestFormatTagsByWorkspace(t *testing.T) {
 	})
 
 	t.Run("return tags for specified workspaces with workspace tags passed", func(t *testing.T) {
-		tags, err := FormatTagsByWorkspace(Tags{"all"}, map[string]Tags{
+		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{
 			"staging":    {"staging"},
 			"production": {"production"},
 		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
@@ -974,7 +976,7 @@ func TestFormatTagsByWorkspace(t *testing.T) {
 	})
 
 	t.Run("return full workspace map when only some workspace tags are set", func(t *testing.T) {
-		tags, err := FormatTagsByWorkspace(Tags{}, map[string]Tags{
+		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
 			"production": {"production"},
 		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
 		if err != nil {
@@ -988,7 +990,7 @@ func TestFormatTagsByWorkspace(t *testing.T) {
 	})
 
 	t.Run("error when a workspace name does not match known workspaces", func(t *testing.T) {
-		_, err := FormatTagsByWorkspace(Tags{}, map[string]Tags{
+		_, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
 			"bar": {"production"},
 		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
 

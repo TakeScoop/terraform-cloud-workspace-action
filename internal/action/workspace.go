@@ -168,7 +168,7 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 
 	b, err := json.Marshal(tags)
 	if err != nil {
-		return fmt.Errorf("failed to marshal workspace tags: %s", err)
+		return fmt.Errorf("failed to marshal workspace tags: %w", err)
 	}
 
 	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.value.name, []))}", string(b))
@@ -176,13 +176,13 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 	return nil
 }
 
-// FormatTagsByWorkspace returns a map of tags by workspace
-func FormatTagsByWorkspace(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
+// MergeWorkspaceTags returns a map of tags by workspace
+func MergeWorkspaceTags(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
 	tagsByWorkspace := map[string]Tags{}
 
-	if len(tags) == 0 && len(wsTags) == 0 {
-		return tagsByWorkspace, nil
-	}
+	// if len(tags) == 0 && len(wsTags) == 0 {
+	// 	return tagsByWorkspace, nil
+	// }
 
 	for _, ws := range workspaces {
 		tagsByWorkspace[ws.Name] = append(Tags{}, tags...)

@@ -21,8 +21,10 @@ inputs:
     default: "${{ github.event.repository.name }}"
   tags:
     description: YAML encoded list of tag names applied to all workspaces
+    default: ""
   workspace_tags:
     description: YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace
+    default: ""
   runner_terraform_version:
     description: Terraform version used to create the workspace.
     default: "1.0.3"
