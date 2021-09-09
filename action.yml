@@ -21,6 +21,7 @@ inputs:
     default: "${{ github.event.repository.name }}"
   description:
     description: Terraform Cloud workspace description
+    default: "${{ github.event.repository.description }}"
   tags:
     description: YAML encoded list of tag names applied to all workspaces
     default: ""
