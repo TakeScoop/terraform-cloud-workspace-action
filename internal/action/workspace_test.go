@@ -10,6 +10,7 @@ import (
 	"path"
 	"testing"
 
+	tfe "github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -306,6 +307,36 @@ func TestNewWorkspaceResource(t *testing.T) {
 
 		assert.Equal(t, *ws.GlobalRemoteState, false)
 		assert.Equal(t, ws.RemoteStateConsumerIDs, []string{})
+	})
+}
+
+func TestNewWorkspaceResourceWithTags(t *testing.T) {
+	ctx := context.Background()
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+
+	defer server.Close()
+
+	mux.HandleFunc("/api/v2/organizations/org/oauth-clients", testServerResHandler(t, 200, basicOauthClientResponse))
+
+	client := newTestTFClient(t, server.URL)
+
+	t.Run("add workspace tag names", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{
+			{Name: "staging-foo", Workspace: "staging", ID: tfe.String("ws-abc123")},
+			{Name: "production-foo", Workspace: "production", ID: tfe.String("ws-def456")},
+		}, &WorkspaceResourceOptions{
+			Tags: map[string]Tags{
+				"staging-foo":    {"all", "staging"},
+				"production-foo": {"all", "production"},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "${toset(lookup({\"production-foo\":[\"all\",\"production\"],\"staging-foo\":[\"all\",\"staging\"]}, each.value.name, []))}", ws.TagNames)
 	})
 }
 
@@ -666,6 +697,31 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 		assert.Equal(t, output.Valid, true, output.Diagnostics)
 	})
+
+	t.Run("validate workspaces with tags", func(t *testing.T) {
+		module, err := NewWorkspaceConfig(ctx, client, []*Workspace{
+			{Name: "staging-foo", ID: tfe.String("ws-abc123"), Workspace: "staging"},
+			{Name: "production-foo", ID: tfe.String("ws-def456"), Workspace: "production"},
+		}, &NewWorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
+				Tags: map[string]Tags{
+					"staging":    {"all", "staging"},
+					"production": {"all", "production"},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, module)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
 }
 
 func TestWillDestroy(t *testing.T) {
@@ -879,5 +935,65 @@ func TestParseWorkspaces(t *testing.T) {
 			Name:      "foo-production",
 			Workspace: "production",
 		})
+	})
+}
+
+func TestMergeWorkspaceTags(t *testing.T) {
+	t.Run("return an empty map if no tags are passed", func(t *testing.T) {
+		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{}, []*Workspace{{Name: "foo"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, tags, map[string]Tags{"foo": {}})
+	})
+
+	t.Run("return tags for all workspaces when tags are passed", func(t *testing.T) {
+		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{}, []*Workspace{{Name: "foo-staging"}, {Name: "foo-production"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, tags, map[string]Tags{
+			"foo-staging":    {"all"},
+			"foo-production": {"all"},
+		})
+	})
+
+	t.Run("return tags for specified workspaces with workspace tags passed", func(t *testing.T) {
+		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{
+			"staging":    {"staging"},
+			"production": {"production"},
+		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, tags, map[string]Tags{
+			"foo-staging":    {"all", "staging"},
+			"foo-production": {"all", "production"},
+		})
+	})
+
+	t.Run("return full workspace map when only some workspace tags are set", func(t *testing.T) {
+		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
+			"production": {"production"},
+		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, tags, map[string]Tags{
+			"foo-staging":    {},
+			"foo-production": {"production"},
+		})
+	})
+
+	t.Run("error when a workspace name does not match known workspaces", func(t *testing.T) {
+		_, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
+			"bar": {"production"},
+		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+
+		assert.Error(t, err)
 	})
 }

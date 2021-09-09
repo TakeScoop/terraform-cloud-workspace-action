@@ -45,6 +45,7 @@ jobs:
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
 | `ssh_key_id` | SSH key ID to assign the workspace | |
+| `tags` | YAML encoded list of tag names applied to all workspaces | |
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
 | `terraform_version` | Workspace Terraform version | `1.0.3` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
@@ -55,6 +56,7 @@ jobs:
 | `vcs_token_id` | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added. | |
 | `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
+| `workspace_tags` | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | |
 | `workspaces` | YAML encoded list of workspace names | |
 
@@ -164,6 +166,20 @@ To disable the import feature, set `import` to `false`
 ...
 with:
   import: false
+```
+
+### Workspace tags
+
+Workspace tags can be specified in two ways, `tags` and `workspace_tags`. `tags` apply to every workspace, while `workspace_tags` apply to the specified workspace only 
+
+```yml
+tags: |-
+- all
+workspace_tags: |-
+  staging:
+    - staging
+  production:
+    - production
 ```
 
 ## Outputs

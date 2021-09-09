@@ -66,6 +66,7 @@ type WorkspaceResourceOptions struct {
 	RemoteStateConsumerIDs string
 	SpeculativeEnabled     *bool
 	SSHKeyID               string
+	Tags                   map[string]Tags
 	TerraformVersion       string
 	VCSIngressSubmodules   bool
 	VCSRepo                string
@@ -143,13 +144,66 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	ws.SSHKeyID = config.SSHKeyID
 	ws.WorkingDirectory = config.WorkingDirectory
 
+	if err := SetTags(ws, config.Tags); err != nil {
+		return nil, err
+	}
+
 	return ws, nil
 }
+
+type Tag string
+type Tags []Tag
 
 type TeamDataResource struct {
 	ForEach      map[string]TeamDataResource `json:"for_each,omitempty"`
 	Name         string                      `json:"name"`
 	Organization string                      `json:"organization"`
+}
+
+// SetTags adds workspace tags to the passed module
+func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	// Marshals the tags into a JSON object which we will use as HCL in a for_each lookup.
+	// This is a result of using for_each for the workspace resource itself, which could be avoided
+	// if we were to use distinct resources for each workspace as each could get their own tag set.
+	// This implementation is an alternative approach to putting the tags in a local variable, as that splits
+	// the tag logic up quite a bit, i.e. we would be setting the tag reference here on the workspace,
+	// and the tags lookup map elsewhere on the module.
+	b, err := json.Marshal(tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal workspace tags: %w", err)
+	}
+
+	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.value.name, []))}", string(b))
+
+	return nil
+}
+
+// MergeWorkspaceTags returns a map of tags by workspace
+func MergeWorkspaceTags(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
+	tagsByWorkspace := map[string]Tags{}
+
+	// if len(tags) == 0 && len(wsTags) == 0 {
+	// 	return tagsByWorkspace, nil
+	// }
+
+	for _, ws := range workspaces {
+		tagsByWorkspace[ws.Name] = append(Tags{}, tags...)
+	}
+
+	for wsName, ts := range wsTags {
+		ws := FindWorkspace(workspaces, wsName)
+		if ws == nil {
+			return nil, fmt.Errorf("tags specified for unknown workspace %q", wsName)
+		}
+
+		tagsByWorkspace[ws.Name] = append(tagsByWorkspace[ws.Name], ts...)
+	}
+
+	return tagsByWorkspace, nil
 }
 
 // AppendTeamAccess adds the passed teams to the calling workspace
