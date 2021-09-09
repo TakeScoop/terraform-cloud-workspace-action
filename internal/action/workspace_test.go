@@ -307,6 +307,16 @@ func TestNewWorkspaceResource(t *testing.T) {
 		assert.Equal(t, *ws.GlobalRemoteState, false)
 		assert.Equal(t, ws.RemoteStateConsumerIDs, []string{})
 	})
+
+	t.Run("add workspace tag names", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+			TagNames: []string{"foo", "bar"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, ws.TagNames, []string{"foo", "bar"})
+	})
 }
 
 func TestAppendTeamAccess(t *testing.T) {

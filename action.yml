@@ -15,10 +15,12 @@ inputs:
     required: true
   tfe_provider_version:
     description: Terraform Cloud provider version.
-    default: "0.25.3"
+    default: "0.26.1"
   name:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
+  tag_names:
+    description: YAML encoded list of tag names for the workspace
   runner_terraform_version:
     description: Terraform version used to create the workspace.
     default: "1.0.3"

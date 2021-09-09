@@ -66,6 +66,7 @@ type WorkspaceResourceOptions struct {
 	RemoteStateConsumerIDs string
 	SpeculativeEnabled     *bool
 	SSHKeyID               string
+	TagNames               []string
 	TerraformVersion       string
 	VCSIngressSubmodules   bool
 	VCSRepo                string
@@ -142,6 +143,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	ws.FileTriggersEnabled = config.FileTriggersEnabled
 	ws.SSHKeyID = config.SSHKeyID
 	ws.WorkingDirectory = config.WorkingDirectory
+	ws.TagNames = config.TagNames
 
 	return ws, nil
 }
