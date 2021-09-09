@@ -191,7 +191,7 @@ func FormatTagsByWorkspace(tags Tags, wsTags map[string]Tags, workspaces []*Work
 	for wsName, ts := range wsTags {
 		ws := FindWorkspace(workspaces, wsName)
 		if ws == nil {
-			return nil, fmt.Errorf("failed to find workspace %s", wsName)
+			return nil, fmt.Errorf("tags specified for unknown workspace %q", wsName)
 		}
 
 		tagsByWorkspace[ws.Name] = append(tagsByWorkspace[ws.Name], ts...)

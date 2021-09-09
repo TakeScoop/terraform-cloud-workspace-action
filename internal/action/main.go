@@ -165,17 +165,17 @@ func Run(config *Inputs) error {
 
 	var tagInputs Tags
 	if err = yaml.Unmarshal([]byte(config.Tags), &tagInputs); err != nil {
-		return fmt.Errorf("failed to decode tag names: %s", err)
+		return fmt.Errorf("failed to decode tag names: %w", err)
 	}
 
 	var wsTagInputs map[string]Tags
 	if err = yaml.Unmarshal([]byte(config.WorkspaceTags), &wsTagInputs); err != nil {
-		return fmt.Errorf("failed to decode workspace tag names: %s", err)
+		return fmt.Errorf("failed to decode workspace tag names: %w", err)
 	}
 
 	tags, err := FormatTagsByWorkspace(tagInputs, wsTagInputs, workspaces)
 	if err != nil {
-		return fmt.Errorf("failed to format workspace tags: %s", err)
+		return fmt.Errorf("failed to format workspace tags: %w", err)
 	}
 
 	providers := []Provider{
