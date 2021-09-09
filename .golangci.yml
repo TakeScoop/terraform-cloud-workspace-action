@@ -1,6 +1,12 @@
 linters:
   enable:
     - bodyclose
+    - errorlint
     - gci
     - gofmt
     - wsl
+linters-settings:
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
