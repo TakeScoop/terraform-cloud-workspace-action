@@ -20,7 +20,9 @@ inputs:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
   tags:
-    description: YAML encoded list of tag names for the workspace
+    description: YAML encoded list of tag names applied to all workspaces
+  workspace_tags:
+    description: YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace
   runner_terraform_version:
     description: Terraform version used to create the workspace.
     default: "1.0.3"
