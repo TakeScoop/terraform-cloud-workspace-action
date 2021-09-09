@@ -13,7 +13,7 @@ type Workspace struct {
 	QueueAllRuns           *bool    `json:"queue_all_runs,omitempty"`
 	RemoteStateConsumerIDs []string `json:"remote_state_consumer_ids,omitempty"`
 	SpeculativeEnabled     *bool    `json:"speculative_enabled,omitempty"`
-	TagNames               []string `json:"tag_names,omitempty"`
+	TagNames               string   `json:"tag_names,omitempty"`
 	TerraformVersion       string   `json:"terraform_version,omitempty"`
 	SSHKeyID               string   `json:"ssh_key_id,omitempty"`
 	VCSRepo                *VCSRepo `json:"vcs_repo,omitempty"`

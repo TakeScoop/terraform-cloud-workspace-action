@@ -66,7 +66,7 @@ type WorkspaceResourceOptions struct {
 	RemoteStateConsumerIDs string
 	SpeculativeEnabled     *bool
 	SSHKeyID               string
-	TagNames               []string
+	Tags                   map[string]Tags
 	TerraformVersion       string
 	VCSIngressSubmodules   bool
 	VCSRepo                string
@@ -143,15 +143,61 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	ws.FileTriggersEnabled = config.FileTriggersEnabled
 	ws.SSHKeyID = config.SSHKeyID
 	ws.WorkingDirectory = config.WorkingDirectory
-	ws.TagNames = config.TagNames
+
+	if err := SetTags(ws, config.Tags); err != nil {
+		return nil, err
+	}
 
 	return ws, nil
 }
+
+type Tag string
+type Tags []Tag
 
 type TeamDataResource struct {
 	ForEach      map[string]TeamDataResource `json:"for_each,omitempty"`
 	Name         string                      `json:"name"`
 	Organization string                      `json:"organization"`
+}
+
+// SetTags adds a tags lookup map to the passed module
+func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	b, err := json.Marshal(tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal workspace tags: %s", err)
+	}
+
+	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.value.name, []))}", string(b))
+
+	return nil
+}
+
+// FormatTagsByWorkspace returns a map of tags by workspace
+func FormatTagsByWorkspace(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
+	tagMap := map[string]Tags{}
+
+	if len(tags) == 0 && len(wsTags) == 0 {
+		return tagMap, nil
+	}
+
+	for _, ws := range workspaces {
+		tagMap[ws.Name] = append(Tags{}, tags...)
+	}
+
+	for wsName, ts := range wsTags {
+		ws := FindWorkspace(workspaces, wsName)
+		if ws == nil {
+			return nil, fmt.Errorf("failed to find workspace %s", wsName)
+		}
+
+		tagMap[ws.Name] = append(tagMap[ws.Name], ts...)
+	}
+
+	return tagMap, nil
 }
 
 // AppendTeamAccess adds the passed teams to the calling workspace

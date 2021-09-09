@@ -20,7 +20,8 @@ type Inputs struct {
 	Token                  string
 	Host                   string
 	Name                   string
-	TagNames               string
+	Tags                   string
+	WorkspaceTags          string
 	Organization           string
 	Apply                  bool
 	RunnerTerraformVersion string
@@ -162,9 +163,19 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to parse backend configuration: %s", err)
 	}
 
-	var tagNames []string
-	if err = yaml.Unmarshal([]byte(config.TagNames), &tagNames); err != nil {
+	var tagInputs Tags
+	if err = yaml.Unmarshal([]byte(config.Tags), &tagInputs); err != nil {
+		return fmt.Errorf("failed to decode tag names: %s", err)
+	}
+
+	var wsTagInputs map[string]Tags
+	if err = yaml.Unmarshal([]byte(config.WorkspaceTags), &wsTagInputs); err != nil {
 		return fmt.Errorf("failed to decode workspace tag names: %s", err)
+	}
+
+	tags, err := FormatTagsByWorkspace(tagInputs, wsTagInputs, workspaces)
+	if err != nil {
+		return fmt.Errorf("failed to format workspace tags: %s", err)
 	}
 
 	providers := []Provider{
@@ -191,7 +202,7 @@ func Run(config *Inputs) error {
 			QueueAllRuns:           config.QueueAllRuns,
 			RemoteStateConsumerIDs: config.RemoteStateConsumerIDs,
 			SpeculativeEnabled:     config.SpeculativeEnabled,
-			TagNames:               tagNames,
+			Tags:                   tags,
 			TerraformVersion:       config.TerraformVersion,
 			SSHKeyID:               config.SSHKeyID,
 			VCSIngressSubmodules:   config.VCSIngressSubmodules,
