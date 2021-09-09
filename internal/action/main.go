@@ -20,6 +20,7 @@ type Inputs struct {
 	Token                  string
 	Host                   string
 	Name                   string
+	Description            string
 	Tags                   string
 	WorkspaceTags          string
 	Organization           string
@@ -195,6 +196,7 @@ func Run(config *Inputs) error {
 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
 			AgentPoolID:            config.AgentPoolID,
 			AutoApply:              config.AutoApply,
+			Description:            config.Description,
 			ExecutionMode:          config.ExecutionMode,
 			FileTriggersEnabled:    config.FileTriggersEnabled,
 			GlobalRemoteState:      config.GlobalRemoteState,

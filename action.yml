@@ -19,6 +19,9 @@ inputs:
   name:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
+  description:
+    description: Terraform Cloud workspace description
+    default: "${{ github.event.repository.description }}"
   tags:
     description: YAML encoded list of tag names applied to all workspaces
     default: ""

@@ -58,6 +58,7 @@ func GetVCSTokenIDByClientType(ctx context.Context, tfc *tfe.Client, organizatio
 type WorkspaceResourceOptions struct {
 	AgentPoolID            string
 	AutoApply              *bool
+	Description            string
 	ExecutionMode          string
 	FileTriggersEnabled    *bool
 	GlobalRemoteState      *bool
@@ -137,6 +138,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 		}
 	}
 
+	ws.Description = config.Description
 	ws.TerraformVersion = config.TerraformVersion
 	ws.QueueAllRuns = config.QueueAllRuns
 	ws.SpeculativeEnabled = config.SpeculativeEnabled
