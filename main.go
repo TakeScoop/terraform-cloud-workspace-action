@@ -14,6 +14,8 @@ func main() {
 		Host:                   githubactions.GetInput("terraform_host"),
 		Name:                   strings.TrimSpace(githubactions.GetInput("name")),
 		Description:            githubactions.GetInput("description"),
+		Tags:                   githubactions.GetInput("tags"),
+		WorkspaceTags:          githubactions.GetInput("workspace_tags"),
 		Organization:           githubactions.GetInput("terraform_organization"),
 		Apply:                  inputs.GetBool("apply"),
 		RunnerTerraformVersion: githubactions.GetInput("runner_terraform_version"),
