@@ -57,19 +57,19 @@ func Run(config *Inputs) error {
 		Token:   config.Token,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create Terraform client: %s", err)
+		return fmt.Errorf("failed to create Terraform client: %w", err)
 	}
 
 	workDir, err := ioutil.TempDir("", config.Name)
 	if err != nil {
-		return fmt.Errorf("failed to create working directory: %s", err)
+		return fmt.Errorf("failed to create working directory: %w", err)
 	}
 
 	defer os.RemoveAll(workDir)
 
 	tf, err := NewTerraformExec(ctx, workDir, config.RunnerTerraformVersion)
 	if err != nil {
-		return fmt.Errorf("failed to create tfexec instance: %s", err)
+		return fmt.Errorf("failed to create tfexec instance: %w", err)
 	}
 
 	b := []byte(fmt.Sprintf(`credentials "%s" {
@@ -78,49 +78,49 @@ func Run(config *Inputs) error {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve homedir: %s", err)
+		return fmt.Errorf("failed to retrieve homedir: %w", err)
 	}
 
 	err = ioutil.WriteFile(path.Join(home, ".terraformrc"), b, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write Terraform Cloud credentials to home directory: %s", err)
+		return fmt.Errorf("failed to write Terraform Cloud credentials to home directory: %w", err)
 	}
 
 	var remoteStates map[string]tfconfig.RemoteState
 
 	err = yaml.Unmarshal([]byte(config.RemoteStates), &remoteStates)
 	if err != nil {
-		return fmt.Errorf("failed to parse remote state blocks: %s", err)
+		return fmt.Errorf("failed to parse remote state blocks: %w", err)
 	}
 
 	var wsInputs []string
 
 	err = yaml.Unmarshal([]byte(config.Workspaces), &wsInputs)
 	if err != nil {
-		return fmt.Errorf("failed to decode workspaces: %s", err)
+		return fmt.Errorf("failed to decode workspaces: %w", err)
 	}
 
 	workspaces, err := ParseWorkspaces(wsInputs, config.Name)
 	if err != nil {
-		return fmt.Errorf("failed to parse workspaces: %s", err)
+		return fmt.Errorf("failed to parse workspaces: %w", err)
 	}
 
 	if err := SetWorkspaceIDs(ctx, client, workspaces, config.Organization); err != nil {
-		return fmt.Errorf("failed to set workspace IDs: %s", err)
+		return fmt.Errorf("failed to set workspace IDs: %w", err)
 	}
 
 	genVars := VariablesInput{}
 
 	err = yaml.Unmarshal([]byte(config.Variables), &genVars)
 	if err != nil {
-		return fmt.Errorf("failed to parse variables %s", err)
+		return fmt.Errorf("failed to parse variables %w", err)
 	}
 
 	wsVars := WorkspaceVariablesInput{}
 
 	err = yaml.Unmarshal([]byte(config.WorkspaceVariables), &wsVars)
 	if err != nil {
-		return fmt.Errorf("failed to parse workspace variables %s", err)
+		return fmt.Errorf("failed to parse workspace variables %w", err)
 	}
 
 	wsNames := make([]string, len(workspaces))
@@ -151,14 +151,14 @@ func Run(config *Inputs) error {
 	var teamInputs TeamAccessInput
 
 	if err = yaml.Unmarshal([]byte(config.TeamAccess), &teamInputs); err != nil {
-		return fmt.Errorf("failed to parse teams: %s", err)
+		return fmt.Errorf("failed to parse teams: %w", err)
 	}
 
 	teamAccess := NewTeamAccess(teamInputs, workspaces)
 
 	backend, err := tfconfig.ParseBackend(config.BackendConfig)
 	if err != nil {
-		return fmt.Errorf("failed to parse backend configuration: %s", err)
+		return fmt.Errorf("failed to parse backend configuration: %w", err)
 	}
 
 	providers := []Provider{
@@ -199,22 +199,22 @@ func Run(config *Inputs) error {
 		Providers:    providers,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create new workspace configuration: %s", err)
+		return fmt.Errorf("failed to create new workspace configuration: %w", err)
 	}
 
 	filePath := path.Join(workDir, "main.tf.json")
 
 	if err = TerraformInit(ctx, tf, module, filePath); err != nil {
-		return fmt.Errorf("failed to initialize the Terraform configuration: %s", err)
+		return fmt.Errorf("failed to initialize the Terraform configuration: %w", err)
 	}
 
 	if err = CopyStateToBackend(ctx, tf, module, nil, filePath); err != nil {
-		return fmt.Errorf("failed to copy state to a local backend: %s", err)
+		return fmt.Errorf("failed to copy state to a local backend: %w", err)
 	}
 
 	if config.Import {
 		if err = ImportResources(ctx, client, tf, module, filePath, workspaces, config.Organization, providers); err != nil {
-			return fmt.Errorf("failed to import resources: %s", err)
+			return fmt.Errorf("failed to import resources: %w", err)
 		}
 	}
 
@@ -226,13 +226,13 @@ func Run(config *Inputs) error {
 
 	diff, err := tf.Plan(ctx, planOpts...)
 	if err != nil {
-		return fmt.Errorf("failed to plan: %s", err)
+		return fmt.Errorf("failed to plan: %w", err)
 	}
 
 	if diff {
 		planStr, err := tf.ShowPlanFileRaw(ctx, planPath)
 		if err != nil {
-			return fmt.Errorf("failed to show plan: %s", err)
+			return fmt.Errorf("failed to show plan: %w", err)
 		}
 
 		githubactions.Infof(planStr)
@@ -240,12 +240,12 @@ func Run(config *Inputs) error {
 
 		plan, err := tf.ShowPlanFile(ctx, planPath)
 		if err != nil {
-			return fmt.Errorf("failed to create plan struct: %s", err)
+			return fmt.Errorf("failed to create plan struct: %w", err)
 		}
 
 		b, err := json.Marshal(plan)
 		if err != nil {
-			return fmt.Errorf("failed to convert plan to JSON: %s", err)
+			return fmt.Errorf("failed to convert plan to JSON: %w", err)
 		}
 
 		githubactions.SetOutput("plan_json", string(b))
@@ -261,11 +261,11 @@ func Run(config *Inputs) error {
 		githubactions.Infof("Applying...\n")
 
 		if err = CopyStateToBackend(ctx, tf, module, backend, filePath); err != nil {
-			return fmt.Errorf("failed to copy local state to configured backend: %s", err)
+			return fmt.Errorf("failed to copy local state to configured backend: %w", err)
 		}
 
 		if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
-			return fmt.Errorf("failed to apply: %s", err)
+			return fmt.Errorf("failed to apply: %w", err)
 		}
 
 		githubactions.Infof("Success\n")
