@@ -34,6 +34,7 @@ jobs:
 | `agent_pool_id` | ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent" | |
 | `auto_apply` | Whether to set auto_apply on the workspace or workspaces | true |
 | `backend_config` | YAML encoded backend configurations | |
+| `description` | Terraform Cloud workspace description | |
 | `execution_mode` | Execution mode to use for the workspace | |
 | `file_triggers_enabled` | Whether to filter runs based on the changed files in a VCS push | |
 | `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |

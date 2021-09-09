@@ -19,6 +19,8 @@ inputs:
   name:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
+  description:
+    description: Terraform Cloud workspace description
   runner_terraform_version:
     description: Terraform version used to create the workspace.
     default: "1.0.3"

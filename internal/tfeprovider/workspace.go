@@ -5,6 +5,7 @@ type Workspace struct {
 
 	AgentPoolID            string   `json:"agent_pool_id,omitempty"`
 	AutoApply              *bool    `json:"auto_apply,omitempty"`
+	Description            string   `json:"description,omitempty"`
 	ExecutionMode          string   `json:"execution_mode,omitempty"`
 	FileTriggersEnabled    *bool    `json:"file_triggers_enabled,omitempty"`
 	GlobalRemoteState      *bool    `json:"global_remote_state,omitempty"`
