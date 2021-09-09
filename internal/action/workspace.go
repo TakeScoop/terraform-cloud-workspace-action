@@ -160,7 +160,7 @@ type TeamDataResource struct {
 	Organization string                      `json:"organization"`
 }
 
-// SetTags adds a tags lookup map to the passed module
+// SetTags adds workspace tags to the passed module
 func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 	if len(tags) == 0 {
 		return nil
@@ -178,14 +178,14 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 
 // FormatTagsByWorkspace returns a map of tags by workspace
 func FormatTagsByWorkspace(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
-	tagMap := map[string]Tags{}
+	tagsByWorkspace := map[string]Tags{}
 
 	if len(tags) == 0 && len(wsTags) == 0 {
-		return tagMap, nil
+		return tagsByWorkspace, nil
 	}
 
 	for _, ws := range workspaces {
-		tagMap[ws.Name] = append(Tags{}, tags...)
+		tagsByWorkspace[ws.Name] = append(Tags{}, tags...)
 	}
 
 	for wsName, ts := range wsTags {
@@ -194,10 +194,10 @@ func FormatTagsByWorkspace(tags Tags, wsTags map[string]Tags, workspaces []*Work
 			return nil, fmt.Errorf("failed to find workspace %s", wsName)
 		}
 
-		tagMap[ws.Name] = append(tagMap[ws.Name], ts...)
+		tagsByWorkspace[ws.Name] = append(tagsByWorkspace[ws.Name], ts...)
 	}
 
-	return tagMap, nil
+	return tagsByWorkspace, nil
 }
 
 // AppendTeamAccess adds the passed teams to the calling workspace
