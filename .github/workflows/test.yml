@@ -31,4 +31,7 @@ jobs:
         go-version: 1.16
 
     - name: Test
+      env:
+        TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        TF_ORGANIZATION: takescoop-oss
       run: go test -v ./...

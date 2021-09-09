@@ -179,7 +179,7 @@ with:
 
 To test the project
 
-`go test`
+`go test -v -short ./...`
 
 ### Lint
 
@@ -187,8 +187,8 @@ This project uses [`golangci-lint`](https://github.com/golangci/golangci-lint)
 
 To lint the project
 
-`golangci-lint run`
+`golangci-lint run ./...`
 
 To auto fix issues where supported
 
-`golangci-lint run  --fix`
+`golangci-lint run  --fix ./...`

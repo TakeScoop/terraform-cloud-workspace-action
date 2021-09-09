@@ -74,7 +74,7 @@ func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Wo
 
 	tfVars, err := client.Variables.List(ctx, *workspace.ID, tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
-			PageSize: 100,
+			PageSize: maxPageSize,
 		},
 	})
 	if err != nil {

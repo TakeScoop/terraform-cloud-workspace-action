@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -24,7 +25,7 @@ type Workspace struct {
 func getVCSClientByName(ctx context.Context, tfc *tfe.Client, organization string, vcsType string) (*tfe.OAuthClient, error) {
 	list, err := tfc.OAuthClients.List(ctx, organization, tfe.OAuthClientListOptions{
 		ListOptions: tfe.ListOptions{
-			PageSize: 100,
+			PageSize: maxPageSize,
 		},
 	})
 	if err != nil {
@@ -350,7 +351,7 @@ func SetWorkspaceIDs(ctx context.Context, client *tfe.Client, workspaces []*Work
 	for _, workspace := range workspaces {
 		ws, err := client.Workspaces.Read(ctx, organization, workspace.Name)
 		if err != nil {
-			if err.Error() != "resource not found" {
+			if !errors.Is(err, tfe.ErrResourceNotFound) {
 				return err
 			}
 		} else {
