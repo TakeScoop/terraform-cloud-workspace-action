@@ -166,6 +166,12 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 		return nil
 	}
 
+	// Marshals the tags into a JSON object which we will use as HCL in a for_each lookup.
+	// This is a result of using for_each for the workspace resource itself, which could be avoided
+	// if we were to use distinct resources for each workspace as each could get their own tag set.
+	// This implementation is an alternative approach to putting the tags in a local variable, as that splits
+	// the tag logic up quite a bit, i.e. we would be setting the tag reference here on the workspace,
+	// and the tags lookup map elsewhere on the module.
 	b, err := json.Marshal(tags)
 	if err != nil {
 		return fmt.Errorf("failed to marshal workspace tags: %w", err)
