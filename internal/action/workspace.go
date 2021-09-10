@@ -179,7 +179,7 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 		return fmt.Errorf("failed to marshal workspace tags: %w", err)
 	}
 
-	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.value.name, []))}", string(b))
+	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.key, []))}", string(b))
 
 	return nil
 }

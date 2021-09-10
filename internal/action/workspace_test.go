@@ -365,7 +365,7 @@ func TestNewWorkspaceResourceWithTags(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, "${toset(lookup({\"production\":[\"all\",\"production\"],\"staging\":[\"all\",\"staging\"]}, each.value.name, []))}", ws.TagNames)
+		assert.Equal(t, "${toset(lookup({\"production\":[\"all\",\"production\"],\"staging\":[\"all\",\"staging\"]}, each.key, []))}", ws.TagNames)
 	})
 }
 
