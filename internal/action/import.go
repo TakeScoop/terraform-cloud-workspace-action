@@ -98,7 +98,7 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 		return nil
 	}
 
-	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Name, key)
+	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Workspace, key)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -170,7 +170,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 		return fmt.Errorf("team %q not found", teamName)
 	}
 
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Name, team.ID)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Workspace, team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {

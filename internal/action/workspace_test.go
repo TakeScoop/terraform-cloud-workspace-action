@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +19,28 @@ import (
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
+
+// newTestWorkspace returns a new test workspace object with test attributes
+func newTestWorkspace() *Workspace {
+	return &Workspace{
+		Name:      "ws",
+		Workspace: "default",
+		ID:        tfe.String("ws-abc-123"),
+	}
+}
+
+// newTestSingleWorkspaceList returns a single workspace with test attributes in a Workspace list
+func newTestSingleWorkspaceList() []*Workspace {
+	return []*Workspace{newTestWorkspace()}
+}
+
+// newTestMultiWorkspaceList returns multiple workspaces with test attributes in a Workspace list
+func newTestMultiWorkspaceList() []*Workspace {
+	return []*Workspace{
+		{Name: "foo-staging", Workspace: "staging", ID: tfe.String("ws-abc123")},
+		{Name: "foo-production", Workspace: "production", ID: tfe.String("ws-def456")},
+	}
+}
 
 var basicOauthClientResponse string = `
 {
@@ -95,8 +118,8 @@ func TestWorkspaceJSONRender(t *testing.T) {
 	t.Run("no VCS block added when VCSRepo is nil", func(t *testing.T) {
 		b, err := json.MarshalIndent(tfeprovider.Workspace{
 			ForEach: map[string]*tfeprovider.Workspace{
-				"foo-staging":    {Name: "foo-staging"},
-				"foo-production": {Name: "foo-production"},
+				"staging":    {Name: "foo-staging"},
+				"production": {Name: "foo-production"},
 			},
 			Name:         "${each.value.name}",
 			Organization: "org",
@@ -109,10 +132,10 @@ func TestWorkspaceJSONRender(t *testing.T) {
 
 		assert.Equal(t, string(b), `{
 	"for_each": {
-		"foo-production": {
+		"production": {
 			"name": "foo-production"
 		},
-		"foo-staging": {
+		"staging": {
 			"name": "foo-staging"
 		}
 	},
@@ -140,9 +163,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	}
 
 	t.Run("should render a basic workspace without unprovided values", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{
-			{Name: "foo", Workspace: "default"},
-		}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 		})
 		if err != nil {
@@ -158,7 +179,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 		assert.Equal(t, string(s), `{
 	"for_each": {
 		"default": {
-			"name": "foo"
+			"name": "ws"
 		}
 	},
 	"name": "${each.value.name}",
@@ -167,7 +188,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value to false if passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			AutoApply:    boolPtr(false),
 		})
@@ -190,7 +211,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value to true if passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			AutoApply:    boolPtr(true),
 		})
@@ -213,7 +234,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("should set boolean value nil if not passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 		})
 		if err != nil {
@@ -235,7 +256,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add VCS block type if VCS type is passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSType:      "github",
 			VCSRepo:      "org/repo",
@@ -249,7 +270,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("fail if vcs_repo is not passed", func(t *testing.T) {
-		_, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		_, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSType:      "github",
 		})
@@ -257,7 +278,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("use VCSTokenID directly when passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			VCSTokenID:   "TOKEN",
 			VCSType:      "github",
@@ -270,7 +291,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add AgentPoolID and ExecutionMode: \"agent\" when AgentPoolID is passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			AgentPoolID:  "12345",
 		})
@@ -283,7 +304,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add RemoteConsumerIDs and GlobalRemoteState if global_remote_state is false", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization:           "org",
 			GlobalRemoteState:      boolPtr(false),
 			RemoteStateConsumerIDs: "123,456,789",
@@ -297,7 +318,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add no remote IDs when none are passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization:      "org",
 			GlobalRemoteState: boolPtr(false),
 		})
@@ -310,7 +331,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 	})
 
 	t.Run("add a description if passed", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{{Name: "foo"}}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization: "org",
 			Description:  "description",
 		})
@@ -335,20 +356,17 @@ func TestNewWorkspaceResourceWithTags(t *testing.T) {
 	client := newTestTFClient(t, server.URL)
 
 	t.Run("add workspace tag names", func(t *testing.T) {
-		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{
-			{Name: "staging-foo", Workspace: "staging", ID: tfe.String("ws-abc123")},
-			{Name: "production-foo", Workspace: "production", ID: tfe.String("ws-def456")},
-		}, &WorkspaceResourceOptions{
+		ws, err := NewWorkspaceResource(ctx, client, newTestMultiWorkspaceList(), &WorkspaceResourceOptions{
 			Tags: map[string]Tags{
-				"staging-foo":    {"all", "staging"},
-				"production-foo": {"all", "production"},
+				"staging":    {"all", "staging"},
+				"production": {"all", "production"},
 			},
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, "${toset(lookup({\"production-foo\":[\"all\",\"production\"],\"staging-foo\":[\"all\",\"staging\"]}, each.value.name, []))}", ws.TagNames)
+		assert.Equal(t, "${toset(lookup({\"production\":[\"all\",\"production\"],\"staging\":[\"all\",\"staging\"]}, each.value.name, []))}", ws.TagNames)
 	})
 }
 
@@ -357,8 +375,8 @@ func TestAppendTeamAccess(t *testing.T) {
 		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
-			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace", Workspace: "default"}},
-			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace", Workspace: "default"}},
+			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: newTestWorkspace()},
+			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: newTestWorkspace()},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"], TeamDataResource{
@@ -378,12 +396,12 @@ func TestAppendTeamAccess(t *testing.T) {
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"], tfeprovider.TeamAccess{
 			ForEach: map[string]tfeprovider.TeamAccess{
-				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
+				"default-${data.tfe_team.teams[\"Writers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 					Access:      "write",
 				},
-				"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+				"default-${data.tfe_team.teams[\"Readers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 					WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 					Access:      "read",
@@ -411,7 +429,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
-			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace", Workspace: "default"}, Permissions: &TeamAccessPermissionsInput{
+			{TeamName: "Readers", Workspace: newTestWorkspace(), Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",
 				StateVersions:    "none",
@@ -428,7 +446,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		})
 
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
-			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
+			"default-${data.tfe_team.teams[\"Readers\"].id}": {
 				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
 				WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 				Access:      "",
@@ -466,6 +484,8 @@ func RunValidate(ctx context.Context, name string, tfexecPath string, module *tf
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(string(b))
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		return nil, err
@@ -513,7 +533,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	name := "test-repo"
 
 	t.Run("validate basic workspace config", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -531,11 +551,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate with multiple workspaces", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client,
-			[]*Workspace{
-				{Name: "foo-staging"},
-				{Name: "foo-production"},
-			},
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(),
 			&NewWorkspaceConfigOptions{
 				Backend: map[string]interface{}{
 					"local": map[string]interface{}{
@@ -559,7 +575,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate using a passed backend", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			Backend: map[string]interface{}{
 				"local": map[string]interface{}{
 					"path": "foo/terraform.tfstate",
@@ -582,7 +598,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate workspace with passed providers", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			Providers: []Provider{
 				{
 					Name:    "tfe",
@@ -610,7 +626,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate workspace with remote states", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -638,7 +654,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate workspace with team access", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -679,7 +695,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate workspace with variables", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{{Name: "foo"}}, &NewWorkspaceConfigOptions{
+		workspace := newTestWorkspace()
+		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{workspace}, &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
@@ -688,13 +705,13 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					Key:       "foo",
 					Value:     "bar",
 					Category:  "env",
-					Workspace: &Workspace{Name: name},
+					Workspace: workspace,
 				},
 				Variable{
 					Key:       "baz",
 					Value:     "woz",
 					Category:  "env",
-					Workspace: &Workspace{Name: name},
+					Workspace: workspace,
 				},
 			},
 		})
@@ -711,10 +728,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	})
 
 	t.Run("validate workspaces with tags", func(t *testing.T) {
-		module, err := NewWorkspaceConfig(ctx, client, []*Workspace{
-			{Name: "staging-foo", ID: tfe.String("ws-abc123"), Workspace: "staging"},
-			{Name: "production-foo", ID: tfe.String("ws-def456"), Workspace: "production"},
-		}, &NewWorkspaceConfigOptions{
+		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 				Tags: map[string]Tags{
@@ -903,18 +917,12 @@ resource "random_pet" "pet" {}
 
 func TestFindWorkspace(t *testing.T) {
 	t.Run("should find a workspace", func(t *testing.T) {
-		workspaces := []*Workspace{
-			{Name: "foo-staging", Workspace: "staging"},
-			{Name: "foo-production", Workspace: "production"},
-		}
+		workspaces := newTestMultiWorkspaceList()
 		assert.Equal(t, FindWorkspace(workspaces, "staging"), workspaces[0])
 	})
 
 	t.Run("should not find a workspace", func(t *testing.T) {
-		assert.Equal(t, FindWorkspace([]*Workspace{
-			{Name: "foo-staging", Workspace: "staging"},
-			{Name: "foo-production", Workspace: "production"},
-		}, "foo"), (*Workspace)(nil))
+		assert.Equal(t, FindWorkspace(newTestMultiWorkspaceList(), "foo"), (*Workspace)(nil))
 	})
 }
 
@@ -929,6 +937,7 @@ func TestParseWorkspaces(t *testing.T) {
 		assert.Equal(t, workspaces[0], &Workspace{
 			Name:      "foo",
 			Workspace: "default",
+			ID:        nil,
 		})
 	})
 
@@ -942,33 +951,35 @@ func TestParseWorkspaces(t *testing.T) {
 		assert.Equal(t, workspaces[0], &Workspace{
 			Name:      "foo-staging",
 			Workspace: "staging",
+			ID:        nil,
 		})
 		assert.Equal(t, workspaces[1], &Workspace{
 			Name:      "foo-production",
 			Workspace: "production",
+			ID:        nil,
 		})
 	})
 }
 
 func TestMergeWorkspaceTags(t *testing.T) {
 	t.Run("return an empty map if no tags are passed", func(t *testing.T) {
-		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{}, []*Workspace{{Name: "foo"}})
+		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{}, newTestSingleWorkspaceList())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, tags, map[string]Tags{"foo": {}})
+		assert.Equal(t, tags, map[string]Tags{"default": {}})
 	})
 
 	t.Run("return tags for all workspaces when tags are passed", func(t *testing.T) {
-		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{}, []*Workspace{{Name: "foo-staging"}, {Name: "foo-production"}})
+		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{}, newTestMultiWorkspaceList())
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, tags, map[string]Tags{
-			"foo-staging":    {"all"},
-			"foo-production": {"all"},
+			"staging":    {"all"},
+			"production": {"all"},
 		})
 	})
 
@@ -976,35 +987,35 @@ func TestMergeWorkspaceTags(t *testing.T) {
 		tags, err := MergeWorkspaceTags(Tags{"all"}, map[string]Tags{
 			"staging":    {"staging"},
 			"production": {"production"},
-		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+		}, newTestMultiWorkspaceList())
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, tags, map[string]Tags{
-			"foo-staging":    {"all", "staging"},
-			"foo-production": {"all", "production"},
+			"staging":    {"all", "staging"},
+			"production": {"all", "production"},
 		})
 	})
 
 	t.Run("return full workspace map when only some workspace tags are set", func(t *testing.T) {
 		tags, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
 			"production": {"production"},
-		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+		}, newTestMultiWorkspaceList())
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, tags, map[string]Tags{
-			"foo-staging":    {},
-			"foo-production": {"production"},
+			"staging":    {},
+			"production": {"production"},
 		})
 	})
 
 	t.Run("error when a workspace name does not match known workspaces", func(t *testing.T) {
 		_, err := MergeWorkspaceTags(Tags{}, map[string]Tags{
-			"bar": {"production"},
-		}, []*Workspace{{Name: "foo-staging", Workspace: "staging"}, {Name: "foo-production", Workspace: "production"}})
+			"playground": {"playground"},
+		}, newTestMultiWorkspaceList())
 
 		assert.Error(t, err)
 	})

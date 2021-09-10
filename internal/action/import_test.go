@@ -123,20 +123,20 @@ func TestImportVariable(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, len(tf.ImportArgs), 1)
 		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
-			Address: "tfe_variable.ws-foo",
+			Address: "tfe_variable.default-foo",
 			ID:      "org/ws/var-abc123",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
@@ -184,14 +184,14 @@ func TestImportVariable(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -220,20 +220,20 @@ func TestImportTeamAccess(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, len(tf.ImportArgs), 1)
 		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
-			Address: "tfe_team_access.teams[\"ws-team-abc123\"]",
+			Address: "tfe_team_access.teams[\"default-team-abc123\"]",
 			ID:      "org/ws/tws-abc213",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
@@ -279,15 +279,15 @@ func TestImportTeamAccess(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
-							{Address: "tfe_team_access.teams[\"ws-team-abc123\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
+							{Address: "tfe_team_access.teams[\"default-team-abc123\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -312,14 +312,14 @@ func TestImportTeamAccess(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
+		if err := ImportTeamAccess(ctx, &tf, client, "org", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "Readers"); err != nil {
 			t.Fatal(err)
 		}
 
