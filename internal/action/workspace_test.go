@@ -3,7 +3,6 @@ package action
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -484,8 +483,6 @@ func RunValidate(ctx context.Context, name string, tfexecPath string, module *tf
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(b))
 
 	if err = ioutil.WriteFile(path.Join(workDir, "main.tf.json"), b, 0644); err != nil {
 		return nil, err
