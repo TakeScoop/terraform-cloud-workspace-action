@@ -232,7 +232,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 	}
 
 	for _, v := range variables {
-		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key), v.ToResource())
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
 	}
 
 	teamAccess, err := FindRelatedTeamAccess(ctx, client, workspace, organization)
