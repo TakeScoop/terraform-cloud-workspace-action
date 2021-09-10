@@ -81,7 +81,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	wsForEach := map[string]*tfeprovider.Workspace{}
 
 	for _, ws := range workspaces {
-		wsForEach[ws.Name] = &tfeprovider.Workspace{
+		wsForEach[ws.Workspace] = &tfeprovider.Workspace{
 			Name: ws.Name,
 		}
 	}
@@ -179,7 +179,7 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 		return fmt.Errorf("failed to marshal workspace tags: %w", err)
 	}
 
-	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.value.name, []))}", string(b))
+	module.TagNames = fmt.Sprintf("${toset(lookup(%s, each.key, []))}", string(b))
 
 	return nil
 }
@@ -188,12 +188,8 @@ func SetTags(module *tfeprovider.Workspace, tags map[string]Tags) error {
 func MergeWorkspaceTags(tags Tags, wsTags map[string]Tags, workspaces []*Workspace) (map[string]Tags, error) {
 	tagsByWorkspace := map[string]Tags{}
 
-	// if len(tags) == 0 && len(wsTags) == 0 {
-	// 	return tagsByWorkspace, nil
-	// }
-
 	for _, ws := range workspaces {
-		tagsByWorkspace[ws.Name] = append(Tags{}, tags...)
+		tagsByWorkspace[ws.Workspace] = append(Tags{}, tags...)
 	}
 
 	for wsName, ts := range wsTags {
@@ -202,7 +198,7 @@ func MergeWorkspaceTags(tags Tags, wsTags map[string]Tags, workspaces []*Workspa
 			return nil, fmt.Errorf("tags specified for unknown workspace %q", wsName)
 		}
 
-		tagsByWorkspace[ws.Name] = append(tagsByWorkspace[ws.Name], ts...)
+		tagsByWorkspace[ws.Workspace] = append(tagsByWorkspace[ws.Workspace], ts...)
 	}
 
 	return tagsByWorkspace, nil
@@ -225,9 +221,9 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 
 		teamIDRef := fmt.Sprintf("${data.tfe_team.teams[\"%s\"].id}", access.TeamName)
 
-		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, teamIDRef)] = tfeprovider.TeamAccess{
+		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Workspace, teamIDRef)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
-			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Name),
+			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Workspace),
 			Access:      access.Access,
 			Permissions: access.ToResource().Permissions,
 		}
@@ -298,7 +294,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 	}
 
 	for _, v := range config.Variables {
-		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key), v.ToResource())
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
 	}
 
 	AppendTeamAccess(module, config.TeamAccess, wsResource.Organization)

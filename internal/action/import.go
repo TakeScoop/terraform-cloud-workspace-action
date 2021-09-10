@@ -44,7 +44,7 @@ func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, w
 		return nil
 	}
 
-	address := fmt.Sprintf("tfe_workspace.workspace[%q]", workspace.Name)
+	address := fmt.Sprintf("tfe_workspace.workspace[%q]", workspace.Workspace)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -98,7 +98,7 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 		return nil
 	}
 
-	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Name, key)
+	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Workspace, key)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -170,7 +170,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 		return fmt.Errorf("team %q not found", teamName)
 	}
 
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Name, team.ID)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Workspace, team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -232,7 +232,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 	}
 
 	for _, v := range variables {
-		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Name, v.Key), v.ToResource())
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
 	}
 
 	teamAccess, err := FindRelatedTeamAccess(ctx, client, workspace, organization)
