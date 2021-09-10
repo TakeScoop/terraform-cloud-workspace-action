@@ -44,7 +44,7 @@ func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, w
 		return nil
 	}
 
-	address := fmt.Sprintf("tfe_workspace.workspace[%q]", workspace.Name)
+	address := fmt.Sprintf("tfe_workspace.workspace[%q]", workspace.Workspace)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {

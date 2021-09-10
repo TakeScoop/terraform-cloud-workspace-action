@@ -141,7 +141,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 
 	t.Run("should render a basic workspace without unprovided values", func(t *testing.T) {
 		ws, err := NewWorkspaceResource(ctx, client, []*Workspace{
-			{Name: "foo"},
+			{Name: "foo", Workspace: "default"},
 		}, &WorkspaceResourceOptions{
 			Organization: "org",
 		})
@@ -157,7 +157,7 @@ func TestNewWorkspaceResource(t *testing.T) {
 
 		assert.Equal(t, string(s), `{
 	"for_each": {
-		"foo": {
+		"default": {
 			"name": "foo"
 		}
 	},
@@ -357,8 +357,8 @@ func TestAppendTeamAccess(t *testing.T) {
 		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
-			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace"}},
-			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace"}},
+			TeamAccessItem{TeamName: "Readers", Access: "read", Workspace: &Workspace{Name: "workspace", Workspace: "default"}},
+			TeamAccessItem{TeamName: "Writers", Access: "write", Workspace: &Workspace{Name: "workspace", Workspace: "default"}},
 		}, "org")
 
 		assert.Equal(t, module.Data["tfe_team"]["teams"], TeamDataResource{
@@ -380,12 +380,12 @@ func TestAppendTeamAccess(t *testing.T) {
 			ForEach: map[string]tfeprovider.TeamAccess{
 				"workspace-${data.tfe_team.teams[\"Writers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Writers\"].id}",
-					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+					WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 					Access:      "write",
 				},
 				"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
 					TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
-					WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+					WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 					Access:      "read",
 				},
 			},
@@ -411,7 +411,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		module := NewModule()
 
 		AppendTeamAccess(module, TeamAccess{
-			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace"}, Permissions: &TeamAccessPermissionsInput{
+			{TeamName: "Readers", Workspace: &Workspace{Name: "workspace", Workspace: "default"}, Permissions: &TeamAccessPermissionsInput{
 				Runs:             "read",
 				Variables:        "read",
 				StateVersions:    "none",
@@ -430,7 +430,7 @@ func TestAppendTeamAccess(t *testing.T) {
 		assert.Equal(t, module.Resources["tfe_team_access"]["teams"].(tfeprovider.TeamAccess).ForEach, map[string]tfeprovider.TeamAccess{
 			"workspace-${data.tfe_team.teams[\"Readers\"].id}": {
 				TeamID:      "${data.tfe_team.teams[\"Readers\"].id}",
-				WorkspaceID: "${tfe_workspace.workspace[\"workspace\"].id}",
+				WorkspaceID: "${tfe_workspace.workspace[\"default\"].id}",
 				Access:      "",
 				Permissions: &tfeprovider.TeamAccessPermissions{
 					Runs:             "read",

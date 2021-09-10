@@ -58,14 +58,14 @@ func TestImportWorkspace(t *testing.T) {
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"ws\"]"},
+							{Address: "tfe_workspace.workspace[\"default\"]"},
 						},
 					},
 				},
 			},
 		}
 
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -77,13 +77,13 @@ func TestImportWorkspace(t *testing.T) {
 			State: &tfjson.State{},
 		}
 
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: strPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Equal(t, len(tf.ImportArgs), 1)
 		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
-			Address: "tfe_workspace.workspace[\"ws\"]",
+			Address: "tfe_workspace.workspace[\"default\"]",
 			ID:      "ws-abc123",
 			Opts:    ([]tfexec.ImportOption)(nil),
 		})
@@ -94,7 +94,7 @@ func TestImportWorkspace(t *testing.T) {
 			State: &tfjson.State{},
 		}
 
-		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", ID: nil}, "org"); err != nil {
+		if err := ImportWorkspace(ctx, &tf, client, &Workspace{Name: "ws", Workspace: "default", ID: nil}, "org"); err != nil {
 			t.Fatal(err)
 		}
 

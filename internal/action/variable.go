@@ -51,7 +51,7 @@ func (v Variable) ToResource() *tfeprovider.Variable {
 		Description: v.Description,
 		Category:    v.Category,
 		Sensitive:   v.Sensitive,
-		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.Workspace.Name),
+		WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", v.Workspace.Workspace),
 	}
 }
 

@@ -81,7 +81,7 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	wsForEach := map[string]*tfeprovider.Workspace{}
 
 	for _, ws := range workspaces {
-		wsForEach[ws.Name] = &tfeprovider.Workspace{
+		wsForEach[ws.Workspace] = &tfeprovider.Workspace{
 			Name: ws.Name,
 		}
 	}
@@ -227,7 +227,7 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 
 		resourceForEach[fmt.Sprintf("%s-%s", access.Workspace.Name, teamIDRef)] = tfeprovider.TeamAccess{
 			TeamID:      teamIDRef,
-			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Name),
+			WorkspaceID: fmt.Sprintf("${tfe_workspace.workspace[%q].id}", access.Workspace.Workspace),
 			Access:      access.Access,
 			Permissions: access.ToResource().Permissions,
 		}
