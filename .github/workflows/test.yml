@@ -75,8 +75,10 @@ jobs:
 
       - name: E2E cleanup     
         run: |
-          env
-          echo ######
           ls -lah /home/runner/work/_temp/_github_home
+          echo ######
+
+          ls -lah /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action
+          echo ######
         
 
