@@ -35,9 +35,11 @@ jobs:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
           TF_ORGANIZATION: takescoop-oss
         run: go test -v ./...
+
       - name: Timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%s)"
+
       - name: E2E test
         uses: ./
         with:
@@ -70,9 +72,10 @@ jobs:
           backend_config: |-
             local:
               path: ${{ github.workspcae }}/terraform.tfstate
-        - name: E2E cleanup     
-          run: |
-            ls 
-            ls ${{ github.workspace }}
+
+      - name: E2E cleanup     
+        run: |
+          ls 
+          ls ${{ github.workspace }}
         
 
