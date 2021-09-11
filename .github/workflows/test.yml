@@ -75,12 +75,4 @@ jobs:
 
       - name: E2E cleanup     
         run: |
-          find /home/runner/work/ -name 'terraform.tfstate'
-
-          ls -lah /home/runner/work/_temp/_github_home
-          echo ######
-
-          ls -lah /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action
-          echo ######
-        
-
+          cat /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
 	"strings"
 
 	"github.com/sethvargo/go-githubactions"
@@ -47,10 +45,5 @@ func main() {
 		AllowWorkspaceDeletion: inputs.GetBool("allow_workspace_deletion"),
 	}); err != nil {
 		githubactions.Fatalf("Error: %s", err)
-	}
-
-	_, err := ioutil.ReadFile("/github/workspace/terraform.tfstate")
-	if err != nil {
-		log.Fatalf("unable to read file: %v", err)
 	}
 }
