@@ -68,7 +68,9 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to create working directory: %w", err)
 	}
 
-	defer os.RemoveAll(workDir)
+	fmt.Println(workDir)
+
+	// defer os.RemoveAll(workDir)
 
 	tf, err := NewTerraformExec(ctx, workDir, config.RunnerTerraformVersion)
 	if err != nil {
@@ -283,6 +285,8 @@ func Run(config *Inputs) error {
 		if err = CopyStateToBackend(ctx, tf, module, backend, filePath); err != nil {
 			return fmt.Errorf("failed to copy local state to configured backend: %w", err)
 		}
+
+		fmt.Println(module.Terraform.Backend)
 
 		if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
 			return fmt.Errorf("failed to apply: %w", err)
