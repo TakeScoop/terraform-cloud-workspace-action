@@ -71,7 +71,7 @@ jobs:
             - production
           backend_config: |-
             local:
-              path: ${{ env.INPUT_GITHUB_WORKSPACE }}/terraform.tfstate
+              path: ${{ env.GITHUB_WORKSPACE }}/terraform.tfstate
 
       - name: E2E cleanup     
         run: |
