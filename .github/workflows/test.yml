@@ -75,4 +75,4 @@ jobs:
 
       - name: E2E cleanup     
         run: |
-        while ! cat /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate ; do echo nope && sleep 5 ; done
+          while ! cat /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate ; do echo nope && sleep 5 ; done
