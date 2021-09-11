@@ -53,7 +53,7 @@ jobs:
               - environment:staging
             production:
               - environment:production
-          apply: false
+          apply: true
           variables: |-
             - key: foo
               value: bar
@@ -76,6 +76,6 @@ jobs:
       - name: E2E cleanup     
         run: |
           ls 
-          ls $GITHUB_WORKSPACE
+          ls "$GITHUB_WORKSPACE"
         
 
