@@ -40,33 +40,33 @@ jobs:
         run: echo "::set-output name=timestamp::$(date +%s)"
       - name: E2E test
         uses: ./
-          with:
-            terraform_organization: takescoop-oss
-            terraform_token: ${{ secrets.TF_TOKEN_OSS }}
-            name: "action-e2e-test-${{ steps.timestamp.outputs.timestamp }}"
-            tags: |-
-              - terraform:true
-            workspace_tags: |-
-              staging:
-                - environment:staging
-              production:
-                - environment:production
-            apply: false
-            variables: |-
-              - key: foo
-                value: bar
+        with:
+          terraform_organization: takescoop-oss
+          terraform_token: ${{ secrets.TF_TOKEN_OSS }}
+          name: "action-e2e-test-${{ steps.timestamp.outputs.timestamp }}"
+          tags: |-
+            - terraform:true
+          workspace_tags: |-
+            staging:
+              - environment:staging
+            production:
+              - environment:production
+          apply: false
+          variables: |-
+            - key: foo
+              value: bar
+              category: terraform
+          workspace_variables: |-
+            staging:
+              - key: environment
+                value: staging
                 category: terraform
-            workspace_variables: |-
-              staging:
-                - key: environment
-                  value: staging
-                  category: terraform
-                - key: environment
-                  value: production
-                  category: terraform
-            workspaces: |-
-              - staging
-              - production
-            vcs_type: github
+              - key: environment
+                value: production
+                category: terraform
+          workspaces: |-
+            - staging
+            - production
+          vcs_type: github
 
 
