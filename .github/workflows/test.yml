@@ -67,6 +67,3 @@ jobs:
           workspaces: |-
             - staging
             - production
-          vcs_type: github
-
-
