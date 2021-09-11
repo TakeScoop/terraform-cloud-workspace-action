@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/sethvargo/go-githubactions"
@@ -45,5 +49,20 @@ func main() {
 		AllowWorkspaceDeletion: inputs.GetBool("allow_workspace_deletion"),
 	}); err != nil {
 		githubactions.Fatalf("Error: %s", err)
+	}
+
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(path)
+
+	files, err := ioutil.ReadDir("./")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		fmt.Println(f.Name())
 	}
 }
