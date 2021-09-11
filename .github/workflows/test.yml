@@ -67,3 +67,12 @@ jobs:
           workspaces: |-
             - staging
             - production
+          backend_config: |-
+            local:
+              path: ${{ github.workspcae }}/terraform.tfstate
+        - name: E2E cleanup     
+          run: |
+            ls 
+            ls ${{ github.workspace }}
+        
+
