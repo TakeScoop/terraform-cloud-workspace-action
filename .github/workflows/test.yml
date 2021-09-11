@@ -75,8 +75,8 @@ jobs:
 
       - name: E2E cleanup     
         run: |
-          ls -lah
-          ls -lah "$GITHUB_WORKSPACE"
-          cat terraform.tfstate
+          env
+          echo ######
+          ls -lah /home/runner/work/_temp/_github_home
         
 
