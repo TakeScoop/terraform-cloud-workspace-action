@@ -311,8 +311,6 @@ func WriteModuleFile(module *tfconfig.Module, filePath string) error {
 		return err
 	}
 
-	fmt.Println(string(b))
-
 	if err = ioutil.WriteFile(filePath, b, 0644); err != nil {
 		return err
 	}

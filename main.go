@@ -68,7 +68,13 @@ func main() {
 		fmt.Println("%w", err)
 	}
 
+	sf, err := os.ReadFile("/github/workspace/terraform.tfstate")
+	if err != nil {
+		fmt.Println("%w", err)
+	}
+
 	fmt.Println(string(f1))
 	fmt.Println(string(f2))
 	fmt.Println(string(f3))
+	fmt.Println(string(sf))
 }
