@@ -84,4 +84,5 @@ jobs:
           terraform destroy \
             -auto-approve \
             -state=/home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate \
-            -input=false
+            -input=false \
+            -lock=false
