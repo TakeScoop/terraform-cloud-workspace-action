@@ -54,6 +54,7 @@ jobs:
             production:
               - environment:production
           apply: true
+          import: false
           variables: |-
             - key: foo
               value: bar

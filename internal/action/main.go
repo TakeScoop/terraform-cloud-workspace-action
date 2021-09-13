@@ -295,5 +295,14 @@ func Run(config *Inputs) error {
 		githubactions.Infof("Success\n")
 	}
 
+	fs, err := os.ReadDir(workDir)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, f := range fs {
+		fmt.Println(f.Name())
+	}
+
 	return nil
 }
