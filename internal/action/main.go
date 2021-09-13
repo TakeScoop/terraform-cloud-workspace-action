@@ -229,8 +229,11 @@ func Run(config *Inputs) error {
 	}
 
 	if !config.Apply {
-		if err = CopyStateToBackend(ctx, tf, module, nil, filePath); err != nil {
-			return fmt.Errorf("failed to copy state to a local backend: %w", err)
+		// copy state to local backend to avoid mutating state when apply=false
+		module.Terraform.Backend = nil
+
+		if err = TerraformInit(ctx, tf, module, filePath); err != nil {
+			return fmt.Errorf("failed to initialize the Terraform configuration: %w", err)
 		}
 	}
 
