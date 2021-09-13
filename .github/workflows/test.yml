@@ -30,13 +30,11 @@ jobs:
         with:
           go-version: 1.16
 
-      # - name: Test
-      #   env:
-      #     TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
-      #     TF_ORGANIZATION: takescoop-oss
-      #   run: go test -v ./...
-
-
+      - name: Test
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+          TF_ORGANIZATION: takescoop-oss
+        run: go test -v ./...
 
       - name: E2E workspace name
         id: e2e-ws-name
@@ -75,23 +73,19 @@ jobs:
           backend_config: |-
             local:
               path: /github/workspace/terraform.tfstate
-      - name: Cleanup E2E
+      - name: Assert & Cleanup E2E
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         shell: bash
         run: |
           set -e
 
-          ids=$(curl -fsS \
-            --header "Authorization: Bearer $TF_TOKEN" \
-            --header "Content-Type: application/vnd.api+json" \
-            https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces?search[name]=${{ steps.e2e-ws-name.outputs.name }} \
-            | jq -r '.data[].id')
+          stat terraform.tfstate
 
-          for id in $ids ; do
+          for ws in staging production ; do
             curl -fsS \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
               --request DELETE \
-              "https://app.terraform.io/api/v2/workspaces/$id"
+              "https://app.terraform.io/api/v2/worganizations/takescoop-oss/workspaces/${{ steps.e2e-ws-name.outputs.name }}-$ws"
           done
