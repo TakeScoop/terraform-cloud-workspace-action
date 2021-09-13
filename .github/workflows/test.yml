@@ -80,13 +80,13 @@ jobs:
         run: |
           set -e
 
-          stat terraform.tfstate && echo "Success: state file present"
+          stat terraform.tfstate > /dev/null && echo "Success: state file present"
 
           for ws in staging production ; do
             curl -fsS \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
               --request DELETE \
-              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.e2e-ws-name.outputs.name }}-$ws"
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.e2e-ws-name.outputs.name }}-$ws" > /dev/null
              echo "Success: Found and deleted ${{ steps.e2e-ws-name.outputs.name }}-$ws"
           done
