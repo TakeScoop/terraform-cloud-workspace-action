@@ -278,6 +278,7 @@ func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terrafo
 		if err := ImportWorkspaceResources(ctx, client, tf, filePath, ws, organization, providers); err != nil {
 			return err
 		}
+
 		if err := TerraformInit(ctx, tf, module, filePath); err != nil {
 			return err
 		}
