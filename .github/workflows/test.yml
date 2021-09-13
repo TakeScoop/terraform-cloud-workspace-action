@@ -36,6 +36,8 @@ jobs:
       #     TF_ORGANIZATION: takescoop-oss
       #   run: go test -v ./...
 
+
+
       - name: Timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%s)"
@@ -43,6 +45,7 @@ jobs:
       - name: E2E test
         uses: ./
         with:
+          runner_terraform_version: '1.0.5'
           terraform_organization: takescoop-oss
           terraform_token: ${{ secrets.TF_TOKEN_OSS }}
           name: "action-e2e-test-${{ steps.timestamp.outputs.timestamp }}"
@@ -72,11 +75,13 @@ jobs:
           backend_config: |-
             local:
               path: /github/workspace/terraform.tfstate
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: '1.0.5'              
+          cli_config_credentials_token: ${{ secrets.TF_TOKEN_OSS }}
       - name: E2E cleanup     
         run: |
-          echo '/github/home:'
-          ls -lah /home/runner/work/_temp/_github_home
-          echo '/github/workflow:'
-          ls -lah /home/runner/work/_temp/_github_workflow
-          echo '/github/workspace'
-          ls -lah /home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action
+          terraform destroy \
+            -auto-approve \
+            -state=/home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate \
+            -input=false
