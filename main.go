@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/sethvargo/go-githubactions"
@@ -45,5 +47,14 @@ func main() {
 		AllowWorkspaceDeletion: inputs.GetBool("allow_workspace_deletion"),
 	}); err != nil {
 		githubactions.Fatalf("Error: %s", err)
+	}
+
+	contents, err := os.ReadDir(".")
+	if err != nil {
+		githubactions.Fatalf("Error: %s", err)
+	}
+
+	for _, f := range contents {
+		fmt.Println(f.Name())
 	}
 }
