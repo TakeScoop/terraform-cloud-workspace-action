@@ -228,8 +228,10 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to initialize the Terraform configuration: %w", err)
 	}
 
-	if err = CopyStateToBackend(ctx, tf, module, nil, filePath); err != nil {
-		return fmt.Errorf("failed to copy state to a local backend: %w", err)
+	if !config.Apply {
+		if err = CopyStateToBackend(ctx, tf, module, nil, filePath); err != nil {
+			return fmt.Errorf("failed to copy state to a local backend: %w", err)
+		}
 	}
 
 	if config.Import {
@@ -273,22 +275,18 @@ func Run(config *Inputs) error {
 		if !config.AllowWorkspaceDeletion && WillDestroy(plan, "tfe_workspace") {
 			return fmt.Errorf("error: allow_workspace_deletion must be true to allow workspace deletion. Deleting a workspace will permanently, irrecoverably delete all of its stored Terraform state versions")
 		}
+
+		if config.Apply {
+			githubactions.Infof("Applying...\n")
+
+			if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
+				return fmt.Errorf("failed to apply: %w", err)
+			}
+
+			githubactions.Infof("Success\n")
+		}
 	} else {
 		githubactions.Infof("No changes\n")
-	}
-
-	if config.Apply {
-		githubactions.Infof("Applying...\n")
-
-		if err = CopyStateToBackend(ctx, tf, module, backend, filePath); err != nil {
-			return fmt.Errorf("failed to copy local state to configured backend: %w", err)
-		}
-
-		if err = tf.Apply(ctx, tfexec.DirOrPlan(planPath)); err != nil {
-			return fmt.Errorf("failed to apply: %w", err)
-		}
-
-		githubactions.Infof("Success\n")
 	}
 
 	return nil
