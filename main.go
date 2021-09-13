@@ -49,12 +49,26 @@ func main() {
 		githubactions.Fatalf("Error: %s", err)
 	}
 
-	contents, err := os.ReadDir(".")
+	os.WriteFile("/github/home/test", []byte("i am bytes"), 0644)
+	os.WriteFile("/github/workflow/test", []byte("i am bytes"), 0644)
+	os.WriteFile("/github/workspace/test", []byte("i am bytes"), 0644)
+
+	f1, err := os.ReadFile("/github/home/test")
 	if err != nil {
-		githubactions.Fatalf("Error: %s", err)
+		fmt.Println("%w", err)
 	}
 
-	for _, f := range contents {
-		fmt.Println(f.Name())
+	f2, err := os.ReadFile("/github/workflow/test")
+	if err != nil {
+		fmt.Println("%w", err)
 	}
+
+	f3, err := os.ReadFile("/github/workspace/test")
+	if err != nil {
+		fmt.Println("%w", err)
+	}
+
+	fmt.Println(string(f1))
+	fmt.Println(string(f2))
+	fmt.Println(string(f3))
 }
