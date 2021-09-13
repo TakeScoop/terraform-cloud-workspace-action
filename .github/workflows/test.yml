@@ -38,9 +38,9 @@ jobs:
 
 
 
-      - name: Timestamp
-        id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%s)"
+      - name: E2E workspace name
+        id: e2e-ws-name
+        run: echo "::set-output name=name::action-e2e-test-$(date +%s)"
 
       - name: E2E test
         uses: ./
@@ -48,7 +48,7 @@ jobs:
           runner_terraform_version: '1.0.5'
           terraform_organization: takescoop-oss
           terraform_token: ${{ secrets.TF_TOKEN_OSS }}
-          name: "action-e2e-test-${{ steps.timestamp.outputs.timestamp }}"
+          name: ${{ steps.e2e-ws-name.outputs.name }}
           tags: |-
             - terraform:true
           workspace_tags: |-
@@ -75,14 +75,23 @@ jobs:
           backend_config: |-
             local:
               path: /github/workspace/terraform.tfstate
-      - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: '1.0.5'              
-          cli_config_credentials_token: ${{ secrets.TF_TOKEN_OSS }}
-      - name: E2E cleanup     
+      - name: Cleanup E2E
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        shell: bash
         run: |
-          terraform destroy \
-            -auto-approve \
-            -state=/home/runner/work/terraform-cloud-workspace-action/terraform-cloud-workspace-action/terraform.tfstate \
-            -input=false \
-            -lock=false
+          set -e
+
+          ids=$(curl -fsS \
+            --header "Authorization: Bearer $TF_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces?search[name]=${{ steps.e2e-ws-name.outputs.name }} \
+            | jq -r '.data[].id')
+
+          for id in $ids ; do
+            curl \
+              --header "Authorization: Bearer $TF_TOKEN" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request DELETE \
+              "https://app.terraform.io/api/v2/workspaces/$id"
+          done
