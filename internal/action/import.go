@@ -219,10 +219,6 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string, providers []Provider) error {
 	module := NewModule()
 
-	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
-		return err
-	}
-
 	wsConfig, err := NewWorkspaceResource(ctx, client, []*Workspace{workspace}, &WorkspaceResourceOptions{})
 	if err != nil {
 		return err
@@ -248,7 +244,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 
 	AddProviders(module, providers)
 
-	if err := WriteModuleFile(module, filePath); err != nil {
+	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
 		return err
 	}
 

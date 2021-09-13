@@ -89,7 +89,7 @@ jobs:
             | jq -r '.data[].id')
 
           for id in $ids ; do
-            curl \
+            curl -fsS \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
               --request DELETE \
