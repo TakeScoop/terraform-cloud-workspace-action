@@ -276,7 +276,7 @@ func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terrafo
 		}
 	}
 
-	if err := WriteModuleFile(module, filePath); err != nil {
+	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
 		return err
 	}
 
