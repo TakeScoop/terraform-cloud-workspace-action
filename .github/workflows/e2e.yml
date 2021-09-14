@@ -84,6 +84,7 @@ jobs:
             echo "GET $workspace_url"
 
             curl \
+              --fail-with-body \
               --silent \
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
