@@ -72,13 +72,17 @@ jobs:
           echo "::group::workspaces"
 
           echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
+            url="https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws-foo"
+
+            echo "GET $url"
+
             curl \
               --fail \
               --silent \
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
-              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws-foo"
+              "$url"
           done
           echo "::endgroup::"
 
