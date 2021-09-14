@@ -1,4 +1,4 @@
-name: End to End Test
+name: "Test: End to End"
 
 on:
   push:
@@ -72,9 +72,9 @@ jobs:
           echo "::group::workspaces"
 
           echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
-            url="https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws-foo"
+            workspace_url="https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws"
 
-            echo "GET $url"
+            echo "GET $workspace_url"
 
             curl \
               --fail \
@@ -82,7 +82,7 @@ jobs:
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
-              "$url"
+              "$workspace_url"
           done
           echo "::endgroup::"
 
