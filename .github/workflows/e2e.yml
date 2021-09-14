@@ -26,7 +26,7 @@ jobs:
           workspaces: '["alpha", "beta"]'
         run: echo "::set-output name=names::${{ toJSON(env.workspaces) }}"
 
-      - name: Test
+      - name: Run action
         uses: ./
         with:
           runner_terraform_version: '1.0.5'
@@ -72,7 +72,7 @@ jobs:
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
-              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws-foo"
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws"
              echo "Success: Found ${{ steps.prefix.outputs.name }}-$ws"
           done
 
