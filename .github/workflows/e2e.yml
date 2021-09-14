@@ -11,12 +11,11 @@ on:
       - '**.md'
 
 jobs:
-
-  E2E:
+  end-to-end-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Workspace prefix
         id: prefix
         run: echo "::set-output name=name::action-e2e-test-$(date +%s)"
@@ -64,6 +63,8 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
+          set -e
+
           stat terraform.tfstate > /dev/null && echo "Success: state file present"
 
           echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
@@ -82,6 +83,8 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
+          set -e
+
           echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
