@@ -81,7 +81,7 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          echo '${{ steps.workspaces.outputs.names }}'' | jq -r '.[]' | while read -r ws ; do
+          echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
