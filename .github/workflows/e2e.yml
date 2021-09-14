@@ -15,6 +15,8 @@ jobs:
   E2E:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+      
       - name: Workspace prefix
         id: prefix
         run: echo "::set-output name=name::action-e2e-test-$(date +%s)"
