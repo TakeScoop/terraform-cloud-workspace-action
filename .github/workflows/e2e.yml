@@ -21,7 +21,9 @@ jobs:
       
       - name: Workspace names
         id: workspaces
-        run: echo "::set-output name=names::${{ toJSON(["alpha","beta"]) }}"
+        env:
+          workspaces: ["alpha", "beta"]
+        run: echo "::set-output name=names::${{ toJSON(env.workspaces)}"
 
       - name: Test
         uses: ./
@@ -62,7 +64,7 @@ jobs:
         run: |
           stat terraform.tfstate > /dev/null && echo "Success: state file present"
 
-          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read ws ; do
+          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
@@ -78,7 +80,7 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read ws ; do
+          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
