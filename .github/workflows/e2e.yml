@@ -65,7 +65,7 @@ jobs:
         run: |
           stat terraform.tfstate > /dev/null && echo "Success: state file present"
 
-          echo '${{ steps.workspaces.outputs.names }}'' | jq -r '.[]' | while read -r ws ; do
+          echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
