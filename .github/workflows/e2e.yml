@@ -63,7 +63,13 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          stat terraform.tfstate > /dev/null && echo "Success: state file present"
+          statefile=$(cat terraform.tfstate) && echo "Success: state file present"
+
+          echo "::group::tfstate-file"
+          echo "$statefile"
+          echo "::endgroup::"
+
+          echo "::group::workspaces"
 
           echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
             curl \
@@ -72,10 +78,11 @@ jobs:
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
               --header "Content-Type: application/vnd.api+json" \
-              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws"
-             echo "Success: Found ${{ steps.prefix.outputs.name }}-$ws"
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws" || failure=1
           done
+          echo "::endgroup::"
 
+          echo "Success: Found ${{ steps.prefix.outputs.name }} workspaces"
       - name: Cleanup
         if: ${{ always() }}
         env:
