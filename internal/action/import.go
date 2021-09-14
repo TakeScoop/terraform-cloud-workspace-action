@@ -244,7 +244,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 
 	AddProviders(module, providers)
 
-	if err := WriteModuleFile(module, filePath); err != nil {
+	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
 		return err
 	}
 
@@ -274,10 +274,10 @@ func ImportResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terrafo
 		if err := ImportWorkspaceResources(ctx, client, tf, filePath, ws, organization, providers); err != nil {
 			return err
 		}
-	}
 
-	if err := WriteModuleFile(module, filePath); err != nil {
-		return err
+		if err := TerraformInit(ctx, tf, module, filePath); err != nil {
+			return err
+		}
 	}
 
 	return nil

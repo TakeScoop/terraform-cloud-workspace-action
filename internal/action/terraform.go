@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
-	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 )
 
 func NewTerraformExec(ctx context.Context, workDir string, version string) (*tfexec.Terraform, error) {
@@ -18,15 +17,4 @@ func NewTerraformExec(ctx context.Context, workDir string, version string) (*tfe
 	}
 
 	return tfexec.NewTerraform(workDir, execPath)
-}
-
-// CopyStateToBackend copies state from the current backend to the passed backend by running Terraform Init
-func CopyStateToBackend(ctx context.Context, tf *tfexec.Terraform, module *tfconfig.Module, backend map[string]interface{}, filePath string) error {
-	module.Terraform.Backend = backend
-
-	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
-		return err
-	}
-
-	return nil
 }
