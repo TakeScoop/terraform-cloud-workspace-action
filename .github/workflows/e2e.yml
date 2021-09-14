@@ -77,7 +77,6 @@ jobs:
             echo "GET $workspace_url"
 
             curl \
-              --fail \
               --silent \
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
@@ -94,7 +93,6 @@ jobs:
         run: |
           echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
             curl \
-              --fail \
               --silent \
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
