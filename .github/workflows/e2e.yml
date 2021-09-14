@@ -1,0 +1,90 @@
+name: End to End Test
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+
+  E2E:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Workspace prefix
+        id: prefix
+        run: echo "::set-output name=name::action-e2e-test-$(date +%s)"
+      
+      - name: Workspace names
+        id: workspaces
+        run: echo "::set-output name=names::${{ toJSON(["alpha","beta"]) }}"
+
+      - name: Test
+        uses: ./
+        with:
+          runner_terraform_version: '1.0.5'
+          terraform_organization: takescoop-oss
+          terraform_token: ${{ secrets.TF_TOKEN_OSS }}
+          name: ${{ steps.prefix.outputs.name }}
+          tags: |-
+            - terraform:true
+          workspace_tags: |-
+            alpha:
+              - workspace:alpha
+            beta:
+              - workspace:beta
+          apply: true
+          variables: |-
+            - key: foo
+              value: bar
+              category: terraform
+          workspace_variables: |-
+            alpha:
+              - key: workspace
+                value: alpha
+                category: terraform
+            beta:
+              - key: workspace
+                value: beta
+                category: terraform
+          workspaces: ${{ steps.workspaces.outputs.names }}
+          backend_config: |-
+            local:
+              path: /github/workspace/terraform.tfstate
+
+      - name: Assertions
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        run: |
+          stat terraform.tfstate > /dev/null && echo "Success: state file present"
+
+          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read ws ; do
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer $TF_TOKEN" \
+              --header "Content-Type: application/vnd.api+json" \
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws" > /dev/null
+             echo "Success: Found ${{ steps.prefix.outputs.name }}-$ws"
+          done
+
+      - name: Cleanup
+        if: ${{ always() }}
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        run: |
+          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read ws ; do
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer $TF_TOKEN" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request DELETE \
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws" > /dev/null || true
+          done
