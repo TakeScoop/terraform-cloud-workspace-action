@@ -23,7 +23,7 @@ jobs:
         id: workspaces
         env:
           workspaces: '["alpha", "beta"]'
-        run: echo "::set-output name=names::${{ toJSON(env.workspaces)}"
+        run: echo "::set-output name=names::${{ toJSON(env.workspaces) }}"
 
       - name: Test
         uses: ./
