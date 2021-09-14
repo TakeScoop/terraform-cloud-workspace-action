@@ -63,11 +63,9 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          set -e
-
           stat terraform.tfstate > /dev/null && echo "Success: state file present"
 
-          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
+          echo '${{ steps.workspaces.outputs.names }}'' | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
@@ -83,9 +81,7 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          set -e
-
-          echo ${{ steps.workspaces.outputs.names }} | jq -r '.[]' | while read -r ws ; do
+          echo '${{ steps.workspaces.outputs.names }}'' | jq -r '.[]' | while read -r ws ; do
             curl \
               --fail \
               --silent \
