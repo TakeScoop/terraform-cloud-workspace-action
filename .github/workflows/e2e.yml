@@ -65,10 +65,15 @@ jobs:
         env:
           TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
         run: |
-          statefile=$(cat terraform.tfstate) && echo "Success: state file present"
-
-          echo "::group::tfstate-file"
-          echo "$statefile"
+          echo "::group::State file"
+          statefile='terraform.tfstate'
+          
+          if [ -f "$statefile" ]; then
+            echo "Found state file"
+            cat "$statefile"
+          else
+            echo "::error ::State file not found"
+          fi
           echo "::endgroup::"
 
           echo "::group::workspaces"
