@@ -55,6 +55,8 @@ jobs:
                 value: beta
                 category: terraform
           workspaces: ${{ steps.workspaces.outputs.names }}
+          # Within the docker env, github.workspace resolvse to /github/workspace, while in non-docker environments,
+          # it resolves to /home/runner/work/<repo>/<repo>, hence the hard coded path.
           backend_config: |-
             local:
               path: /github/workspace/terraform.tfstate
