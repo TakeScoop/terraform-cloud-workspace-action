@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -270,29 +271,6 @@ func TestMultipleWorkspaces(t *testing.T) {
 
 	inputs := newTestInputs(t)
 
-	inputs.Workspaces = `---
-- staging
-- production`
-
-	inputs.WorkspaceVariables = `---
-staging:
-  - key: environment
-    value: staging
-    category: env
-production:
-  - key: environment
-    value: production
-    category: env`
-
-	inputs.Tags = `---
-- all`
-
-	inputs.WorkspaceTags = `---
-staging:
-  - staging
-production:
-  - production`
-
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
@@ -335,4 +313,92 @@ production:
 
 		assert.Len(t, v.Items, 1)
 	}
+}
+
+// fuzzyFindWorksapce finds the first workspace matching the passed match string
+func fuzzyFindWorksapce(match string, workspaceList *tfe.WorkspaceList) *tfe.Workspace {
+	for _, ws := range workspaceList.Items {
+		if strings.Contains(ws.Name, match) {
+			return ws
+		}
+	}
+
+	return nil
+}
+
+func TestWorkspaceRunTriggers(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	inputs := newTestInputs(t)
+
+	inputs.Workspaces = `---
+- alpha
+- beta`
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
+	removeTestWorkspaces(t, ctx, client)
+
+	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", testWorkspacePrefix, time.Now().Unix())),
+		TerraformVersion: tfe.String("1.0.0"),
+	})
+	assert.NoError(t, err)
+
+	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", testWorkspacePrefix, time.Now().Unix())),
+		TerraformVersion: tfe.String("1.0.0"),
+	})
+	assert.NoError(t, err)
+
+	inputs.RunTriggers = fmt.Sprintf("- %s", wsSourceAll.ID)
+	inputs.WorkspaceRunTriggers = fmt.Sprintf(`---
+alpha:
+  - %s
+`, wsSourceAlpha.ID)
+
+	err = Run(inputs)
+	assert.NoError(t, err)
+
+	workspaces, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
+		Search: &testWorkspacePrefix,
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, workspaces.Items, 4)
+
+	alpha := fuzzyFindWorksapce("alpha", workspaces)
+	if alpha == nil {
+		t.Fatal("alpha workspace not found")
+	}
+
+	triggers, err := client.RunTriggers.List(ctx, alpha.ID, tfe.RunTriggerListOptions{
+		RunTriggerType: tfe.String("inbound"),
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, triggers.Items, 2)
+
+	beta := fuzzyFindWorksapce("beta", workspaces)
+	if beta == nil {
+		t.Fatal("beta workspace not found")
+	}
+
+	triggers, err = client.RunTriggers.List(ctx, beta.ID, tfe.RunTriggerListOptions{
+		RunTriggerType: tfe.String("inbound"),
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, triggers.Items, 1)
 }

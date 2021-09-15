@@ -745,6 +745,32 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 		assert.Equal(t, output.Valid, true, output.Diagnostics)
 	})
+
+	t.Run("validate workspaces run triggers", func(t *testing.T) {
+		workspaces := newTestMultiWorkspaceList()
+
+		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
+			RunTriggers: RunTriggers{
+				{Workspace: workspaces[0], SourceID: "ws-def456"},
+				{Workspace: workspaces[0], SourceID: "ws-ghi789"},
+				{Workspace: workspaces[1], SourceID: "ws-def456"},
+				{Workspace: workspaces[1], SourceID: "ws-ghi789"},
+			},
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, module)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
 }
 
 func TestWillDestroy(t *testing.T) {
