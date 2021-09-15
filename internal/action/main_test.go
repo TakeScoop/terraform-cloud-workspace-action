@@ -271,6 +271,29 @@ func TestMultipleWorkspaces(t *testing.T) {
 
 	inputs := newTestInputs(t)
 
+	inputs.Workspaces = `---
+	- staging
+	- production`
+
+	inputs.WorkspaceVariables = `---
+	staging:
+		- key: environment
+			value: staging
+			category: env
+	production:
+		- key: environment
+			value: production
+			category: env`
+
+	inputs.Tags = `---
+	- all`
+
+	inputs.WorkspaceTags = `---
+	staging:
+		- staging
+	production:
+		- production`
+
 	client, err := tfe.NewClient(&tfe.Config{
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
