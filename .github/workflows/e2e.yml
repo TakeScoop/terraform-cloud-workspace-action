@@ -22,8 +22,7 @@ jobs:
       
       - name: Workspace names
         id: workspaces
-        env:
-        run: echo '::set-output name=names::["alpha", "beta"]'
+        run: echo '::set-output name=names::["alpha","beta"]'
 
       - name: Run action
         uses: ./
