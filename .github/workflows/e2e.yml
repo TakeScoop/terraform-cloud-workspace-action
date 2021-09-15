@@ -1,0 +1,108 @@
+name: "Test: End to End"
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  end-to-end-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Workspace prefix
+        id: prefix
+        run: echo "::set-output name=name::action-e2e-test-$(date +%s)"
+      
+      - name: Workspace names
+        id: workspaces
+        run: echo '::set-output name=names::["alpha","beta"]'
+
+      - name: Run action
+        uses: ./
+        with:
+          runner_terraform_version: '1.0.5'
+          terraform_organization: takescoop-oss
+          terraform_token: ${{ secrets.TF_TOKEN_OSS }}
+          name: ${{ steps.prefix.outputs.name }}
+          tags: |-
+            - terraform:true
+          workspace_tags: |-
+            alpha:
+              - workspace:alpha
+            beta:
+              - workspace:beta
+          apply: true
+          variables: |-
+            - key: foo
+              value: bar
+              category: terraform
+          workspace_variables: |-
+            alpha:
+              - key: workspace
+                value: alpha
+                category: terraform
+            beta:
+              - key: workspace
+                value: beta
+                category: terraform
+          workspaces: ${{ steps.workspaces.outputs.names }}
+          # Within the docker env, github.workspace resolvse to /github/workspace, while in non-docker environments,
+          # it resolves to /home/runner/work/<repo>/<repo>, hence the hard coded path.
+          backend_config: |-
+            local:
+              path: /github/workspace/terraform.tfstate
+
+      - name: Assertions
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        run: |
+          echo "::group::State file"
+          statefile='terraform.tfstate'
+          
+          if [ -f "$statefile" ]; then
+            echo "Found state file"
+            cat "$statefile"
+          else
+            echo "::error ::State file not found"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::workspaces"
+
+          echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
+            workspace_url="https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws"
+
+            echo "GET $workspace_url"
+
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer $TF_TOKEN" \
+              --header "Content-Type: application/vnd.api+json" \
+              "$workspace_url"
+          done
+          echo "::endgroup::"
+
+          echo "Success: Found ${{ steps.prefix.outputs.name }} workspaces"
+      - name: Cleanup
+        if: ${{ always() }}
+        env:
+          TF_TOKEN: ${{ secrets.TF_TOKEN_OSS }}
+        run: |
+          echo '${{ steps.workspaces.outputs.names }}' | jq -r '.[]' | while read -r ws ; do
+            curl \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer $TF_TOKEN" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request DELETE \
+              "https://app.terraform.io/api/v2/organizations/takescoop-oss/workspaces/${{ steps.prefix.outputs.name }}-$ws" > /dev/null || true
+          done
