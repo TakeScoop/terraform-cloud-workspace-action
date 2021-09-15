@@ -23,8 +23,7 @@ jobs:
       - name: Workspace names
         id: workspaces
         env:
-          workspaces: '["alpha", "beta"]'
-        run: echo "::set-output name=names::${{ toJSON(env.workspaces) }}"
+        run: echo '::set-output name=names::["alpha", "beta"]'
 
       - name: Run action
         uses: ./
@@ -84,7 +83,7 @@ jobs:
             echo "GET $workspace_url"
 
             curl \
-              --fail-with-body \
+              --fail \
               --silent \
               --show-error \
               --header "Authorization: Bearer $TF_TOKEN" \
