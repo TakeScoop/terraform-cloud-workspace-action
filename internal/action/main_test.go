@@ -68,7 +68,7 @@ func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client,
 
 	for _, ws := range workspaces.Items {
 		err := client.Workspaces.DeleteByID(ctx, ws.ID)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}
 }
 
