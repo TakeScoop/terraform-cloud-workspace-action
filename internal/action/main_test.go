@@ -338,10 +338,10 @@ production:
 	}
 }
 
-// fuzzyFindWorksapce finds the first workspace matching the passed match string
-func fuzzyFindWorksapce(match string, workspaceList *tfe.WorkspaceList) *tfe.Workspace {
+// findWorkspaceByName finds the first workspace matching the passed match string
+func findWorkspaceByName(name string, workspaceList *tfe.WorkspaceList) *tfe.Workspace {
 	for _, ws := range workspaceList.Items {
-		if strings.Contains(ws.Name, match) {
+		if strings.Contains(ws.Name, name) {
 			return ws
 		}
 	}
@@ -392,13 +392,13 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	assert.NoError(t, err)
 
 	workspaces, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
-		Search: &testWorkspacePrefix,
+		Search: &inputs.Name,
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, workspaces.Items, 4)
+	assert.Len(t, workspaces.Items, 2)
 
-	alpha := fuzzyFindWorksapce("alpha", workspaces)
+	alpha := findWorkspaceByName(fmt.Sprintf("%s-alpha", inputs.Name), workspaces)
 	if alpha == nil {
 		t.Fatal("alpha workspace not found")
 	}
@@ -410,7 +410,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 
 	assert.Len(t, triggers.Items, 2)
 
-	beta := fuzzyFindWorksapce("beta", workspaces)
+	beta := findWorkspaceByName(fmt.Sprintf("%s-beta", inputs.Name), workspaces)
 	if beta == nil {
 		t.Fatal("beta workspace not found")
 	}
