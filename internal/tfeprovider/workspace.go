@@ -28,6 +28,7 @@ type VCSRepo struct {
 }
 
 type DataWorkspace struct {
-	Name         string `json:"name"`
-	Organization string `json:"organization"`
+	ForEach      map[string]DataWorkspace `json:"for_each,omitempty"`
+	Name         string                   `json:"name"`
+	Organization string                   `json:"organization"`
 }

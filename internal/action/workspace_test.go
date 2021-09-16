@@ -754,7 +754,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 				{Workspace: workspaces[0], SourceID: "ws-def456"},
 				{
 					Workspace: workspaces[0],
-					SourceID:  "${data.tfe_workspace.foo.id}",
+					SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
 					DataRef: map[string]tfeprovider.DataWorkspace{
 						"foo": {
 							Name:         "foo",

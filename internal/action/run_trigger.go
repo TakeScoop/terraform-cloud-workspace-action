@@ -50,7 +50,7 @@ func (rt *RunTriggerInput) ToRunTrigger(target *Workspace, workspaces []*Workspa
 				},
 			}
 
-			trigger.SourceID = fmt.Sprintf("${data.tfe_workspace.%s.id}", rt.SourceName)
+			trigger.SourceID = fmt.Sprintf("${data.tfe_workspace.run_trigger_workspaces[%q].id}", rt.SourceName)
 		}
 	} else {
 		return nil, fmt.Errorf("run trigger source ID or source name must be set")
@@ -109,14 +109,24 @@ func AppendRunTriggers(module *tfconfig.Module, triggers RunTriggers) {
 
 	triggerForEach := map[string]tfeprovider.RunTrigger{}
 
+	wsDataForEach := map[string]tfeprovider.DataWorkspace{}
+
 	for _, t := range triggers {
 		if t.DataRef != nil {
 			for name, ref := range t.DataRef {
-				module.AppendData("tfe_workspace", name, ref)
+				wsDataForEach[name] = ref
 			}
 		}
 
 		triggerForEach[fmt.Sprintf("%s-%s", t.Workspace.Workspace, t.SourceID)] = *t.ToResource()
+	}
+
+	if len(wsDataForEach) > 0 {
+		module.AppendData("tfe_workspace", "run_trigger_workspaces", tfeprovider.DataWorkspace{
+			ForEach:      wsDataForEach,
+			Name:         "${each.value.name}",
+			Organization: "${each.value.organization}",
+		})
 	}
 
 	rt := tfeprovider.RunTrigger{
