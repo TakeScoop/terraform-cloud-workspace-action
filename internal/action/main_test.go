@@ -51,17 +51,17 @@ func newTestInputs(t *testing.T) *Inputs {
 	}
 }
 
-// removeTestWorkspacesFunc returns a function that removes all workspaces created by the integration tests
-func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Client) func() {
+// removeTestWorkspacesFunc returns a function that removes matching workspaces created by the integration tests
+func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Client, match string) func() {
 	return func() {
-		removeTestWorkspaces(t, ctx, client)
+		removeTestWorkspaces(t, ctx, client, match)
 	}
 }
 
-// removeTestWorkspaces deletes all test workspaces created by these tests
-func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client) {
+// removeTestWorkspaces deletes matching test workspaces created by the integration tests
+func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client, match string) {
 	workspaces, err := client.Workspaces.List(ctx, os.Getenv("TF_ORGANIZATION"), tfe.WorkspaceListOptions{
-		Search: tfe.String(testWorkspacePrefix),
+		Search: tfe.String(match),
 		ListOptions: tfe.ListOptions{
 			PageSize: maxPageSize,
 		},
@@ -122,9 +122,7 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	_, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
 	if err == nil {
@@ -167,9 +165,7 @@ func TestImportExistingResources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
 		Name:             &inputs.Name,
@@ -228,9 +224,7 @@ func TestDriftCorrection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
 		Name:             &inputs.Name,
@@ -301,9 +295,7 @@ production:
 		t.Fatal(err)
 	}
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
@@ -369,17 +361,16 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", testWorkspacePrefix, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	assert.NoError(t, err)
 
 	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", testWorkspacePrefix, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	assert.NoError(t, err)
@@ -395,7 +386,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, workspaces.Items, 2)
+	assert.Len(t, workspaces.Items, 4)
 
 	alpha := findWorkspaceByName(fmt.Sprintf("%s-alpha", inputs.Name), workspaces)
 	if alpha == nil {
