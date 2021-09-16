@@ -60,7 +60,7 @@ jobs:
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
 | `workspace_tags` | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | |
-| `workspace_run_triggers` | A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is ran | |
+| `workspace_run_triggers` | A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is applied | |
 | `workspaces` | YAML encoded list of workspace names | |
 
 ### Backend Config
