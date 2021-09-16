@@ -231,8 +231,8 @@ func TestAppendRunTriggers(t *testing.T) {
 	})
 }
 
-func TestFindRelatedRunTriggers(t *testing.T) {
-	t.Run("get a list of RunTriggers when they exist", func(t *testing.T) {
+func TestToRunTriggers(t *testing.T) {
+	t.Run("get a list of RunTriggers", func(t *testing.T) {
 		ctx := context.Background()
 
 		mux := http.NewServeMux()
@@ -246,8 +246,12 @@ func TestFindRelatedRunTriggers(t *testing.T) {
 
 		workspace := newTestWorkspace()
 
-		triggers, err := FindRelatedRunTriggers(ctx, client, workspace, "org")
-		assert.NoError(t, err)
+		tfeTriggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		triggers := ToRunTriggers(tfeTriggers, workspace)
 
 		assert.Len(t, triggers, 1)
 		assert.Equal(t, RunTriggers{
@@ -263,16 +267,19 @@ func TestFindRelatedRunTriggers(t *testing.T) {
 
 		defer server.Close()
 
-		mux.HandleFunc("/api/v2/workspaces/ws-abc123/run-triggers", testServerResHandler(t, 200, `{"data": []}`))
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/run-triggers", testServerResHandler(t, 200, `{"data":[]}`))
 
 		client := newTestTFClient(t, server.URL)
 
 		workspace := newTestWorkspace()
 
-		triggers, err := FindRelatedRunTriggers(ctx, client, workspace, "org")
-		assert.NoError(t, err)
+		tfeTriggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		triggers := ToRunTriggers(tfeTriggers, workspace)
 
 		assert.Len(t, triggers, 0)
-		assert.Equal(t, RunTriggers{}, triggers)
 	})
 }

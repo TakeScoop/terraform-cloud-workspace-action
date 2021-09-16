@@ -345,8 +345,12 @@ func TestImportRelatedRunTriggers(t *testing.T) {
 		tf := TestTFExec{
 			State: &tfjson.State{},
 		}
+		workspace := newTestWorkspace()
 
-		err := ImportRelatedRunTriggers(ctx, &tf, client, newTestWorkspace())
+		triggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
+		assert.NoError(t, err)
+
+		err = ImportRunTriggers(ctx, &tf, triggers, client, workspace)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -375,10 +379,13 @@ func TestImportRelatedRunTriggers(t *testing.T) {
 			State: &tfjson.State{},
 		}
 
-		err := ImportRelatedRunTriggers(ctx, &tf, client, newTestWorkspace())
-		if err != nil {
-			t.Fatal(err)
-		}
+		workspace := newTestWorkspace()
+
+		triggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
+		assert.NoError(t, err)
+
+		err = ImportRunTriggers(ctx, &tf, triggers, client, workspace)
+		assert.NoError(t, err)
 
 		assert.Len(t, tf.ImportArgs, 0)
 	})

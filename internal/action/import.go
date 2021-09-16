@@ -215,16 +215,11 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	return nil
 }
 
-// ImportRelatedRunTriggers imports all related inbound run triggers to the passed workspace
-func ImportRelatedRunTriggers(ctx context.Context, tf TerraformCLI, client *tfe.Client, workspace *Workspace) error {
+// ImportRunTriggers imports all related inbound run triggers to the passed workspace
+func ImportRunTriggers(ctx context.Context, tf TerraformCLI, triggers []*tfe.RunTrigger, client *tfe.Client, workspace *Workspace) error {
 	if workspace.ID == nil {
 		githubactions.Infof("Workspace %q not found, skipping run trigger import\n", workspace.Name)
 		return nil
-	}
-
-	triggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
-	if err != nil {
-		return err
 	}
 
 	for _, trigger := range triggers {
@@ -279,12 +274,12 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 
 	AppendTeamAccess(module, teamAccess, organization)
 
-	triggers, err := FindRelatedRunTriggers(ctx, client, workspace, organization)
+	tfeTriggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
 	if err != nil {
 		return err
 	}
 
-	AppendRunTriggers(module, triggers)
+	AppendRunTriggers(module, ToRunTriggers(tfeTriggers, workspace))
 
 	AddProviders(module, providers)
 
@@ -309,7 +304,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		}
 	}
 
-	if err := ImportRelatedRunTriggers(ctx, tf, client, workspace); err != nil {
+	if err := ImportRunTriggers(ctx, tf, tfeTriggers, client, workspace); err != nil {
 		return err
 	}
 

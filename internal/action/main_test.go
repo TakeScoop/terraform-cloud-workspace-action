@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -341,7 +340,7 @@ production:
 // findWorkspaceByName finds the first workspace matching the passed match string
 func findWorkspaceByName(name string, workspaceList *tfe.WorkspaceList) *tfe.Workspace {
 	for _, ws := range workspaceList.Items {
-		if strings.Contains(ws.Name, name) {
+		if ws.Name == name {
 			return ws
 		}
 	}

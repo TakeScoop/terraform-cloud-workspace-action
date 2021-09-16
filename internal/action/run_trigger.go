@@ -144,24 +144,14 @@ func FetchInboundRunTriggers(ctx context.Context, client *tfe.Client, workspaceI
 	return rts.Items, nil
 }
 
-// FindRelatedRunTriggers returns a list of inbound run triggers associated with the passed workspace
-func FindRelatedRunTriggers(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (RunTriggers, error) {
-	triggers := RunTriggers{}
-	if workspace.ID == nil {
-		return triggers, nil
-	}
-
-	rts, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, rt := range rts {
-		triggers = append(triggers, RunTrigger{
+// ToRunTriggers takes a list of tfe.RunTriggers and returns a list of RunTriggers
+func ToRunTriggers(tfeTriggers []*tfe.RunTrigger, workspace *Workspace) (runTriggers RunTriggers) {
+	for _, rt := range tfeTriggers {
+		runTriggers = append(runTriggers, RunTrigger{
 			SourceID:  rt.Sourceable.ID,
 			Workspace: workspace,
 		})
 	}
 
-	return triggers, nil
+	return runTriggers
 }
