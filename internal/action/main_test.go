@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -18,10 +19,7 @@ var testWorkspacePrefix string = "action-test"
 
 // newTestInputs returns an Inputs object with test defaults
 func newTestInputs(t *testing.T) *Inputs {
-	action, err := getActionConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	action := getActionConfig(t)
 
 	imp, err := strconv.ParseBool(action.Inputs["import"].Default)
 	if err != nil {
@@ -66,14 +64,11 @@ func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client,
 			PageSize: maxPageSize,
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	for _, ws := range workspaces.Items {
-		if err := client.Workspaces.DeleteByID(ctx, ws.ID); err != nil {
-			t.Fatal(err)
-		}
+		err := client.Workspaces.DeleteByID(ctx, ws.ID)
+		assert.NoError(t, err)
 	}
 }
 
@@ -90,19 +85,16 @@ type ActionConfig struct {
 }
 
 // getActionConfig returns the action configuration file
-func getActionConfig() (*ActionConfig, error) {
+func getActionConfig(t *testing.T) *ActionConfig {
 	actionFile, err := ioutil.ReadFile("../../action.yml")
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
 	var action ActionConfig
 
-	if err := yaml.Unmarshal(actionFile, &action); err != nil {
-		return nil, err
-	}
+	err = yaml.Unmarshal(actionFile, &action)
+	require.NoError(t, err)
 
-	return &action, nil
+	return &action
 }
 
 func TestCreateWorkspace(t *testing.T) {
@@ -118,27 +110,19 @@ func TestCreateWorkspace(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	_, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err == nil {
-		t.Fatal("workspace should not exist, and an error should be returned")
-	}
-
 	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 
 	if err = Run(inputs); err != nil {
-		t.Fatal(err)
+		require.NoError(t, err)
 	}
 
 	ws, err := client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, ws.Name, inputs.Name)
 }
@@ -161,9 +145,7 @@ func TestImportExistingResources(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
@@ -171,9 +153,7 @@ func TestImportExistingResources(t *testing.T) {
 		Name:             &inputs.Name,
 		TerraformVersion: tfe.String("1.0.0"),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, ws.TerraformVersion, "1.0.0")
 
@@ -182,27 +162,20 @@ func TestImportExistingResources(t *testing.T) {
 		Value:    tfe.String("bar"),
 		Category: tfe.Category(tfe.CategoryTerraform),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, v.Value, "bar")
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	require.NoError(t, err)
 
 	ws, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, ws.TerraformVersion, inputs.TerraformVersion)
 
 	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, v.Value, "baz")
 }
@@ -220,9 +193,7 @@ func TestDriftCorrection(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
@@ -230,28 +201,19 @@ func TestDriftCorrection(t *testing.T) {
 		Name:             &inputs.Name,
 		TerraformVersion: &inputs.TerraformVersion,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
 		Key:      tfe.String("foo"),
 		Value:    tfe.String("bar"),
 		Category: tfe.Category(tfe.CategoryTerraform),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	require.NoError(t, err)
 
 	_, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err == nil {
-		t.Fatal("Expected variable not to exist")
-	}
-
 	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 }
 
@@ -291,39 +253,30 @@ production:
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Len(t, ws.Items, 0)
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	require.NoError(t, err)
 
 	ws, err = client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	assert.Len(t, ws.Items, 2)
 
 	for _, ws := range ws.Items {
 		v, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		assert.Len(t, v.Items, 1)
 	}
@@ -357,9 +310,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
@@ -367,24 +318,24 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
 		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	inputs.RunTriggers = fmt.Sprintf("- id: %s", wsSourceAll.ID)
 	inputs.WorkspaceRunTriggers = fmt.Sprintf("alpha: [id: %s]", wsSourceAlpha.ID)
 
 	err = Run(inputs)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	workspaces, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &inputs.Name,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, workspaces.Items, 4)
 
@@ -396,7 +347,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	triggers, err := client.RunTriggers.List(ctx, alpha.ID, tfe.RunTriggerListOptions{
 		RunTriggerType: tfe.String("inbound"),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, triggers.Items, 2)
 
@@ -408,7 +359,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	triggers, err = client.RunTriggers.List(ctx, beta.ID, tfe.RunTriggerListOptions{
 		RunTriggerType: tfe.String("inbound"),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, triggers.Items, 1)
 }
