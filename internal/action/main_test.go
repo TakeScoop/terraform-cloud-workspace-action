@@ -385,8 +385,8 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	inputs.RunTriggers = fmt.Sprintf("- %s", wsSourceAll.ID)
-	inputs.WorkspaceRunTriggers = fmt.Sprintf("alpha: [%s]", wsSourceAlpha.ID)
+	inputs.RunTriggers = fmt.Sprintf("- id: %s", wsSourceAll.ID)
+	inputs.WorkspaceRunTriggers = fmt.Sprintf("alpha: [id: %s]", wsSourceAlpha.ID)
 
 	err = Run(inputs)
 	assert.NoError(t, err)
