@@ -48,14 +48,14 @@ func newTestInputs(t *testing.T) *Inputs {
 	}
 }
 
-// removeTestWorkspacesFunc returns a function that removes matched workspaces created by the integration tests
+// removeTestWorkspacesFunc returns a function that removes matching workspaces created by the integration tests
 func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Client, match string) func() {
 	return func() {
 		removeTestWorkspaces(t, ctx, client, match)
 	}
 }
 
-// removeTestWorkspaces deletes all test workspaces created by these tests
+// removeTestWorkspaces deletes matching test workspaces created by the integration tests
 func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client, match string) {
 	workspaces, err := client.Workspaces.List(ctx, os.Getenv("TF_ORGANIZATION"), tfe.WorkspaceListOptions{
 		Search: tfe.String(match),
@@ -63,14 +63,11 @@ func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client,
 			PageSize: maxPageSize,
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for _, ws := range workspaces.Items {
-		if err := client.Workspaces.DeleteByID(ctx, ws.ID); err != nil {
-			t.Fatal(err)
-		}
+		err := client.Workspaces.DeleteByID(ctx, ws.ID)
+		assert.NoError(err)
 	}
 }
 
