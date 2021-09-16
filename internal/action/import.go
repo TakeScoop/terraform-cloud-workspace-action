@@ -215,8 +215,45 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 	return nil
 }
 
+// ImportRunTriggers imports all related inbound run triggers to the passed workspace
+func ImportRunTriggers(ctx context.Context, tf TerraformCLI, triggers []*tfe.RunTrigger, client *tfe.Client, workspace *Workspace) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q not found, skipping run trigger import\n", workspace.Name)
+		return nil
+	}
+
+	for _, trigger := range triggers {
+		address := fmt.Sprintf("tfe_run_trigger.trigger[\"%s-%s\"]", workspace.Workspace, trigger.Sourceable.ID)
+
+		imp, err := shouldImport(ctx, tf, address)
+		if err != nil {
+			return err
+		}
+
+		if !imp {
+			githubactions.Infof("Run trigger %q already exists in state, skipping import\n", address)
+			return nil
+		}
+
+		githubactions.Infof("Importing run trigger: %q\n", address)
+
+		if err := tf.Import(ctx, address, trigger.ID); err != nil {
+			return err
+		}
+
+		githubactions.Infof("Run trigger %q successfully imported\n", address)
+	}
+
+	return nil
+}
+
 // ImportWorkspaceResources discovers and imports resources related to the passed workspace
 func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string, providers []Provider) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q is not found, skipping import", workspace.Name)
+		return nil
+	}
+
 	module := NewModule()
 
 	wsConfig, err := NewWorkspaceResource(ctx, client, []*Workspace{workspace}, &WorkspaceResourceOptions{})
@@ -242,6 +279,13 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 
 	AppendTeamAccess(module, teamAccess, organization)
 
+	tfeTriggers, err := FetchInboundRunTriggers(ctx, client, *workspace.ID)
+	if err != nil {
+		return err
+	}
+
+	AppendRunTriggers(module, ToRunTriggers(tfeTriggers, workspace))
+
 	AddProviders(module, providers)
 
 	if err := TerraformInit(ctx, tf, module, filePath); err != nil {
@@ -263,6 +307,10 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		if err := ImportTeamAccess(ctx, tf, client, organization, access.Workspace, access.TeamName); err != nil {
 			return err
 		}
+	}
+
+	if err := ImportRunTriggers(ctx, tf, tfeTriggers, client, workspace); err != nil {
+		return err
 	}
 
 	return nil

@@ -34,6 +34,8 @@ func main() {
 		RemoteStateConsumerIDs: githubactions.GetInput("remote_state_consumer_ids"),
 		SpeculativeEnabled:     inputs.GetBoolPtr("speculative_enabled"),
 		TerraformVersion:       githubactions.GetInput("terraform_version"),
+		RunTriggers:            githubactions.GetInput("run_triggers"),
+		WorkspaceRunTriggers:   githubactions.GetInput("workspace_run_triggers"),
 		SSHKeyID:               githubactions.GetInput("ssh_key_id"),
 		VCSIngressSubmodules:   inputs.GetBool("vcs_ingress_submodules"),
 		VCSRepo:                githubactions.GetInput("vcs_repo"),

@@ -44,6 +44,7 @@ jobs:
 | `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
 | `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
 | `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
+| `run_triggers` | YAML encoded list of either workspace IDs or names that, when applied, trigger runs in all the created workspaces (max 20) | |
 | `speculative_enabled` | Whether the workspace allows speculative plans | |
 | `ssh_key_id` | SSH key ID to assign the workspace | |
 | `tags` | YAML encoded list of tag names applied to all workspaces | |
@@ -59,6 +60,7 @@ jobs:
 | `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
 | `workspace_tags` | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace | |
 | `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | |
+| `workspace_run_triggers` | A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is applied | |
 | `workspaces` | YAML encoded list of workspace names | |
 
 ### Backend Config
@@ -181,6 +183,22 @@ workspace_tags: |-
     - staging
   production:
     - production
+```
+
+### Run Triggers
+
+The following configuration will add a run trigger for the `alpha` and `beta` workspaces when workspace `parent-workspace` is ran, and will also add two more triggers to the `alpha` workspace when either workspace `ws-abc123` or `ws-def456` are ran
+
+```yml
+workspaces: |-
+  - alpha
+  - beta
+run_triggers: |-
+  - name: parent-workspace
+workspace_run_triggers: |-
+  alpha:
+    - id: ws-abc123
+    - id: ws-def456
 ```
 
 ## Outputs

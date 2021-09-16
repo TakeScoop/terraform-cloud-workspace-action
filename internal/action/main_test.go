@@ -336,3 +336,88 @@ production:
 		assert.Len(t, v.Items, 1)
 	}
 }
+
+// findWorkspaceByName finds the first workspace matching the passed match string
+func findWorkspaceByName(name string, workspaceList *tfe.WorkspaceList) *tfe.Workspace {
+	for _, ws := range workspaceList.Items {
+		if ws.Name == name {
+			return ws
+		}
+	}
+
+	return nil
+}
+
+func TestWorkspaceRunTriggers(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	inputs := newTestInputs(t)
+
+	inputs.Workspaces = `---
+- alpha
+- beta`
+
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", inputs.Host),
+		Token:   inputs.Token,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
+	removeTestWorkspaces(t, ctx, client)
+
+	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", testWorkspacePrefix, time.Now().Unix())),
+		TerraformVersion: tfe.String("1.0.0"),
+	})
+	assert.NoError(t, err)
+
+	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
+		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", testWorkspacePrefix, time.Now().Unix())),
+		TerraformVersion: tfe.String("1.0.0"),
+	})
+	assert.NoError(t, err)
+
+	inputs.RunTriggers = fmt.Sprintf("- id: %s", wsSourceAll.ID)
+	inputs.WorkspaceRunTriggers = fmt.Sprintf("alpha: [id: %s]", wsSourceAlpha.ID)
+
+	err = Run(inputs)
+	assert.NoError(t, err)
+
+	workspaces, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
+		Search: &inputs.Name,
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, workspaces.Items, 2)
+
+	alpha := findWorkspaceByName(fmt.Sprintf("%s-alpha", inputs.Name), workspaces)
+	if alpha == nil {
+		t.Fatal("alpha workspace not found")
+	}
+
+	triggers, err := client.RunTriggers.List(ctx, alpha.ID, tfe.RunTriggerListOptions{
+		RunTriggerType: tfe.String("inbound"),
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, triggers.Items, 2)
+
+	beta := findWorkspaceByName(fmt.Sprintf("%s-beta", inputs.Name), workspaces)
+	if beta == nil {
+		t.Fatal("beta workspace not found")
+	}
+
+	triggers, err = client.RunTriggers.List(ctx, beta.ID, tfe.RunTriggerListOptions{
+		RunTriggerType: tfe.String("inbound"),
+	})
+	assert.NoError(t, err)
+
+	assert.Len(t, triggers.Items, 1)
+}

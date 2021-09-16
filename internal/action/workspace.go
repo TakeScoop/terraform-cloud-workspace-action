@@ -261,6 +261,7 @@ type NewWorkspaceConfigOptions struct {
 	RemoteStates             map[string]tfconfig.RemoteState
 	Variables                Variables
 	TeamAccess               TeamAccess
+	RunTriggers              RunTriggers
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
 }
@@ -296,6 +297,8 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 	for _, v := range config.Variables {
 		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
 	}
+
+	AppendRunTriggers(module, config.RunTriggers)
 
 	AppendTeamAccess(module, config.TeamAccess, wsResource.Organization)
 

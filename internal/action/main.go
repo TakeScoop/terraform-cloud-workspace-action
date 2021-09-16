@@ -41,6 +41,8 @@ type Inputs struct {
 	RemoteStateConsumerIDs string
 	SpeculativeEnabled     *bool
 	TerraformVersion       string
+	RunTriggers            string
+	WorkspaceRunTriggers   string
 	SSHKeyID               string
 	VCSIngressSubmodules   bool
 	VCSRepo                string
@@ -179,6 +181,21 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to format workspace tags: %w", err)
 	}
 
+	var triggerInputs RunTriggerInputs
+	if err = yaml.Unmarshal([]byte(config.RunTriggers), &triggerInputs); err != nil {
+		return fmt.Errorf("failed to decode workspace tag names: %w", err)
+	}
+
+	var workspaceTriggerInputs map[string]RunTriggerInputs
+	if err = yaml.Unmarshal([]byte(config.WorkspaceRunTriggers), &workspaceTriggerInputs); err != nil {
+		return fmt.Errorf("failed to decode workspace tag names: %w", err)
+	}
+
+	triggers, err := MergeRunTriggers(triggerInputs, workspaceTriggerInputs, workspaces, config.Organization)
+	if err != nil {
+		return fmt.Errorf("failed to merge run triggers: %w", err)
+	}
+
 	providers := []Provider{
 		{
 			Name:    "tfe",
@@ -216,6 +233,7 @@ func Run(config *Inputs) error {
 		RemoteStates: remoteStates,
 		Variables:    variables,
 		TeamAccess:   teamAccess,
+		RunTriggers:  triggers,
 		Providers:    providers,
 	})
 	if err != nil {
