@@ -17,9 +17,9 @@ type RunTriggerInput struct {
 type RunTriggerInputs []RunTriggerInput
 
 type RunTrigger struct {
-	SourceID  string
-	Workspace *Workspace
-	DataRef   map[string]tfeprovider.DataWorkspace
+	SourceID     string
+	Workspace    *Workspace
+	WorkspaceRef map[string]tfeprovider.DataWorkspace
 }
 
 type RunTriggers []RunTrigger
@@ -43,7 +43,7 @@ func (rt *RunTriggerInput) ToRunTrigger(target *Workspace, workspaces []*Workspa
 		}
 
 		if trigger.SourceID == "" {
-			trigger.DataRef = map[string]tfeprovider.DataWorkspace{
+			trigger.WorkspaceRef = map[string]tfeprovider.DataWorkspace{
 				rt.SourceName: {
 					Name:         rt.SourceName,
 					Organization: organization,
@@ -112,8 +112,8 @@ func AppendRunTriggers(module *tfconfig.Module, triggers RunTriggers) {
 	wsDataForEach := map[string]tfeprovider.DataWorkspace{}
 
 	for _, t := range triggers {
-		if t.DataRef != nil {
-			for name, ref := range t.DataRef {
+		if t.WorkspaceRef != nil {
+			for name, ref := range t.WorkspaceRef {
 				wsDataForEach[name] = ref
 			}
 		}

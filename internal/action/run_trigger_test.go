@@ -50,9 +50,9 @@ func TestMergeRunTriggers(t *testing.T) {
 
 		assert.Equal(t, RunTriggers{
 			{
-				SourceID:  "${tfe_workspace.workspace[\"default\"].id}",
-				Workspace: workspaces[0],
-				DataRef:   (map[string]tfeprovider.DataWorkspace)(nil),
+				SourceID:     "${tfe_workspace.workspace[\"default\"].id}",
+				Workspace:    workspaces[0],
+				WorkspaceRef: (map[string]tfeprovider.DataWorkspace)(nil),
 			}}, triggers)
 	})
 
@@ -70,7 +70,7 @@ func TestMergeRunTriggers(t *testing.T) {
 			{
 				SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
 				Workspace: workspaces[0],
-				DataRef: map[string]tfeprovider.DataWorkspace{
+				WorkspaceRef: map[string]tfeprovider.DataWorkspace{
 					"foo": {
 						Name:         "foo",
 						Organization: "org",
@@ -156,7 +156,7 @@ func TestMergeRunTriggers(t *testing.T) {
 			{
 				SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
 				Workspace: workspaces[0],
-				DataRef: map[string]tfeprovider.DataWorkspace{
+				WorkspaceRef: map[string]tfeprovider.DataWorkspace{
 					"foo": {
 						Name:         "foo",
 						Organization: "org",
@@ -200,7 +200,7 @@ func TestAppendRunTriggers(t *testing.T) {
 			{
 				SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
 				Workspace: workspace,
-				DataRef: map[string]tfeprovider.DataWorkspace{
+				WorkspaceRef: map[string]tfeprovider.DataWorkspace{
 					"foo": {
 						Name:         "foo",
 						Organization: "org",
