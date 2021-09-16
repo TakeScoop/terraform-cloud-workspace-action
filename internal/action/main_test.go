@@ -51,17 +51,17 @@ func newTestInputs(t *testing.T) *Inputs {
 	}
 }
 
-// removeTestWorkspacesFunc returns a function that removes all workspaces created by the integration tests
-func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Client) func() {
+// removeTestWorkspacesFunc returns a function that removes matched workspaces created by the integration tests
+func removeTestWorkspacesFunc(t *testing.T, ctx context.Context, client *tfe.Client, match string) func() {
 	return func() {
-		removeTestWorkspaces(t, ctx, client)
+		removeTestWorkspaces(t, ctx, client, match)
 	}
 }
 
 // removeTestWorkspaces deletes all test workspaces created by these tests
-func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client) {
+func removeTestWorkspaces(t *testing.T, ctx context.Context, client *tfe.Client, match string) {
 	workspaces, err := client.Workspaces.List(ctx, os.Getenv("TF_ORGANIZATION"), tfe.WorkspaceListOptions{
-		Search: tfe.String(testWorkspacePrefix),
+		Search: tfe.String(match),
 		ListOptions: tfe.ListOptions{
 			PageSize: maxPageSize,
 		},
@@ -118,29 +118,19 @@ func TestCreateWorkspace(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	_, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err == nil {
-		t.Fatal("workspace should not exist, and an error should be returned")
-	}
-
 	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 
 	if err = Run(inputs); err != nil {
-		t.Fatal(err)
+		assert.NoError(t, err)
 	}
 
 	ws, err := client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, ws.Name, inputs.Name)
 }
@@ -163,21 +153,15 @@ func TestImportExistingResources(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
 		Name:             &inputs.Name,
 		TerraformVersion: tfe.String("1.0.0"),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, ws.TerraformVersion, "1.0.0")
 
@@ -186,27 +170,20 @@ func TestImportExistingResources(t *testing.T) {
 		Value:    tfe.String("bar"),
 		Category: tfe.Category(tfe.CategoryTerraform),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, v.Value, "bar")
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	assert.NoError(t, err)
 
 	ws, err = client.Workspaces.Read(ctx, inputs.Organization, inputs.Name)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, ws.TerraformVersion, inputs.TerraformVersion)
 
 	v, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, v.Value, "baz")
 }
@@ -224,40 +201,27 @@ func TestDriftCorrection(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
 		Name:             &inputs.Name,
 		TerraformVersion: &inputs.TerraformVersion,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	v, err := client.Variables.Create(ctx, ws.ID, tfe.VariableCreateOptions{
 		Key:      tfe.String("foo"),
 		Value:    tfe.String("bar"),
 		Category: tfe.Category(tfe.CategoryTerraform),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	assert.NoError(t, err)
 
 	_, err = client.Variables.Read(ctx, ws.ID, v.ID)
-	if err == nil {
-		t.Fatal("Expected variable not to exist")
-	}
-
 	assert.ErrorIs(t, err, tfe.ErrResourceNotFound)
 }
 
@@ -297,41 +261,30 @@ production:
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Len(t, ws.Items, 0)
 
-	if err = Run(inputs); err != nil {
-		t.Fatal(err)
-	}
+	err = Run(inputs)
+	assert.NoError(t, err)
 
 	ws, err = client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
 		Search: &testWorkspacePrefix,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Len(t, ws.Items, 2)
 
 	for _, ws := range ws.Items {
 		v, err := client.Variables.List(ctx, ws.ID, tfe.VariableListOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		assert.Len(t, v.Items, 1)
 	}
