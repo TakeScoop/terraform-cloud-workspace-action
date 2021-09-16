@@ -249,6 +249,11 @@ func ImportRunTriggers(ctx context.Context, tf TerraformCLI, triggers []*tfe.Run
 
 // ImportWorkspaceResources discovers and imports resources related to the passed workspace
 func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexec.Terraform, filePath string, workspace *Workspace, organization string, providers []Provider) error {
+	if workspace.ID == nil {
+		githubactions.Infof("Workspace %q is not found, skipping import", workspace.Name)
+		return nil
+	}
+
 	module := NewModule()
 
 	wsConfig, err := NewWorkspaceResource(ctx, client, []*Workspace{workspace}, &WorkspaceResourceOptions{})
