@@ -18,10 +18,7 @@ var testWorkspacePrefix string = "action-test"
 
 // newTestInputs returns an Inputs object with test defaults
 func newTestInputs(t *testing.T) *Inputs {
-	action, err := getActionConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	action := getActionConfig(t)
 
 	imp, err := strconv.ParseBool(action.Inputs["import"].Default)
 	if err != nil {
@@ -90,19 +87,16 @@ type ActionConfig struct {
 }
 
 // getActionConfig returns the action configuration file
-func getActionConfig() (*ActionConfig, error) {
+func getActionConfig(t *testing.T) *ActionConfig {
 	actionFile, err := ioutil.ReadFile("../../action.yml")
-	if err != nil {
-		return nil, err
-	}
+	assert.NoError(t, err)
 
 	var action ActionConfig
 
-	if err := yaml.Unmarshal(actionFile, &action); err != nil {
-		return nil, err
-	}
+	err = yaml.Unmarshal(actionFile, &action)
+	assert.NoError(t, err)
 
-	return &action, nil
+	return &action
 }
 
 func TestCreateWorkspace(t *testing.T) {
@@ -318,21 +312,18 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 		Address: fmt.Sprintf("https://%s", inputs.Host),
 		Token:   inputs.Token,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
-	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client))
-	removeTestWorkspaces(t, ctx, client)
+	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", testWorkspacePrefix, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	assert.NoError(t, err)
 
 	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", testWorkspacePrefix, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", inputs.Name, time.Now().Unix())),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	assert.NoError(t, err)
@@ -348,7 +339,7 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Len(t, workspaces.Items, 2)
+	assert.Len(t, workspaces.Items, 4)
 
 	alpha := findWorkspaceByName(fmt.Sprintf("%s-alpha", inputs.Name), workspaces)
 	if alpha == nil {
