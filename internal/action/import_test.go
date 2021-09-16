@@ -327,6 +327,63 @@ func TestImportTeamAccess(t *testing.T) {
 	})
 }
 
+func TestImportRelatedRunTriggers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("import a team access resource", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/run-triggers", testServerResHandler(t, 200, runTriggerAPIResponse))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{},
+		}
+
+		err := ImportRelatedRunTriggers(ctx, &tf, client, newTestWorkspace())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, len(tf.ImportArgs), 1)
+		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
+			Address: "tfe_run_trigger.trigger[\"default-ws-def456\"]",
+			ID:      "rt-abc123",
+			Opts:    ([]tfexec.ImportOption)(nil),
+		})
+	})
+
+	t.Run("no import if no related run triggers", func(t *testing.T) {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+
+		t.Cleanup(func() {
+			server.Close()
+		})
+
+		mux.HandleFunc("/api/v2/workspaces/ws-abc123/run-triggers", testServerResHandler(t, 200, `{"data": []}`))
+
+		client := newTestTFClient(t, server.URL)
+
+		tf := TestTFExec{
+			State: &tfjson.State{},
+		}
+
+		err := ImportRelatedRunTriggers(ctx, &tf, client, newTestWorkspace())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Len(t, tf.ImportArgs, 0)
+	})
+}
+
 var varsAPIResponse = `{
   "data": [
     {
@@ -472,6 +529,180 @@ var teamAPIResponse = `{
     "pagination": {
       "current-page": 1,
       "page-size": 100,
+      "prev-page": null,
+      "next-page": null,
+      "total-pages": 1,
+      "total-count": 1
+    }
+  }
+}`
+
+var runTriggerAPIResponse string = `{
+  "data": [
+    {
+      "id": "rt-abc123",
+      "type": "run-triggers",
+      "attributes": {
+        "workspace-name": "ws",
+        "sourceable-name": "ws-sourceable",
+        "created-at": "2021-09-16T05:36:15.784Z"
+      },
+      "relationships": {
+        "workspace": {
+          "data": {
+            "id": "ws-abc123",
+            "type": "workspaces"
+          }
+        },
+        "sourceable": {
+          "data": {
+            "id": "ws-def456",
+            "type": "workspaces"
+          }
+        }
+      },
+      "links": {
+        "self": "/api/v2/run-triggers/rt-abc123"
+      }
+    }
+  ],
+  "included": [
+    {
+      "id": "ws-abc123",
+      "type": "workspaces",
+      "attributes": {
+        "allow-destroy-plan": true,
+        "auto-apply": true,
+        "auto-destroy-at": null,
+        "created-at": "2021-09-09T03:12:02.113Z",
+        "environment": "default",
+        "locked": false,
+        "name": "deployments-test-staging",
+        "queue-all-runs": true,
+        "speculative-enabled": true,
+        "structured-run-output-enabled": true,
+        "terraform-version": "1.0.5",
+        "working-directory": "",
+        "global-remote-state": false,
+        "updated-at": "2021-09-10T19:37:18.761Z",
+        "resource-count": 0,
+        "apply-duration-average": null,
+        "plan-duration-average": null,
+        "policy-check-failures": null,
+        "run-failures": null,
+        "workspace-kpis-runs-count": null,
+        "latest-change-at": "2021-09-09T03:12:02.113Z",
+        "operations": true,
+        "execution-mode": "remote",
+        "vcs-repo": {
+          "branch": "",
+          "ingress-submodules": false,
+          "identifier": "org/ws",
+          "display-identifier": "org/ws",
+          "oauth-token-id": "ot-abc123",
+          "webhook-url": "https://app.terraform.io/webhooks/vcs/00000000-2a86-4655-a7bc-d48ecb2e09f6",
+          "repository-http-url": "https://github.com/org/ws",
+          "service-provider": "github"
+        },
+        "vcs-repo-identifier": "org/ws",
+        "permissions": {
+          "can-update": true,
+          "can-destroy": true,
+          "can-queue-destroy": true,
+          "can-queue-run": true,
+          "can-queue-apply": true,
+          "can-read-state-versions": true,
+          "can-create-state-versions": true,
+          "can-read-variable": true,
+          "can-update-variable": true,
+          "can-lock": true,
+          "can-unlock": true,
+          "can-force-unlock": true,
+          "can-read-settings": true,
+          "can-manage-tags": true
+        },
+        "actions": {
+          "is-destroyable": true
+        },
+        "description": "test workspace foo",
+        "file-triggers-enabled": true,
+        "trigger-prefixes": [],
+        "source": "tfe-api",
+        "source-name": null,
+        "source-url": null,
+        "tag-names": []
+      },
+      "relationships": {
+        "organization": {
+          "data": {
+            "id": "org",
+            "type": "organizations"
+          }
+        },
+        "current-run": {
+          "data": {
+            "id": "run-abc123",
+            "type": "runs"
+          },
+          "links": {
+            "related": "/api/v2/runs/run-abc123"
+          }
+        },
+        "latest-run": {
+          "data": {
+            "id": "run-abc123",
+            "type": "runs"
+          },
+          "links": {
+            "related": "/api/v2/runs/run-abc123"
+          }
+        },
+        "outputs": {
+          "data": []
+        },
+        "remote-state-consumers": {
+          "links": {
+            "related": "/api/v2/workspaces/ws-abc123/relationships/remote-state-consumers"
+          }
+        },
+        "current-state-version": {
+          "data": null
+        },
+        "current-configuration-version": {
+          "data": {
+            "id": "cv-abc123",
+            "type": "configuration-versions"
+          },
+          "links": {
+            "related": "/api/v2/configuration-versions/cv-abc123"
+          }
+        },
+        "agent-pool": {
+          "data": null
+        },
+        "readme": {
+          "data": {
+            "id": "254797",
+            "type": "workspace-readme"
+          }
+        }
+      },
+      "links": {
+        "self": "/api/v2/organizations/org/workspaces/ws"
+      }
+    }
+  ],
+  "links": {
+    "self": "https://app.terraform.io/api/v2/workspaces/ws-abc123/run-triggers?filter%5Brun-trigger%5D%5Btype%5D=inbound\u0026include=sourceable\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=5\u0026workspace_id=ws-ijhdfBHEMWagkig3",
+    "first": "https://app.terraform.io/api/v2/workspaces/ws-abc123/run-triggers?filter%5Brun-trigger%5D%5Btype%5D=inbound\u0026include=sourceable\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=5\u0026workspace_id=ws-ijhdfBHEMWagkig3",
+    "prev": null,
+    "next": null,
+    "last": "https://app.terraform.io/api/v2/workspaces/ws-abc123/run-triggers?filter%5Brun-trigger%5D%5Btype%5D=inbound\u0026include=sourceable\u0026page%5Bnumber%5D=1\u0026page%5Bsize%5D=5\u0026workspace_id=ws-ijhdfBHEMWagkig3"
+  },
+  "meta": {
+    "pagination": {
+      "current-page": 1,
+      "page-size": 5,
       "prev-page": null,
       "next-page": null,
       "total-pages": 1,

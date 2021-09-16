@@ -26,3 +26,8 @@ type VCSRepo struct {
 	Identifier        string `json:"identifier"`
 	IngressSubmodules bool   `json:"ingress_submodules"`
 }
+
+type DataWorkspace struct {
+	Name         string `json:"name"`
+	Organization string `json:"organization"`
+}

@@ -24,7 +24,7 @@ func newTestWorkspace() *Workspace {
 	return &Workspace{
 		Name:      "ws",
 		Workspace: "default",
-		ID:        tfe.String("ws-abc-123"),
+		ID:        tfe.String("ws-abc123"),
 	}
 }
 
@@ -752,9 +752,21 @@ func TestNewWorkspaceConfig(t *testing.T) {
 		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
 			RunTriggers: RunTriggers{
 				{Workspace: workspaces[0], SourceID: "ws-def456"},
-				{Workspace: workspaces[0], SourceID: "ws-ghi789"},
+				{
+					Workspace: workspaces[0],
+					SourceID:  "${data.tfe_workspace.foo.id}",
+					DataRef: map[string]tfeprovider.DataWorkspace{
+						"foo": {
+							Name:         "foo",
+							Organization: "org",
+						},
+					},
+				},
 				{Workspace: workspaces[1], SourceID: "ws-def456"},
-				{Workspace: workspaces[1], SourceID: "ws-ghi789"},
+				{
+					Workspace: workspaces[1],
+					SourceID:  "${tfe_workspace.workspace[\"staging\"].id}",
+				},
 			},
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",

@@ -191,7 +191,7 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to decode workspace tag names: %w", err)
 	}
 
-	triggers, err := MergeRunTriggers(triggerInputs, workspaceTriggerInputs, workspaces)
+	triggers, err := MergeRunTriggers(triggerInputs, workspaceTriggerInputs, workspaces, config.Organization)
 	if err != nil {
 		return fmt.Errorf("failed to merge run triggers: %w", err)
 	}

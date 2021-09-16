@@ -298,9 +298,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
 	}
 
-	for _, t := range config.RunTriggers {
-		module.AppendResource("tfe_run_trigger", fmt.Sprintf("%s-%s", t.Workspace.Workspace, t.SourceID), t.ToResource())
-	}
+	AppendRunTriggers(module, config.RunTriggers)
 
 	AppendTeamAccess(module, config.TeamAccess, wsResource.Organization)
 

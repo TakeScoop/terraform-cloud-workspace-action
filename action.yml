@@ -91,9 +91,9 @@ inputs:
     description: Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted.
     default: false
   run_triggers:
-    description: YAML encoded list of workspace IDs that, when applied, trigger runs in all the created workspaces (max 20)
+    description: YAML encoded list of either workspace IDs or names that, when applied, trigger runs in all the created workspaces (max 20)
   workspace_run_triggers:
-    description: A YAML encoded map of workspaces to workspace IDs, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is ran
+    description: A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is ran
 outputs:
   plan:
     description: A human friendly output of the Terraform plan.
