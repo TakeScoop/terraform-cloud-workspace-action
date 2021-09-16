@@ -136,7 +136,6 @@ func FetchInboundRunTriggers(ctx context.Context, client *tfe.Client, workspaceI
 		},
 		RunTriggerType: tfe.String("inbound"),
 	})
-
 	if err != nil {
 		return nil, err
 	}
