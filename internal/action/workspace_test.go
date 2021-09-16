@@ -24,7 +24,7 @@ func newTestWorkspace() *Workspace {
 	return &Workspace{
 		Name:      "ws",
 		Workspace: "default",
-		ID:        tfe.String("ws-abc-123"),
+		ID:        tfe.String("ws-abc123"),
 	}
 }
 
@@ -732,6 +732,44 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					"staging":    {"all", "staging"},
 					"production": {"all", "production"},
 				},
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := RunValidate(ctx, name, execPath, module)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
+
+	t.Run("validate workspaces run triggers", func(t *testing.T) {
+		workspaces := newTestMultiWorkspaceList()
+
+		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
+			RunTriggers: RunTriggers{
+				{Workspace: workspaces[0], SourceID: "ws-def456"},
+				{
+					Workspace: workspaces[0],
+					SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
+					WorkspaceRef: map[string]tfeprovider.DataWorkspace{
+						"foo": {
+							Name:         "foo",
+							Organization: "org",
+						},
+					},
+				},
+				{Workspace: workspaces[1], SourceID: "ws-def456"},
+				{
+					Workspace: workspaces[1],
+					SourceID:  "${tfe_workspace.workspace[\"staging\"].id}",
+				},
+			},
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
 			},
 		})
 		if err != nil {

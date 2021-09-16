@@ -26,3 +26,9 @@ type VCSRepo struct {
 	Identifier        string `json:"identifier"`
 	IngressSubmodules bool   `json:"ingress_submodules"`
 }
+
+type DataWorkspace struct {
+	ForEach      map[string]DataWorkspace `json:"for_each,omitempty"`
+	Name         string                   `json:"name"`
+	Organization string                   `json:"organization"`
+}
