@@ -68,29 +68,6 @@ func ImportWorkspace(ctx context.Context, tf TerraformCLI, client *tfe.Client, w
 	return nil
 }
 
-func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, workspaceID string, page int) (*tfe.Variable, error) {
-	vs, err := client.Variables.List(ctx, workspaceID, tfe.VariableListOptions{
-		ListOptions: tfe.ListOptions{
-			PageSize: maxPageSize,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range vs.Items {
-		if v.Key == key {
-			return v, nil
-		}
-	}
-
-	if vs.NextPage > page {
-		return fetchVariableByKey(ctx, client, key, workspaceID, vs.NextPage)
-	}
-
-	return nil, nil
-}
-
 // ImportVariable imports the passed variable into Terraform state
 func ImportVariable(ctx context.Context, tf TerraformCLI, v *tfe.Variable, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
 	if workspace.ID == nil {

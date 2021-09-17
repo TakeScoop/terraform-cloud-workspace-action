@@ -339,38 +339,6 @@ func TestImportRelatedRunTriggers(t *testing.T) {
 	})
 }
 
-var varsAPIResponse = `{
-  "data": [
-    {
-      "id": "var-abc123",
-      "type": "vars",
-      "attributes": {
-        "key": "foo",
-        "value": "bar",
-        "sensitive": false,
-        "category": "env",
-        "hcl": false,
-        "created-at": "2021-08-30T16:01:07.885Z",
-        "description": null
-      },
-      "relationships": {
-        "configurable": {
-          "data": {
-            "id": "ws-abc123",
-            "type": "workspaces"
-          },
-          "links": {
-            "related": "/api/v2/organizations/org/workspaces/ws"
-          }
-        }
-      },
-      "links": {
-        "self": "/api/v2/workspaces/ws-abc123/vars/var-abc123"
-      }
-    }
-  ]
-}`
-
 var teamAccessAPIResponse = `{
   "data": [
     {
