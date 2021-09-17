@@ -92,13 +92,13 @@ func fetchVariableByKey(ctx context.Context, client *tfe.Client, key string, wor
 }
 
 // ImportVariable imports the passed variable into Terraform state
-func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, key string, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
+func ImportVariable(ctx context.Context, tf TerraformCLI, v *tfe.Variable, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
 	if workspace.ID == nil {
 		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
 		return nil
 	}
 
-	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Workspace, key)
+	address := fmt.Sprintf("tfe_variable.%s-%s", workspace.Workspace, v.Key)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -111,16 +111,6 @@ func ImportVariable(ctx context.Context, tf TerraformCLI, client *tfe.Client, ke
 	}
 
 	githubactions.Infof("Importing variable: %q\n", address)
-
-	v, err := fetchVariableByKey(ctx, client, key, *workspace.ID, 1)
-	if err != nil {
-		return err
-	}
-
-	if v == nil {
-		githubactions.Infof("Variable %q for workspace %q not found, skipping import\n", key, workspace.Name)
-		return nil
-	}
 
 	importID := fmt.Sprintf("%s/%s/%s", organization, workspace.Name, v.ID)
 
@@ -263,13 +253,15 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 
 	module.AppendResource("tfe_workspace", "workspace", wsConfig)
 
-	variables, err := FindRelatedVariables(ctx, client, workspace, organization)
+	variables, err := FetchRelatedVariables(ctx, client, workspace)
 	if err != nil {
 		return err
 	}
 
-	for _, v := range variables {
-		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
+	for _, variable := range variables {
+		v := ToVariable(variable, workspace)
+
+		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", workspace.Workspace, v.Key), v.ToResource())
 	}
 
 	teamAccess, err := FindRelatedTeamAccess(ctx, client, workspace, organization)
@@ -297,7 +289,7 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 	}
 
 	for _, v := range variables {
-		err := ImportVariable(ctx, tf, client, v.Key, v.Workspace, organization)
+		err := ImportVariable(ctx, tf, v, workspace, organization)
 		if err != nil {
 			return err
 		}

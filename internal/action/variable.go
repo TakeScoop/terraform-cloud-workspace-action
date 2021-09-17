@@ -55,24 +55,21 @@ func (v Variable) ToResource() *tfeprovider.Variable {
 	}
 }
 
-// ToResource converts a list of variables to a list of Terraform variable resources
-func (vs Variables) ToResource() []*tfeprovider.Variable {
-	vars := make([]*tfeprovider.Variable, len(vs))
-
-	for i, v := range vs {
-		vars[i] = v.ToResource()
+// ToVariable takes a tfe.Variable and returns a Variable
+func ToVariable(v *tfe.Variable, workspace *Workspace) *Variable {
+	return &Variable{
+		Key:         v.Key,
+		Value:       v.Value,
+		Description: v.Description,
+		Category:    string(v.Category),
+		Sensitive:   v.Sensitive,
+		Workspace:   workspace,
 	}
-
-	return vars
 }
 
-// FindRelatedVariables returns a list of variables related to the pass workspace
-func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (Variables, error) {
-	if workspace.ID == nil {
-		return Variables{}, nil
-	}
-
-	tfVars, err := client.Variables.List(ctx, *workspace.ID, tfe.VariableListOptions{
+// FetchRelatedVariables returns tfe.Variables related to the passed workspace
+func FetchRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Workspace) ([]*tfe.Variable, error) {
+	vars, err := client.Variables.List(ctx, *workspace.ID, tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
 			PageSize: maxPageSize,
 		},
@@ -81,18 +78,5 @@ func FindRelatedVariables(ctx context.Context, client *tfe.Client, workspace *Wo
 		return nil, err
 	}
 
-	var vars Variables
-
-	for _, v := range tfVars.Items {
-		vars = append(vars, Variable{
-			Key:         v.Key,
-			Value:       v.Value,
-			Description: v.Description,
-			Category:    string(v.Category),
-			Sensitive:   v.Sensitive,
-			Workspace:   workspace,
-		})
-	}
-
-	return vars, nil
+	return vars.Items, nil
 }

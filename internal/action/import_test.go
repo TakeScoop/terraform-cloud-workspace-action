@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
@@ -106,18 +107,6 @@ func TestImportVariable(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("import a variable", func(t *testing.T) {
-
-		mux := http.NewServeMux()
-		server := httptest.NewServer(mux)
-
-		t.Cleanup(func() {
-			server.Close()
-		})
-
-		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, varsAPIResponse))
-
-		client := newTestTFClient(t, server.URL)
-
 		tf := TestTFExec{
 			State: &tfjson.State{
 				Values: &tfjson.StateValues{
@@ -130,11 +119,14 @@ func TestImportVariable(t *testing.T) {
 			},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, &tfe.Variable{
+			Key: "foo",
+			ID:  "var-abc123",
+		}, &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, len(tf.ImportArgs), 1)
+		assert.Len(t, tf.ImportArgs, 1)
 		assert.Equal(t, tf.ImportArgs[0], &ImportArgs{
 			Address: "tfe_variable.default-foo",
 			ID:      "org/ws/var-abc123",
@@ -143,59 +135,15 @@ func TestImportVariable(t *testing.T) {
 	})
 
 	t.Run("skip importing a variable if the workspace is not set with an ID", func(t *testing.T) {
-
-		mux := http.NewServeMux()
-		server := httptest.NewServer(mux)
-
-		t.Cleanup(func() {
-			server.Close()
-		})
-
-		mux.HandleFunc("/api/v2/organizations/org/workspaces/ws", testServerResHandler(t, 404, `{}`))
-
-		client := newTestTFClient(t, server.URL)
-
 		tf := TestTFExec{
 			State: &tfjson.State{},
 		}
 
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", ID: nil}, "org"); err != nil {
+		if err := ImportVariable(ctx, &tf, &tfe.Variable{Key: "foo", ID: "var-abc123"}, &Workspace{Name: "ws", ID: nil}, "org"); err != nil {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, len(tf.ImportArgs), 0)
-	})
-
-	t.Run("skip importing a variable if it does not exist in Terraform Cloud", func(t *testing.T) {
-
-		mux := http.NewServeMux()
-		server := httptest.NewServer(mux)
-
-		t.Cleanup(func() {
-			server.Close()
-		})
-
-		mux.HandleFunc("/api/v2/workspaces/ws-abc123/vars", testServerResHandler(t, 200, `{"data": []}`))
-
-		client := newTestTFClient(t, server.URL)
-
-		tf := TestTFExec{
-			State: &tfjson.State{
-				Values: &tfjson.StateValues{
-					RootModule: &tfjson.StateModule{
-						Resources: []*tfjson.StateResource{
-							{Address: "tfe_workspace.workspace[\"default\"]"},
-						},
-					},
-				},
-			},
-		}
-
-		if err := ImportVariable(ctx, &tf, client, "foo", &Workspace{Name: "ws", Workspace: "default", ID: strPtr("ws-abc123")}, "org"); err != nil {
-			t.Fatal(err)
-		}
-
-		assert.Equal(t, len(tf.ImportArgs), 0)
+		assert.Len(t, tf.ImportArgs, 0)
 	})
 }
 
