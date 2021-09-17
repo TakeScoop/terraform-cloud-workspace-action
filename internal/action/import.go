@@ -265,9 +265,8 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		return err
 	}
 
-	for _, v := range variables {
-		err := ImportVariable(ctx, tf, v, workspace, organization)
-		if err != nil {
+	for _, variable := range variables {
+		if err := ImportVariable(ctx, tf, variable, workspace, organization); err != nil {
 			return err
 		}
 	}
