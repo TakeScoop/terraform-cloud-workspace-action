@@ -94,6 +94,8 @@ inputs:
     description: YAML encoded list of either workspace IDs or names that, when applied, trigger runs in all the created workspaces (max 20)
   workspace_run_triggers:
     description: A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is ran
+  notification_configuration:
+    description: A YAML encoded map of notification settings applied to all created workspaces
 outputs:
   plan:
     description: A human friendly output of the Terraform plan.

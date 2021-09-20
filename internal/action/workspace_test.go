@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
@@ -529,260 +530,282 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	name := "test-repo"
 
-	t.Run("validate basic workspace config", func(t *testing.T) {
+	t.Run("validate notification configuration", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
 				Organization: "org",
 			},
+			Notifications: []*Notification{{
+				Workspace: newTestWorkspace(),
+				Input: NotificationInput{
+					Name:            "my-notification",
+					DestinationType: "email",
+					EmailAddresses:  []string{"email@foo.com"},
+				},
+			}},
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		assert.Equal(t, output.Valid, true, output.Diagnostics)
 	})
 
-	t.Run("validate with multiple workspaces", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(),
-			&NewWorkspaceConfigOptions{
-				Backend: map[string]interface{}{
-					"local": map[string]interface{}{
-						"path": "foo/terraform.tfstate",
-					},
-				},
-				WorkspaceResourceOptions: &WorkspaceResourceOptions{
-					Organization: "org",
-				},
-			})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate basic workspace config", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate using a passed backend", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
-			Backend: map[string]interface{}{
-				"local": map[string]interface{}{
-					"path": "foo/terraform.tfstate",
-				},
-			},
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate with multiple workspaces", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(),
+	// 		&NewWorkspaceConfigOptions{
+	// 			Backend: map[string]interface{}{
+	// 				"local": map[string]interface{}{
+	// 					"path": "foo/terraform.tfstate",
+	// 				},
+	// 			},
+	// 			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 				Organization: "org",
+	// 			},
+	// 		})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspace with passed providers", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
-			Providers: []Provider{
-				{
-					Name:    "tfe",
-					Version: "0.25.0",
-					Source:  "hashicorp/tfe",
-					Config: tfeprovider.Config{
-						Hostname: "app.terraform.io",
-					},
-				},
-			},
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate using a passed backend", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		Backend: map[string]interface{}{
+	// 			"local": map[string]interface{}{
+	// 				"path": "foo/terraform.tfstate",
+	// 			},
+	// 		},
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspace with remote states", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-			RemoteStates: map[string]tfconfig.RemoteState{
-				"foo": {
-					Backend: "s3",
-					Config: tfconfig.RemoteStateBackendConfig{
-						Key:    "key",
-						Bucket: "bucket",
-						Region: "us-east-1",
-					},
-				},
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate workspace with passed providers", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		Providers: []Provider{
+	// 			{
+	// 				Name:    "tfe",
+	// 				Version: "0.25.0",
+	// 				Source:  "hashicorp/tfe",
+	// 				Config: tfeprovider.Config{
+	// 					Hostname: "app.terraform.io",
+	// 				},
+	// 			},
+	// 		},
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspace with team access", func(t *testing.T) {
-		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-			RemoteStates: map[string]tfconfig.RemoteState{
-				"teams": {
-					Backend: "remote",
-					Config: tfconfig.RemoteStateBackendConfig{
-						Organization: "org",
-						Hostname:     "app.terraform.io",
-						Workspaces: &tfconfig.RemoteStateBackendConfigWorkspaces{
-							Name: "teams",
-						},
-					},
-				},
-			},
-			TeamAccess: TeamAccess{
-				TeamAccessItem{TeamName: "Readers", Workspace: &Workspace{Name: name}, Access: "read"},
-				TeamAccessItem{TeamName: "Writers", Workspace: &Workspace{Name: name}, Permissions: &TeamAccessPermissionsInput{
-					Runs:             "read",
-					Variables:        "read",
-					StateVersions:    "read",
-					SentinelMocks:    "none",
-					WorkspaceLocking: true,
-				}},
-				TeamAccessItem{TeamName: "${data.terraform_remote_state.teams.outputs.team}", Workspace: &Workspace{Name: name}, Access: "read"},
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate workspace with remote states", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 		RemoteStates: map[string]tfconfig.RemoteState{
+	// 			"foo": {
+	// 				Backend: "s3",
+	// 				Config: tfconfig.RemoteStateBackendConfig{
+	// 					Key:    "key",
+	// 					Bucket: "bucket",
+	// 					Region: "us-east-1",
+	// 				},
+	// 			},
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspace with variables", func(t *testing.T) {
-		workspace := newTestWorkspace()
-		wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{workspace}, &NewWorkspaceConfigOptions{
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-			Variables: Variables{
-				Variable{
-					Key:       "foo",
-					Value:     "bar",
-					Category:  "env",
-					Workspace: workspace,
-				},
-				Variable{
-					Key:       "baz",
-					Value:     "woz",
-					Category:  "env",
-					Workspace: workspace,
-				},
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate workspace with team access", func(t *testing.T) {
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 		RemoteStates: map[string]tfconfig.RemoteState{
+	// 			"teams": {
+	// 				Backend: "remote",
+	// 				Config: tfconfig.RemoteStateBackendConfig{
+	// 					Organization: "org",
+	// 					Hostname:     "app.terraform.io",
+	// 					Workspaces: &tfconfig.RemoteStateBackendConfigWorkspaces{
+	// 						Name: "teams",
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 		TeamAccess: TeamAccess{
+	// 			TeamAccessItem{TeamName: "Readers", Workspace: &Workspace{Name: name}, Access: "read"},
+	// 			TeamAccessItem{TeamName: "Writers", Workspace: &Workspace{Name: name}, Permissions: &TeamAccessPermissionsInput{
+	// 				Runs:             "read",
+	// 				Variables:        "read",
+	// 				StateVersions:    "read",
+	// 				SentinelMocks:    "none",
+	// 				WorkspaceLocking: true,
+	// 			}},
+	// 			TeamAccessItem{TeamName: "${data.terraform_remote_state.teams.outputs.team}", Workspace: &Workspace{Name: name}, Access: "read"},
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, wsConfig)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspaces with tags", func(t *testing.T) {
-		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-				Tags: map[string]Tags{
-					"staging":    {"all", "staging"},
-					"production": {"all", "production"},
-				},
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// t.Run("validate workspace with variables", func(t *testing.T) {
+	// 	workspace := newTestWorkspace()
+	// 	wsConfig, err := NewWorkspaceConfig(ctx, client, []*Workspace{workspace}, &NewWorkspaceConfigOptions{
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 		Variables: Variables{
+	// 			Variable{
+	// 				Key:       "foo",
+	// 				Value:     "bar",
+	// 				Category:  "env",
+	// 				Workspace: workspace,
+	// 			},
+	// 			Variable{
+	// 				Key:       "baz",
+	// 				Value:     "woz",
+	// 				Category:  "env",
+	// 				Workspace: workspace,
+	// 			},
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, module)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, wsConfig)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-	t.Run("validate workspaces run triggers", func(t *testing.T) {
-		workspaces := newTestMultiWorkspaceList()
+	// t.Run("validate workspaces with tags", func(t *testing.T) {
+	// 	module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 			Tags: map[string]Tags{
+	// 				"staging":    {"all", "staging"},
+	// 				"production": {"all", "production"},
+	// 			},
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
-			RunTriggers: RunTriggers{
-				{Workspace: workspaces[0], SourceID: "ws-def456"},
-				{
-					Workspace: workspaces[0],
-					SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
-					WorkspaceRef: map[string]tfeprovider.DataWorkspace{
-						"foo": {
-							Name:         "foo",
-							Organization: "org",
-						},
-					},
-				},
-				{Workspace: workspaces[1], SourceID: "ws-def456"},
-				{
-					Workspace: workspaces[1],
-					SourceID:  "${tfe_workspace.workspace[\"staging\"].id}",
-				},
-			},
-			WorkspaceResourceOptions: &WorkspaceResourceOptions{
-				Organization: "org",
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	output, err := RunValidate(ctx, name, execPath, module)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
 
-		output, err := RunValidate(ctx, name, execPath, module)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 
-		assert.Equal(t, output.Valid, true, output.Diagnostics)
-	})
+	// t.Run("validate workspaces run triggers", func(t *testing.T) {
+	// 	workspaces := newTestMultiWorkspaceList()
+
+	// 	module, err := NewWorkspaceConfig(ctx, client, newTestMultiWorkspaceList(), &NewWorkspaceConfigOptions{
+	// 		RunTriggers: RunTriggers{
+	// 			{Workspace: workspaces[0], SourceID: "ws-def456"},
+	// 			{
+	// 				Workspace: workspaces[0],
+	// 				SourceID:  "${data.tfe_workspace.run_trigger_workspaces[\"foo\"].id}",
+	// 				WorkspaceRef: map[string]tfeprovider.DataWorkspace{
+	// 					"foo": {
+	// 						Name:         "foo",
+	// 						Organization: "org",
+	// 					},
+	// 				},
+	// 			},
+	// 			{Workspace: workspaces[1], SourceID: "ws-def456"},
+	// 			{
+	// 				Workspace: workspaces[1],
+	// 				SourceID:  "${tfe_workspace.workspace[\"staging\"].id}",
+	// 			},
+	// 		},
+	// 		WorkspaceResourceOptions: &WorkspaceResourceOptions{
+	// 			Organization: "org",
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
+
+	// 	output, err := RunValidate(ctx, name, execPath, module)
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
+
+	// 	assert.Equal(t, output.Valid, true, output.Diagnostics)
+	// })
 }
 
 func TestWillDestroy(t *testing.T) {
