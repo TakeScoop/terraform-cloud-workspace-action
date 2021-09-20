@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
@@ -77,8 +76,8 @@ type TeamAccessPermissionsInput struct {
 }
 
 // findTeamByID takes a list of teams and returns a matching team to the passed ID
-func findTeamByID(teams *tfe.TeamList, teamID string) *tfe.Team {
-	for _, t := range teams.Items {
+func findTeamByID(teams []*tfe.Team, teamID string) *tfe.Team {
+	for _, t := range teams {
 		if t.ID == teamID {
 			return t
 		}
@@ -87,22 +86,35 @@ func findTeamByID(teams *tfe.TeamList, teamID string) *tfe.Team {
 	return nil
 }
 
-// FindRelatedTeamAccess returns a list of workspace related team access resources
-func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) (TeamAccess, error) {
-	if workspace.ID == nil {
-		return TeamAccess{}, nil
+// ToTeamAccess takes a tfe.TeamAccess object and returns a TeamAccess object
+func ToTeamAccessItems(access []*tfe.TeamAccess, teams []*tfe.Team, workspace *Workspace) (ta []TeamAccessItem, err error) {
+	for _, a := range access {
+		t := findTeamByID(teams, a.Team.ID)
+
+		item := TeamAccessItem{
+			Workspace: workspace,
+			Access:    string(a.Access),
+			TeamName:  t.Name,
+		}
+
+		if a.Team.Permissions != nil {
+			item.Permissions = &TeamAccessPermissionsInput{
+				Runs:             string(a.Runs),
+				Variables:        string(a.Variables),
+				StateVersions:    string(a.StateVersions),
+				SentinelMocks:    string(a.SentinelMocks),
+				WorkspaceLocking: a.WorkspaceLocking,
+			}
+		}
+
+		ta = append(ta, item)
 	}
 
-	tas, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
-		ListOptions: tfe.ListOptions{
-			PageSize: maxPageSize,
-		},
-		WorkspaceID: workspace.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
+	return ta, nil
+}
 
+// FetchRelatedTeamAccess finds all team access resources related to the passed workspace
+func FetchRelatedTeams(ctx context.Context, client *tfe.Client, workspace *Workspace, organization string) ([]*tfe.Team, error) {
 	teams, err := client.Teams.List(ctx, organization, tfe.TeamListOptions{
 		ListOptions: tfe.ListOptions{
 			PageSize: maxPageSize,
@@ -112,32 +124,20 @@ func FindRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *W
 		return nil, err
 	}
 
-	var access TeamAccess
+	return teams.Items, nil
+}
 
-	for _, ta := range tas.Items {
-		team := findTeamByID(teams, ta.Team.ID)
-		if team == nil {
-			return nil, fmt.Errorf("team %s not found", ta.Team.ID)
-		}
-
-		item := TeamAccessItem{
-			Workspace: workspace,
-			Access:    string(ta.Access),
-			TeamName:  team.Name,
-		}
-
-		if ta.Team.Permissions != nil {
-			item.Permissions = &TeamAccessPermissionsInput{
-				Runs:             string(ta.Runs),
-				Variables:        string(ta.Variables),
-				StateVersions:    string(ta.StateVersions),
-				SentinelMocks:    string(ta.SentinelMocks),
-				WorkspaceLocking: ta.WorkspaceLocking,
-			}
-		}
-
-		access = append(access, item)
+// FetchRelatedTeamAccess finds all team access resources related to the passed workspace
+func FetchRelatedTeamAccess(ctx context.Context, client *tfe.Client, workspace *Workspace) ([]*tfe.TeamAccess, error) {
+	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
+		ListOptions: tfe.ListOptions{
+			PageSize: maxPageSize,
+		},
+		WorkspaceID: workspace.ID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return access, nil
+	return teamAccess.Items, nil
 }
