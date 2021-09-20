@@ -202,6 +202,22 @@ workspace_run_triggers: |-
     - id: ws-def456
 ```
 
+### Notification configuration
+
+The following configuration will add a [notification configuration](https://registry.terraform.io/providers/hashicorp/tfe/latest/docs/resources/notification_configuration#destination_type) for each workspace. 
+
+```yml
+workspaces: |-
+  - alpha
+  - beta
+notification_configuration: |-
+  name: my-notification
+  destination_type: email
+  email_addresses:
+    - foo@email.com
+  enabled: true
+```
+
 ## Outputs
 
 | Name | Description |

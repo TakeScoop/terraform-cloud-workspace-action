@@ -37,12 +37,12 @@ type Inputs struct {
 	ExecutionMode             string
 	FileTriggersEnabled       *bool
 	GlobalRemoteState         *bool
+	NotificationConfiguration string
 	QueueAllRuns              *bool
 	RemoteStateConsumerIDs    string
 	SpeculativeEnabled        *bool
 	TerraformVersion          string
 	RunTriggers               string
-	NotificationConfiguration string
 	WorkspaceRunTriggers      string
 	SSHKeyID                  string
 	VCSIngressSubmodules      bool
