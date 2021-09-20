@@ -122,22 +122,13 @@ func GetTeam(ctx context.Context, client *tfe.Client, teamName string, organizat
 }
 
 // ImportTeamAccess imports a team access resource by looking up an existing relation
-func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, organization string, workspace *Workspace, teamName string, opts ...tfexec.ImportOption) error {
+func ImportTeamAccess(ctx context.Context, tf TerraformCLI, access *tfe.TeamAccess, workspace *Workspace, organization string, opts ...tfexec.ImportOption) error {
 	if workspace.ID == nil {
-		githubactions.Infof("Workspace %q not found, skipping import\n", workspace.Name)
+		githubactions.Infof("Workspace %q not found, skipping team access import\n", workspace.Name)
 		return nil
 	}
 
-	team, err := GetTeam(ctx, client, teamName, organization)
-	if err != nil {
-		return err
-	}
-
-	if team == nil {
-		return fmt.Errorf("team %q not found", teamName)
-	}
-
-	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Workspace, team.ID)
+	address := fmt.Sprintf("tfe_team_access.teams[\"%s-%s\"]", workspace.Workspace, access.Team.ID)
 
 	imp, err := shouldImport(ctx, tf, address)
 	if err != nil {
@@ -151,27 +142,7 @@ func ImportTeamAccess(ctx context.Context, tf TerraformCLI, client *tfe.Client, 
 
 	githubactions.Infof("Importing team access: %q\n", address)
 
-	teamAccess, err := client.TeamAccess.List(ctx, tfe.TeamAccessListOptions{
-		WorkspaceID: workspace.ID,
-	})
-	if err != nil {
-		return err
-	}
-
-	var teamAccessID string
-
-	for _, access := range teamAccess.Items {
-		if access.Team.ID == team.ID {
-			teamAccessID = access.ID
-		}
-	}
-
-	if teamAccessID == "" {
-		githubactions.Infof("Team access %q for workspace %q not found, skipping import\n", teamName, workspace.Name)
-		return nil
-	}
-
-	importID := fmt.Sprintf("%s/%s/%s", organization, workspace.Name, teamAccessID)
+	importID := fmt.Sprintf("%s/%s/%s", organization, workspace.Name, access.ID)
 
 	if err = tf.Import(ctx, address, importID, opts...); err != nil {
 		return err
@@ -241,7 +212,17 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", workspace.Workspace, v.Key), v.ToResource())
 	}
 
-	teamAccess, err := FindRelatedTeamAccess(ctx, client, workspace, organization)
+	tfeTeams, err := FetchRelatedTeams(ctx, client, workspace, organization)
+	if err != nil {
+		return err
+	}
+
+	tfeTeamAccess, err := FetchRelatedTeamAccess(ctx, client, workspace)
+	if err != nil {
+		return err
+	}
+
+	teamAccess, err := ToTeamAccessItems(tfeTeamAccess, tfeTeams, workspace)
 	if err != nil {
 		return err
 	}
@@ -271,8 +252,8 @@ func ImportWorkspaceResources(ctx context.Context, client *tfe.Client, tf *tfexe
 		}
 	}
 
-	for _, access := range teamAccess {
-		if err := ImportTeamAccess(ctx, tf, client, organization, access.Workspace, access.TeamName); err != nil {
+	for _, access := range tfeTeamAccess {
+		if err := ImportTeamAccess(ctx, tf, access, workspace, organization); err != nil {
 			return err
 		}
 	}
