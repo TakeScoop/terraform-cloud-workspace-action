@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/sethvargo/go-githubactions"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
 
@@ -41,6 +42,19 @@ func NewVariable(vi VariablesInputItem, w *Workspace) *Variable {
 		Sensitive:   vi.Sensitive,
 		Workspace:   w,
 	}
+}
+
+func (vs Variables) MaskSensitive() {
+	for _, v := range vs {
+		if v.Sensitive {
+			v.Mask()
+		}
+	}
+}
+
+func (v Variable) Mask() {
+	githubactions.Debugf("Masking variable %q\n", v.Key)
+	githubactions.AddMask(v.Value)
 }
 
 // ToResource converts a variable to a Terraform variable resource

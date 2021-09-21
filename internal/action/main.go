@@ -141,6 +141,8 @@ func Run(config *Inputs) error {
 		}
 	}
 
+	variables.MaskSensitive()
+
 	for wsName, wvs := range wsVars {
 		ws := FindWorkspace(workspaces, wsName)
 
