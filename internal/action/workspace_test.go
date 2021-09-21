@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
 )
@@ -528,6 +529,28 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	}
 
 	name := "test-repo"
+
+	t.Run("validate notification configuration", func(t *testing.T) {
+		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{
+			WorkspaceResourceOptions: &WorkspaceResourceOptions{
+				Organization: "org",
+			},
+			Notifications: []*Notification{{
+				Workspace: newTestWorkspace(),
+				Input: &NotificationInput{
+					Name:            "my-notification",
+					DestinationType: "email",
+					EmailAddresses:  []string{"email@foo.com"},
+				},
+			}},
+		})
+		require.NoError(t, err)
+
+		output, err := RunValidate(ctx, name, execPath, wsConfig)
+		require.NoError(t, err)
+
+		assert.Equal(t, output.Valid, true, output.Diagnostics)
+	})
 
 	t.Run("validate basic workspace config", func(t *testing.T) {
 		wsConfig, err := NewWorkspaceConfig(ctx, client, newTestSingleWorkspaceList(), &NewWorkspaceConfigOptions{

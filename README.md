@@ -40,6 +40,7 @@ jobs:
 | `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |
 | `import` | Whether to import existing matching resources from the Terraform Cloud organization. Ran as a dry run if `apply` is false. | `true` |
 | `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
+| `notification_configuration` | A YAML encoded map of notification settings applied to all created workspaces | |
 | `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
 | `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
 | `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
@@ -199,6 +200,22 @@ workspace_run_triggers: |-
   alpha:
     - id: ws-abc123
     - id: ws-def456
+```
+
+### Notification configuration
+
+The following configuration will add a [notification configuration](https://registry.terraform.io/providers/hashicorp/tfe/latest/docs/resources/notification_configuration#destination_type) for each workspace. 
+
+```yml
+workspaces: |-
+  - alpha
+  - beta
+notification_configuration: |-
+  name: my-notification
+  destination_type: email
+  email_addresses:
+    - foo@email.com
+  enabled: true
 ```
 
 ## Outputs

@@ -262,6 +262,7 @@ type NewWorkspaceConfigOptions struct {
 	Variables                Variables
 	TeamAccess               TeamAccess
 	RunTriggers              RunTriggers
+	Notifications            []*Notification
 	WorkspaceResourceOptions *WorkspaceResourceOptions
 	Providers                []Provider
 }
@@ -296,6 +297,10 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 
 	for _, v := range config.Variables {
 		module.AppendResource("tfe_variable", fmt.Sprintf("%s-%s", v.Workspace.Workspace, v.Key), v.ToResource())
+	}
+
+	for _, n := range config.Notifications {
+		module.AppendResource("tfe_notification_configuration", n.Workspace.Workspace, n.ToResource())
 	}
 
 	AppendRunTriggers(module, config.RunTriggers)

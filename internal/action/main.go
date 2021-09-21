@@ -17,41 +17,42 @@ import (
 )
 
 type Inputs struct {
-	Token                  string
-	Host                   string
-	Name                   string
-	Description            string
-	Tags                   string
-	WorkspaceTags          string
-	Organization           string
-	Apply                  bool
-	RunnerTerraformVersion string
-	RemoteStates           string
-	Workspaces             string
-	Variables              string
-	WorkspaceVariables     string
-	TeamAccess             string
-	BackendConfig          string
-	AgentPoolID            string
-	AutoApply              *bool
-	ExecutionMode          string
-	FileTriggersEnabled    *bool
-	GlobalRemoteState      *bool
-	QueueAllRuns           *bool
-	RemoteStateConsumerIDs string
-	SpeculativeEnabled     *bool
-	TerraformVersion       string
-	RunTriggers            string
-	WorkspaceRunTriggers   string
-	SSHKeyID               string
-	VCSIngressSubmodules   bool
-	VCSRepo                string
-	VCSTokenID             string
-	VCSType                string
-	WorkingDirectory       string
-	TFEProviderVersion     string
-	Import                 bool
-	AllowWorkspaceDeletion bool
+	Token                     string
+	Host                      string
+	Name                      string
+	Description               string
+	Tags                      string
+	WorkspaceTags             string
+	Organization              string
+	Apply                     bool
+	RunnerTerraformVersion    string
+	RemoteStates              string
+	Workspaces                string
+	Variables                 string
+	WorkspaceVariables        string
+	TeamAccess                string
+	BackendConfig             string
+	AgentPoolID               string
+	AutoApply                 *bool
+	ExecutionMode             string
+	FileTriggersEnabled       *bool
+	GlobalRemoteState         *bool
+	NotificationConfiguration string
+	QueueAllRuns              *bool
+	RemoteStateConsumerIDs    string
+	SpeculativeEnabled        *bool
+	TerraformVersion          string
+	RunTriggers               string
+	WorkspaceRunTriggers      string
+	SSHKeyID                  string
+	VCSIngressSubmodules      bool
+	VCSRepo                   string
+	VCSTokenID                string
+	VCSType                   string
+	WorkingDirectory          string
+	TFEProviderVersion        string
+	Import                    bool
+	AllowWorkspaceDeletion    bool
 }
 
 func Run(config *Inputs) error {
@@ -198,6 +199,13 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to merge run triggers: %w", err)
 	}
 
+	var notificationInput *NotificationInput
+	if err = yaml.Unmarshal([]byte(config.NotificationConfiguration), &notificationInput); err != nil {
+		return fmt.Errorf("failed to decode notification input: %w", err)
+	}
+
+	notifications := MergeNotifications(notificationInput, workspaces)
+
 	providers := []Provider{
 		{
 			Name:    "tfe",
@@ -232,11 +240,12 @@ func Run(config *Inputs) error {
 			VCSType:                config.VCSType,
 			WorkingDirectory:       config.WorkingDirectory,
 		},
-		RemoteStates: remoteStates,
-		Variables:    variables,
-		TeamAccess:   teamAccess,
-		RunTriggers:  triggers,
-		Providers:    providers,
+		RemoteStates:  remoteStates,
+		Variables:     variables,
+		TeamAccess:    teamAccess,
+		RunTriggers:   triggers,
+		Notifications: notifications,
+		Providers:     providers,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create new workspace configuration: %w", err)
