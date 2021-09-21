@@ -141,8 +141,6 @@ func Run(config *Inputs) error {
 		}
 	}
 
-	variables.MaskSensitive()
-
 	for wsName, wvs := range wsVars {
 		ws := FindWorkspace(workspaces, wsName)
 
@@ -154,6 +152,8 @@ func Run(config *Inputs) error {
 			variables = append(variables, *NewVariable(v, ws))
 		}
 	}
+
+	variables.MaskSensitive()
 
 	var teamInputs TeamAccessInput
 
