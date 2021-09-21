@@ -197,7 +197,7 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to merge run triggers: %w", err)
 	}
 
-	var notificationInput NotificationInput
+	var notificationInput *NotificationInput
 	if err = yaml.Unmarshal([]byte(config.NotificationConfiguration), &notificationInput); err != nil {
 		return fmt.Errorf("failed to decode notification input: %w", err)
 	}

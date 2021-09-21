@@ -15,17 +15,19 @@ type NotificationInput struct {
 }
 
 type Notification struct {
-	Input     NotificationInput
+	Input     *NotificationInput
 	Workspace *Workspace
 }
 
 // MergeNotifications returns a list of notifications, one notification object per workspace
-func MergeNotifications(input NotificationInput, workspaces []*Workspace) (notifications []*Notification) {
+func MergeNotifications(input *NotificationInput, workspaces []*Workspace) (notifications []*Notification) {
 	for _, ws := range workspaces {
-		notifications = append(notifications, &Notification{
-			Input:     input,
-			Workspace: ws,
-		})
+		if input != nil {
+			notifications = append(notifications, &Notification{
+				Input:     input,
+				Workspace: ws,
+			})
+		}
 	}
 
 	return notifications

@@ -300,6 +300,7 @@ func NewWorkspaceConfig(ctx context.Context, client *tfe.Client, workspaces []*W
 	}
 
 	for _, n := range config.Notifications {
+		fmt.Println(n)
 		module.AppendResource("tfe_notification_configuration", n.Workspace.Workspace, n.ToResource())
 	}
 

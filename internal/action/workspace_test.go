@@ -537,7 +537,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 			},
 			Notifications: []*Notification{{
 				Workspace: newTestWorkspace(),
-				Input: NotificationInput{
+				Input: &NotificationInput{
 					Name:            "my-notification",
 					DestinationType: "email",
 					EmailAddresses:  []string{"email@foo.com"},

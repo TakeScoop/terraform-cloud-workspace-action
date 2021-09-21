@@ -10,7 +10,7 @@ import (
 func TestNotificationToResource(t *testing.T) {
 	t.Run("convert a notification", func(t *testing.T) {
 		n := Notification{
-			Input: NotificationInput{
+			Input: &NotificationInput{
 				Name:            "foo",
 				DestinationType: "email",
 			},
@@ -27,7 +27,7 @@ func TestNotificationToResource(t *testing.T) {
 
 func TestMergeNotifications(t *testing.T) {
 	t.Run("return a notification list", func(t *testing.T) {
-		input := NotificationInput{
+		input := &NotificationInput{
 			Name:            "foo",
 			DestinationType: "email",
 		}
@@ -41,5 +41,15 @@ func TestMergeNotifications(t *testing.T) {
 			{Input: input, Workspace: workspaces[0]},
 			{Input: input, Workspace: workspaces[1]},
 		}, notifications)
+	})
+
+	t.Run("return an empty list if notification is nil", func(t *testing.T) {
+		input := (*NotificationInput)(nil)
+
+		workspaces := newTestMultiWorkspaceList()
+
+		notifications := MergeNotifications(input, workspaces)
+
+		assert.Len(t, notifications, 0)
 	})
 }
