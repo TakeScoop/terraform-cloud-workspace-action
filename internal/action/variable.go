@@ -44,6 +44,7 @@ func NewVariable(vi VariablesInputItem, w *Workspace) *Variable {
 	}
 }
 
+// MaskSensitive masks all sensitive variable values in the GitHub Actions log output
 func (vs Variables) MaskSensitive() {
 	for _, v := range vs {
 		if v.Sensitive {
@@ -52,6 +53,7 @@ func (vs Variables) MaskSensitive() {
 	}
 }
 
+// Mask masks a variable's value in the GitHub Actions log output
 func (v Variable) Mask() {
 	githubactions.Debugf("Masking variable %q\n", v.Key)
 	githubactions.AddMask(v.Value)
