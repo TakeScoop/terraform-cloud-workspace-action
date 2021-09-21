@@ -154,6 +154,8 @@ func Run(config *Inputs) error {
 		}
 	}
 
+	variables.MaskSensitive()
+
 	var teamInputs TeamAccessInput
 
 	if err = yaml.Unmarshal([]byte(config.TeamAccess), &teamInputs); err != nil {
