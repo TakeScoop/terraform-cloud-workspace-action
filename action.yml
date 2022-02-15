@@ -65,6 +65,7 @@ inputs:
     description: ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent".
   execution_mode:
     description: Execution mode to use for the workspace.
+    default: remote
   global_remote_state: 
     description: Whether all workspaces in the organization can access the workspace via remote state.
     default: false
