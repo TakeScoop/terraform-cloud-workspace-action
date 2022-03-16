@@ -213,7 +213,6 @@ func Run(config *Inputs) error {
 			Source:  "hashicorp/tfe",
 			Config: tfeprovider.Config{
 				Hostname: config.Host,
-				Token:    config.Token,
 			},
 		},
 	}
