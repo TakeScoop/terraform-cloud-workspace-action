@@ -78,18 +78,8 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to create tfexec instance: %w", err)
 	}
 
-	b := []byte(fmt.Sprintf(`credentials "%s" {
-	token = "%s" 
-}`, config.Host, config.Token))
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve homedir: %w", err)
-	}
-
-	err = ioutil.WriteFile(path.Join(home, ".terraformrc"), b, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write Terraform Cloud credentials to home directory: %w", err)
+	if err := writeTerraformrcFile(config.Host, config.Token); err != nil {
+		return fmt.Errorf("failed to write .terraformrc file")
 	}
 
 	var remoteStates map[string]tfconfig.RemoteState
@@ -213,7 +203,6 @@ func Run(config *Inputs) error {
 			Source:  "hashicorp/tfe",
 			Config: tfeprovider.Config{
 				Hostname: config.Host,
-				Token:    config.Token,
 			},
 		},
 	}
