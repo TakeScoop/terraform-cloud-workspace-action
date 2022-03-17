@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -79,7 +78,7 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to create tfexec instance: %w", err)
 	}
 
-	if err := writeTerraformrcFile(map[string]string{config.Host: config.Token}); err != nil {
+	if err := writeTerraformrcFile(config.Host, config.Token); err != nil {
 		return fmt.Errorf("failed to write .terraformrc file")
 	}
 
@@ -309,28 +308,6 @@ func Run(config *Inputs) error {
 		}
 	} else {
 		githubactions.Infof("No changes\n")
-	}
-
-	return nil
-}
-
-func writeTerraformrcFile(hostTokens map[string]string) error {
-	var entries []string
-
-	for host, token := range hostTokens {
-		entries = append(entries, fmt.Sprintf(`credentials %q { token = %q	}`, host, token))
-	}
-
-	b := []byte(strings.Join(entries, "\n"))
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve homedir: %w", err)
-	}
-
-	err = ioutil.WriteFile(path.Join(home, ".terraformrc"), b, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write Terraform Cloud credentials to home directory: %w", err)
 	}
 
 	return nil
