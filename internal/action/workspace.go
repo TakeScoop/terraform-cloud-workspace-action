@@ -326,7 +326,7 @@ func WriteModuleFile(module *tfconfig.Module, filePath string) error {
 	return nil
 }
 
-// TerraformInit updates the current configuration using the passed module and runs Terraform Init
+// TerraformInit updates the current configuration using the passed module and runs "terraform init"
 func TerraformInit(ctx context.Context, tf *tfexec.Terraform, module *tfconfig.Module, filePath string) error {
 	if err := WriteModuleFile(module, filePath); err != nil {
 		return err
