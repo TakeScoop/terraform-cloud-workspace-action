@@ -78,8 +78,8 @@ func Run(config *Inputs) error {
 		return fmt.Errorf("failed to create tfexec instance: %w", err)
 	}
 
-	b := []byte(fmt.Sprintf(`credentials "%s" {
-	token = "%s" 
+	b := []byte(fmt.Sprintf(`credentials %q {
+	token = %q
 }`, config.Host, config.Token))
 
 	home, err := os.UserHomeDir()
