@@ -2,9 +2,9 @@ package action
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strconv"
 	"testing"
@@ -17,6 +17,18 @@ import (
 )
 
 var testWorkspacePrefix string = "action-test"
+
+func randomString(n int) string {
+	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321")
+
+	str := make([]rune, n)
+
+	for i := range str {
+		str[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return string(str)
+}
 
 // newTestInputs returns an Inputs object with test defaults
 func newTestInputs(t *testing.T) *Inputs {
@@ -37,18 +49,11 @@ func newTestInputs(t *testing.T) *Inputs {
 		t.Fatal(`Error: "TF_ORGANIZATION" must be set in the environment`)
 	}
 
-	nameSuffix := make([]byte, 8)
-
-	_, err = rand.Read(nameSuffix)
-	if err != nil {
-		t.Fatalf(`Error: could not generate random bytes: %s`, err)
-	}
-
 	return &Inputs{
 		Token:                  token,
 		Organization:           organization,
 		Host:                   action.Inputs["terraform_host"].Default,
-		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, nameSuffix),
+		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, randomString(10)),
 		Import:                 imp,
 		Apply:                  true,
 		TFEProviderVersion:     action.Inputs["tfe_provider_version"].Default,
