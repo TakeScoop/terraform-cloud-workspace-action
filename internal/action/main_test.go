@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
@@ -17,18 +16,6 @@ import (
 )
 
 var testWorkspacePrefix string = "action-test"
-
-func randomString(n int) string {
-	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321")
-
-	str := make([]rune, n)
-
-	for i := range str {
-		str[i] = chars[rand.Intn(len(chars))]
-	}
-
-	return string(str)
-}
 
 // newTestInputs returns an Inputs object with test defaults
 func newTestInputs(t *testing.T) *Inputs {
@@ -279,7 +266,7 @@ production:
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
-		Search: &testWorkspacePrefix,
+		Search: &inputs.Name,
 	})
 	require.NoError(t, err)
 
@@ -289,7 +276,7 @@ production:
 	require.NoError(t, err)
 
 	ws, err = client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
-		Search: &testWorkspacePrefix,
+		Search: &inputs.Name,
 	})
 	require.NoError(t, err)
 
@@ -338,13 +325,13 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", inputs.Name, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-all", inputs.Name)),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	require.NoError(t, err)
 
 	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", inputs.Name, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-single", inputs.Name)),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	require.NoError(t, err)
@@ -385,4 +372,16 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, triggers.Items, 1)
+}
+
+func randomString(n int) string {
+	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321")
+
+	str := make([]rune, n)
+
+	for i := range str {
+		str[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return string(str)
 }
