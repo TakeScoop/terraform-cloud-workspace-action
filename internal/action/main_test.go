@@ -115,6 +115,8 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -144,6 +146,8 @@ func TestImportExistingResources(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+
+	t.Parallel()
 
 	ctx := context.Background()
 
@@ -198,6 +202,8 @@ func TestDriftCorrection(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -234,6 +240,8 @@ func TestMultipleWorkspaces(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+
+	t.Parallel()
 
 	ctx := context.Background()
 
@@ -310,6 +318,8 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+
+	t.Parallel()
 
 	ctx := context.Background()
 
