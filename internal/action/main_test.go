@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -36,11 +37,18 @@ func newTestInputs(t *testing.T) *Inputs {
 		t.Fatal(`Error: "TF_ORGANIZATION" must be set in the environment`)
 	}
 
+	nameSuffix := make([]byte, 8)
+
+	_, err = rand.Read(nameSuffix)
+	if err != nil {
+		t.Fatalf(`Error: could not generate random bytes: %s`, err)
+	}
+
 	return &Inputs{
 		Token:                  token,
 		Organization:           organization,
 		Host:                   action.Inputs["terraform_host"].Default,
-		Name:                   fmt.Sprintf("%s-%d", testWorkspacePrefix, time.Now().Unix()),
+		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, nameSuffix),
 		Import:                 imp,
 		Apply:                  true,
 		TFEProviderVersion:     action.Inputs["tfe_provider_version"].Default,
