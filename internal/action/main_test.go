@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,7 @@ func newTestInputs(t *testing.T) *Inputs {
 		Token:                  token,
 		Organization:           organization,
 		Host:                   action.Inputs["terraform_host"].Default,
-		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, randomString(10)),
+		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, uuid.New()),
 		Import:                 imp,
 		Apply:                  true,
 		TFEProviderVersion:     action.Inputs["tfe_provider_version"].Default,
@@ -372,16 +372,4 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, triggers.Items, 1)
-}
-
-func randomString(n int) string {
-	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321")
-
-	str := make([]rune, n)
-
-	for i := range str {
-		str[i] = chars[rand.Intn(len(chars))]
-	}
-
-	return string(str)
 }
