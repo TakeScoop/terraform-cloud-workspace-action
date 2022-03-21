@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,7 @@ func newTestInputs(t *testing.T) *Inputs {
 		Token:                  token,
 		Organization:           organization,
 		Host:                   action.Inputs["terraform_host"].Default,
-		Name:                   fmt.Sprintf("%s-%d", testWorkspacePrefix, time.Now().Unix()),
+		Name:                   fmt.Sprintf("%s-%s", testWorkspacePrefix, uuid.New()),
 		Import:                 imp,
 		Apply:                  true,
 		TFEProviderVersion:     action.Inputs["tfe_provider_version"].Default,
@@ -102,6 +102,8 @@ func TestCreateWorkspace(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -131,6 +133,8 @@ func TestImportExistingResources(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+
+	t.Parallel()
 
 	ctx := context.Background()
 
@@ -185,6 +189,8 @@ func TestDriftCorrection(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -222,6 +228,8 @@ func TestMultipleWorkspaces(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -258,7 +266,7 @@ production:
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	ws, err := client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
-		Search: &testWorkspacePrefix,
+		Search: &inputs.Name,
 	})
 	require.NoError(t, err)
 
@@ -268,7 +276,7 @@ production:
 	require.NoError(t, err)
 
 	ws, err = client.Workspaces.List(ctx, inputs.Organization, tfe.WorkspaceListOptions{
-		Search: &testWorkspacePrefix,
+		Search: &inputs.Name,
 	})
 	require.NoError(t, err)
 
@@ -298,6 +306,8 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	t.Parallel()
+
 	ctx := context.Background()
 
 	inputs := newTestInputs(t)
@@ -315,13 +325,13 @@ func TestWorkspaceRunTriggers(t *testing.T) {
 	t.Cleanup(removeTestWorkspacesFunc(t, ctx, client, inputs.Name))
 
 	wsSourceAll, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-all-%d", inputs.Name, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-all", inputs.Name)),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	require.NoError(t, err)
 
 	wsSourceAlpha, err := client.Workspaces.Create(ctx, inputs.Organization, tfe.WorkspaceCreateOptions{
-		Name:             tfe.String(fmt.Sprintf("%s-source-single-%d", inputs.Name, time.Now().Unix())),
+		Name:             tfe.String(fmt.Sprintf("%s-source-single", inputs.Name)),
 		TerraformVersion: tfe.String("1.0.0"),
 	})
 	require.NoError(t, err)
