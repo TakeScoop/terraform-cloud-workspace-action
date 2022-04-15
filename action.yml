@@ -3,7 +3,7 @@ description: Manages Terraform Cloud workspaces
 inputs:
   terraform_version:
     description: Workspace Terraform version.
-    default: "1.0.3"
+    default: "1.1.8"
   terraform_token:
     description: Terraform Cloud token.
     required: true
@@ -30,7 +30,7 @@ inputs:
     default: ""
   runner_terraform_version:
     description: Terraform version used to create the workspace.
-    default: "1.0.3"
+    default: "1.1.8"
   workspaces:
     description: YAML encoded list of workspace names.
     default: ""
