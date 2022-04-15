@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-tfe v0.19.0
 	github.com/hashicorp/terraform-exec v0.14.0
-	github.com/hashicorp/terraform-json v0.12.0
+	github.com/hashicorp/terraform-json v0.13.0
 	github.com/mitchellh/go-testing-interface v1.0.4 // indirect
 	github.com/sethvargo/go-githubactions v0.4.0
 	github.com/stretchr/testify v1.7.1
