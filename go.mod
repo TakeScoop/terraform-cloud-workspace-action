@@ -15,5 +15,5 @@ require (
 	google.golang.org/api v0.34.0 // indirect
 	google.golang.org/grpc v1.32.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	sigs.k8s.io/yaml v1.2.0
+	sigs.k8s.io/yaml v1.3.0
 )
