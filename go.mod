@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.14.0
 	github.com/hashicorp/terraform-json v0.13.0
 	github.com/mitchellh/go-testing-interface v1.0.4 // indirect
-	github.com/sethvargo/go-githubactions v0.4.0
+	github.com/sethvargo/go-githubactions v0.5.3
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/tools v0.0.0-20201028111035-eafbe7b904eb // indirect
 	google.golang.org/api v0.34.0 // indirect
