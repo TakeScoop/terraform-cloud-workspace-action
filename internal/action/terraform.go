@@ -7,15 +7,28 @@ import (
 	"os"
 	"path"
 
+	"github.com/hashicorp/go-version"
+	install "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 )
 
-func NewTerraformExec(ctx context.Context, workDir string, version string) (*tfexec.Terraform, error) {
-	execPath, err := tfinstall.Find(
-		ctx,
-		tfinstall.ExactVersion(version, workDir),
-	)
+func NewTerraformExec(ctx context.Context, workDir string, tfVersion string) (*tfexec.Terraform, error) {
+	v, err := version.NewVersion(tfVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Terraform version: %w", err)
+	}
+
+	installer := install.NewInstaller()
+	execPath, err := installer.Ensure(ctx, []src.Source{
+		&releases.ExactVersion{
+			Product: product.Terraform,
+			Version: v,
+		},
+	})
+
 	if err != nil {
 		return nil, err
 	}

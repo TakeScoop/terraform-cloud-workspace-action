@@ -11,13 +11,19 @@ import (
 	"testing"
 
 	tfe "github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/go-version"
+	install "github.com/hashicorp/hc-install"
+	fs "github.com/hashicorp/hc-install/fs"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfconfig"
 	"github.com/takescoop/terraform-cloud-workspace-action/internal/tfeprovider"
+	"gopkg.in/yaml.v2"
 )
 
 // newTestWorkspace returns a new test workspace object with test attributes
@@ -513,20 +519,43 @@ func TestNewWorkspaceConfig(t *testing.T) {
 
 	client := newTestTFClient(t, server.URL)
 
-	tmpDir, err := ioutil.TempDir("", "tfinstall")
+	tmpDir, err := ioutil.TempDir("", "terraform")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer os.RemoveAll(tmpDir)
 
-	execPath, err := tfinstall.Find(
-		ctx,
-		tfinstall.ExactVersion("1.0.3", tmpDir),
-	)
-	if err != nil {
-		t.Fatal(err)
+	type actionConfig struct {
+		Inputs struct {
+			RunnerTerraformVersion struct {
+				Default string `yaml:"default"`
+			} `yaml:"runner_terraform_version"`
+		} `yaml:"inputs"`
 	}
+
+	b, err := os.ReadFile("../../action.yml")
+	require.NoError(t, err)
+
+	var config actionConfig
+	require.NoError(t, yaml.Unmarshal(b, &config))
+
+	v, err := version.NewVersion(config.Inputs.RunnerTerraformVersion.Default)
+	require.NoError(t, err)
+
+	installer := install.NewInstaller()
+	execPath, err := installer.Ensure(ctx, []src.Source{
+		&fs.ExactVersion{
+			Product: product.Terraform,
+			Version: v,
+		},
+		&releases.ExactVersion{
+			Product: product.Terraform,
+			Version: v,
+		},
+	})
+
+	require.NoError(t, err)
 
 	name := "test-repo"
 
