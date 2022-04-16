@@ -537,8 +537,8 @@ func TestNewWorkspaceConfig(t *testing.T) {
 	b, err := os.ReadFile("../../action.yml")
 	require.NoError(t, err)
 
-	var config actionConfig
-	require.NoError(t, yaml.Unmarshal(b, &config))
+	config := &actionConfig{}
+	require.NoError(t, yaml.Unmarshal(b, config))
 
 	v, err := version.NewVersion(config.Inputs.RunnerTerraformVersion.Default)
 	require.NoError(t, err)
