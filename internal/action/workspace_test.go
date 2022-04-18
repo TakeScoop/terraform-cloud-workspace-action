@@ -323,6 +323,16 @@ func TestNewWorkspaceResource(t *testing.T) {
 		assert.Equal(t, ws.RemoteStateConsumerIDs, []string{"123", "456", "789"})
 	})
 
+	t.Run("ensure GlobalRemoteState true if passed as true", func(t *testing.T) {
+		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
+			Organization:      "org",
+			GlobalRemoteState: boolPtr(true),
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, *ws.GlobalRemoteState, true)
+	})
+
 	t.Run("add no remote IDs when none are passed", func(t *testing.T) {
 		ws, err := NewWorkspaceResource(ctx, client, newTestSingleWorkspaceList(), &WorkspaceResourceOptions{
 			Organization:      "org",

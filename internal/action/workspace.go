@@ -132,8 +132,9 @@ func NewWorkspaceResource(ctx context.Context, client *tfe.Client, workspaces []
 	}
 
 	if config.GlobalRemoteState != nil {
+		ws.GlobalRemoteState = config.GlobalRemoteState
+
 		if !*config.GlobalRemoteState {
-			ws.GlobalRemoteState = config.GlobalRemoteState
 			ws.RemoteStateConsumerIDs = strings.FieldsFunc(config.RemoteStateConsumerIDs, func(c rune) bool { return c == ',' })
 		}
 	}
