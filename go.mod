@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/hc-install v0.3.2
 	github.com/hashicorp/terraform-exec v0.16.1
 	github.com/hashicorp/terraform-json v0.13.0
-	github.com/sethvargo/go-githubactions v0.4.0
+	github.com/sethvargo/go-githubactions v1.0.0
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/yaml v1.2.0
