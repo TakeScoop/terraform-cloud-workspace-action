@@ -3,7 +3,7 @@ description: Manages Terraform Cloud workspaces
 inputs:
   terraform_version:
     description: Workspace Terraform version.
-    default: "1.1.8"
+    default: "~> 1.1.8"
   terraform_token:
     description: Terraform Cloud token.
     required: true
@@ -15,7 +15,7 @@ inputs:
     required: true
   tfe_provider_version:
     description: Terraform Cloud provider version.
-    default: "0.30.2"
+    default: "~> 0.30.2"
   name:
     description: Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).
     default: "${{ github.event.repository.name }}"
@@ -30,7 +30,7 @@ inputs:
     default: ""
   runner_terraform_version:
     description: Terraform version used to create the workspace.
-    default: "1.1.8"
+    default: "~> 1.1.8"
   workspaces:
     description: YAML encoded list of workspace names.
     default: ""
