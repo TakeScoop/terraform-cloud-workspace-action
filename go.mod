@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-tfe v0.26.0
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hc-install v0.3.2
-	github.com/hashicorp/terraform-exec v0.16.1
+	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/terraform-exec v0.17.2
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/sethvargo/go-githubactions v0.4.0
 	github.com/stretchr/testify v1.7.0
