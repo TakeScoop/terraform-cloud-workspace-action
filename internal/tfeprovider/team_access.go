@@ -18,6 +18,7 @@ type TeamAccessPermissions struct {
 	StateVersions    string      `json:"state_versions"`
 	SentinelMocks    string      `json:"sentinel_mocks"`
 	WorkspaceLocking interface{} `json:"workspace_locking"`
+	RunTasks         interface{} `json:"run_tasks"`
 }
 
 type DynamicPermissions struct {

@@ -250,6 +250,7 @@ func AppendTeamAccess(module *tfconfig.Module, teamAccess TeamAccess, organizati
 					StateVersions:    "${each.value.permissions.state_versions}",
 					SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
 					WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+					RunTasks:         "${each.value.permissions.run_tasks}",
 				},
 			}},
 		},

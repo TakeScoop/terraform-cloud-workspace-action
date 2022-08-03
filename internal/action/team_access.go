@@ -61,6 +61,7 @@ func (ta TeamAccessItem) ToResource() *tfeprovider.TeamAccess {
 			StateVersions:    ta.Permissions.StateVersions,
 			SentinelMocks:    ta.Permissions.SentinelMocks,
 			WorkspaceLocking: ta.Permissions.WorkspaceLocking,
+			RunTasks:         ta.Permissions.RunTasks,
 		}
 	}
 
@@ -73,6 +74,7 @@ type TeamAccessPermissionsInput struct {
 	StateVersions    string `yaml:"state_versions"`
 	SentinelMocks    string `yaml:"sentinel_mocks"`
 	WorkspaceLocking bool   `yaml:"workspace_locking"`
+	RunTasks         bool   `yaml:"run_tasks"`
 }
 
 // findTeamByID takes a list of teams and returns a matching team to the passed ID
