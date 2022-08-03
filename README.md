@@ -25,44 +25,47 @@ jobs:
 
 ## Inputs
 
-| Name | Description | Default |
-| --- | --- | --- |
-| `allow_workspace_deletion` | Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted | `false` |
-| `apply` | (required) Whether to apply the proposed Terraform changes | |
-| `terraform_organization` | (required) Terraform Cloud organization | |
-| `terraform_token`  | (required) Terraform Cloud token | |
-| `agent_pool_id` | ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent" | |
-| `auto_apply` | Whether to set auto_apply on the workspace or workspaces | true |
-| `backend_config` | YAML encoded backend configurations | |
-| `description` | Terraform Cloud workspace description | `${{ github.event.repository.description}}` |
-| `execution_mode` | Execution mode to use for the workspace | |
-| `file_triggers_enabled` | Whether to filter runs based on the changed files in a VCS push | |
-| `global_remote_state` | Whether all workspaces in the organization can access the workspace via remote state | `false` |
-| `import` | Whether to import existing matching resources from the Terraform Cloud organization. Ran as a dry run if `apply` is false. | `true` |
-| `name` | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`) | `"${{ github.event.repository.name }}" `|
-| `notification_configuration` | A YAML encoded map of notification settings applied to all created workspaces | |
-| `queue_all_runs` | Whether the workspace should start automatically performing runs immediately after creation | |
-| `remote_state_consumer_ids` | Comma separated list of workspace IDs to allow read access to the workspace outputs | |
-| `remote_states` | YAML encoded remote state blocks to configure in the workspace | |
-| `runner_terraform_version` | Terraform version used to create the workspace | `1.0.3` |
-| `run_triggers` | YAML encoded list of either workspace IDs or names that, when applied, trigger runs in all the created workspaces (max 20) | |
-| `speculative_enabled` | Whether the workspace allows speculative plans | |
-| `ssh_key_id` | SSH key ID to assign the workspace | |
-| `tags` | YAML encoded list of tag names applied to all workspaces | |
-| `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
-| `terraform_version` | Workspace Terraform version | `1` |
-| `terraform_host` | Terraform Cloud host | `app.terraform.io` |
-| `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
-| `variables` | YAML encoded variables to apply to all workspaces | |
-| `vcs_ingress_submodules` | Whether to allow submodule ingress | `false` |
-| `vcs_repo` | Repository identifier for a VCS integration | `"${{ github.repository }}"` |
-| `vcs_token_id` | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added. | |
-| `vcs_type` | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added | |
-| `working_directory` | A relative path that Terraform will execute within. Defaults to the root of your repository | |
-| `workspace_tags` | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace | |
-| `workspace_variables` | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names | |
-| `workspace_run_triggers` | A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is applied | |
-| `workspaces` | YAML encoded list of workspace names | |
+<!-- https://github.com/actions-ecosystem/describe-action -->
+
+|             NAME             |                                                                               DESCRIPTION                                                                               | REQUIRED |                   DEFAULT                    |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------------------------|
+| `agent_pool_id`              | ID of an agent pool to assign to the workspace. If passed, execution_mode is set to "agent".                                                                            | `false`  | `N/A`                                        |
+| `allow_workspace_deletion`   | Whether to allow workspaces to be deleted. If enabled, workspace state may be irrecoverably deleted.                                                                    | `false`  | `false`                                      |
+| `apply`                      | Whether to apply the proposed Terraform changes.                                                                                                                        | `true`   | `N/A`                                        |
+| `auto_apply`                 | Whether to set auto_apply on the workspace or workspaces.                                                                                                               | `false`  | `true`                                       |
+| `backend_config`             | YAML encoded backend configurations.                                                                                                                                    | `false`  | `N/A`                                        |
+| `description`                | Terraform Cloud workspace description                                                                                                                                   | `false`  | `${{ github.event.repository.description }}` |
+| `execution_mode`             | Execution mode to use for the workspace.                                                                                                                                | `false`  | `remote`                                     |
+| `file_triggers_enabled`      | Whether to filter runs based on the changed files in a VCS push.                                                                                                        | `false`  | `N/A`                                        |
+| `global_remote_state`        | Whether all workspaces in the organization can access the workspace via remote state.                                                                                   | `false`  | `false`                                      |
+| `import`                     | Whether to import existing matching resources from the Terraform Cloud organization.                                                                                    | `false`  | `true`                                       |
+| `name`                       | Name of the workspace. Becomes a prefix if workspaces are passed (`${name}-${workspace}`).                                                                              | `false`  | `${{ github.event.repository.name }}`        |
+| `notification_configuration` | A YAML encoded map of notification settings applied to all created workspaces                                                                                           | `false`  | `N/A`                                        |
+| `queue_all_runs`             | Whether the workspace should start automatically performing runs immediately after creation.                                                                            | `false`  | `N/A`                                        |
+| `remote_state_consumer_ids`  | Comma separated list of workspace IDs to allow read access to the workspace outputs.                                                                                    | `false`  | `N/A`                                        |
+| `remote_states`              | YAML encoded remote state blocks to configure in the workspace.                                                                                                         | `false`  | `N/A`                                        |
+| `run_triggers`               | YAML encoded list of either workspace IDs or names that, when applied, trigger runs in all the created workspaces (max 20)                                              | `false`  | `N/A`                                        |
+| `runner_terraform_version`   | Terraform version used to create the workspace.                                                                                                                         | `false`  | `1.1.8`                                      |
+| `speculative_enabled`        | Whether the workspace allows speculative plans.                                                                                                                         | `false`  | `N/A`                                        |
+| `ssh_key_id`                 | SSH key ID to assign the workspace.                                                                                                                                     | `false`  | `N/A`                                        |
+| `tags`                       | YAML encoded list of tag names applied to all workspaces                                                                                                                | `false`  | `N/A`                                        |
+| `team_access`                | YAML encoded teams and their associated permissions to be granted to the created workspaces.                                                                            | `false`  | `N/A`                                        |
+| `terraform_host`             | Terraform Cloud host.                                                                                                                                                   | `false`  | `app.terraform.io`                           |
+| `terraform_organization`     | Terraform Cloud organization.                                                                                                                                           | `true`   | `N/A`                                        |
+| `terraform_token`            | Terraform Cloud token.                                                                                                                                                  | `true`   | `N/A`                                        |
+| `terraform_version`          | Workspace Terraform version.                                                                                                                                            | `false`  | `1.1.8`                                      |
+| `tfe_provider_version`       | Terraform Cloud provider version.                                                                                                                                       | `false`  | `0.30.2`                                     |
+| `variables`                  | YAML encoded variables to apply to all workspaces.                                                                                                                      | `false`  | `N/A`                                        |
+| `vcs_ingress_submodules`     | Whether to allow submodule ingress.                                                                                                                                     | `false`  | `false`                                      |
+| `vcs_repo`                   | Repository identifier for a VCS integration.                                                                                                                            | `false`  | `${{ github.repository }}`                   |
+| `vcs_token_id`               | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added.                                                    | `false`  | `N/A`                                        |
+| `vcs_type`                   | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.                                                  | `false`  | `N/A`                                        |
+| `working_directory`          | A relative path that Terraform will execute within. Defaults to the root of your repository.                                                                            | `false`  | `N/A`                                        |
+| `workspace_run_triggers`     | A YAML encoded map of workspaces to workspace IDs or names, which like `run_triggers`, will trigger a run for the associated workspace when the source workspace is ran | `false`  | `N/A`                                        |
+| `workspace_tags`             | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace                                                                | `false`  | `N/A`                                        |
+| `workspace_variables`        | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names.                                                                    | `false`  | `N/A`                                        |
+| `workspaces`                 | YAML encoded list of workspace names.                                                                                                                                   | `false`  | `N/A`                                        |
+
 
 ### Backend Config
 
