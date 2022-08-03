@@ -435,6 +435,7 @@ func TestAppendTeamAccess(t *testing.T) {
 						StateVersions:    "${each.value.permissions.state_versions}",
 						SentinelMocks:    "${each.value.permissions.sentinel_mocks}",
 						WorkspaceLocking: "${each.value.permissions.workspace_locking}",
+						RunTasks:         "${each.value.permissions.run_tasks}",
 					},
 				}},
 			},
@@ -451,6 +452,7 @@ func TestAppendTeamAccess(t *testing.T) {
 				StateVersions:    "none",
 				SentinelMocks:    "none",
 				WorkspaceLocking: true,
+				RunTasks:         true,
 			}},
 		}, "org")
 
@@ -472,6 +474,7 @@ func TestAppendTeamAccess(t *testing.T) {
 					StateVersions:    "none",
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
+					RunTasks:         true,
 				},
 			},
 		})
@@ -737,6 +740,7 @@ func TestNewWorkspaceConfig(t *testing.T) {
 					StateVersions:    "read",
 					SentinelMocks:    "none",
 					WorkspaceLocking: true,
+					RunTasks:         true,
 				}},
 				TeamAccessItem{TeamName: "${data.terraform_remote_state.teams.outputs.team}", Workspace: &Workspace{Name: name}, Access: "read"},
 			},
