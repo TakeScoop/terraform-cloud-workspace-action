@@ -39,7 +39,7 @@ jobs:
 | description | Terraform Cloud workspace description | `false` | ${{ github.event.repository.description }} |
 | tags | YAML encoded list of tag names applied to all workspaces | `false` |  |
 | workspace_tags | YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace | `false` |  |
-| runner_terraform_version | Terraform version used to create the workspace. | `false` | 1.1.8 |
+| runner_terraform_version | Terraform version used in GitHub Actions to manage the workspace and related resources. | `false` | 1.1.8 |
 | workspaces | YAML encoded list of workspace names. | `false` |  |
 | backend_config | YAML encoded backend configurations. | `false` |  |
 | apply | Whether to apply the proposed Terraform changes. | `true` |  |
