@@ -50,7 +50,7 @@ jobs:
 | `ssh_key_id` | SSH key ID to assign the workspace | |
 | `tags` | YAML encoded list of tag names applied to all workspaces | |
 | `team_access` | YAML encoded teams and their associated permissions to be granted to the created workspaces | `false` |
-| `terraform_version` | Workspace Terraform version | `1.0.3` |
+| `terraform_version` | Workspace Terraform version | `1` |
 | `terraform_host` | Terraform Cloud host | `app.terraform.io` |
 | `tfe_provider_version` | Terraform Cloud provider version | `0.25.3` |
 | `variables` | YAML encoded variables to apply to all workspaces | |

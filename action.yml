@@ -2,8 +2,8 @@ name: Terraform Cloud Workspace
 description: Manages Terraform Cloud workspaces
 inputs:
   terraform_version:
-    description: Workspace Terraform version.
-    default: "1.1.8"
+    description: Workspace Terraform version. This can be either an exact version or a version constraint (like ~> 1.0.0). 
+    default: "1"
   terraform_token:
     description: Terraform Cloud token.
     required: true
