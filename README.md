@@ -249,13 +249,13 @@ To test the project
 
 ### Documentation
 
-Documentation is generated from `action.yml` using [action-docs](https://github.com/npalm/action-docs). To generate documentation locally: 
+Documentation is generated from `action.yml` using [action-docs](https://github.com/npalm/action-docs). To generate documentation and update it in place: 
 
 ```sh
-npx action-docs --update-readme
+make docs
 ```
 
-On each pull request, a workflow will automatically update the documentation and push changes to the pull request branch.
+On each pull request, a workflow will automatically update the documentation and fail if the documentation is out of date.
 
 ### Lint
 
