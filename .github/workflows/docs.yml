@@ -1,11 +1,12 @@
-name: Generate Documentation
+name: Documentation
 on:
   pull_request:
     paths:
+      - .githhub/workflows/docs.yml
       - README.md
       - action.yml
 jobs:
-  lint:
+  generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
