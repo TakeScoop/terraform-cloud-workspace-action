@@ -247,6 +247,16 @@ To test the project
 
 `go test -v -short ./...`
 
+### Documentation
+
+Documentation is generated from `action.yml` using [action-docs](https://github.com/npalm/action-docs). To generate documentation locally: 
+
+```sh
+npx action-docs --update-readme
+```
+
+On each pull request, a workflow will automatically update the documentation and push changes to the pull request branch.
+
 ### Lint
 
 This project uses [`golangci-lint`](https://github.com/golangci/golangci-lint)
