@@ -29,7 +29,7 @@ inputs:
     description: YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace
     default: ""
   runner_terraform_version:
-    description: Terraform version used to create the workspace.
+    description: Terraform version used in GitHub Actions to manage the workspace and related resources.
     default: "1.1.8"
   workspaces:
     description: YAML encoded list of workspace names.
