@@ -1,5 +1,12 @@
 name: Documentation
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - .githhub/workflows/docs.yml
+      - README.md
+      - action.yml
   pull_request:
     paths:
       - .githhub/workflows/docs.yml
