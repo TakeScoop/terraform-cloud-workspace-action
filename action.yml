@@ -29,7 +29,7 @@ inputs:
     description: YAML encoded map of workspace names to a list of tag names, which are applied to the specified workspace
     default: ""
   runner_terraform_version:
-    description: Terraform version used to create the workspace.
+    description: Terraform version used in GitHub Actions to manage the workspace and related resources.
     default: "1.1.8"
   workspaces:
     description: YAML encoded list of workspace names.
@@ -46,7 +46,7 @@ inputs:
     description: YAML encoded variables to apply to all workspaces.
     default: ""
   workspace_variables:
-    description: YAML encoded variables to apply to specific workspaces, with variables nested under workspace names.
+    description: YAML encoded map of variables to apply to specific workspaces, with each key corresponding to a workspace.
     default: ""
   vcs_type:
     description: Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added.
