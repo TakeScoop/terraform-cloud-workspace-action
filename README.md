@@ -45,7 +45,7 @@ jobs:
 | apply | Whether to apply the proposed Terraform changes. | `true` |  |
 | import | Whether to import existing matching resources from the Terraform Cloud organization. | `false` | true |
 | variables | YAML encoded variables to apply to all workspaces. | `false` |  |
-| workspace_variables | YAML encoded variables to apply to specific workspaces, with variables nested under workspace names. | `false` |  |
+| workspace_variables | YAML encoded map of variables to apply to specific workspaces, with each key corresponding to a workspace. | `false` |  |
 | vcs_type | Terraform VCS type (e.g., "github"). Superseded by `vcs_token_id`. If neither are passed, no VCS integration is added. | `false` |  |
 | vcs_token_id | Terraform VCS client token ID. Takes precedence over `vcs_name`. If neither are passed, no VCS integration is added. | `false` |  |
 | vcs_repo | Repository identifier for a VCS integration. | `false` | ${{ github.repository }} |
