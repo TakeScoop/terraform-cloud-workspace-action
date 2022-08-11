@@ -5,12 +5,12 @@ go 1.19
 require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-tfe v0.26.0
-	github.com/hashicorp/go-version v1.5.0
-	github.com/hashicorp/hc-install v0.3.2
-	github.com/hashicorp/terraform-exec v0.16.1
+	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/terraform-exec v0.17.2
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/sethvargo/go-githubactions v0.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/yaml v1.2.0
 )
@@ -29,5 +29,5 @@ require (
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
