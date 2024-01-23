@@ -3,7 +3,7 @@ module github.com/takescoop/terraform-cloud-workspace-action
 go 1.19
 
 require (
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-tfe v0.26.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.4.0
