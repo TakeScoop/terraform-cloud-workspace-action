@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.17.2
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/sethvargo/go-githubactions v0.4.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.12.1
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/yaml v1.2.0
 )
@@ -26,6 +26,7 @@ require (
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/zclconf/go-cty v1.10.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
